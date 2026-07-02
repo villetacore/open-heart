@@ -1,0 +1,3 @@
+# Redot LTS 26.1 = Godot 4.3 LTS fork.
+# api-4-3 feature is set in Cargo.toml — no binary needed for codegen.
+

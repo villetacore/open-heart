@@ -1,0 +1,14 @@
+[configuration]
+entry_symbol = "gdext_rust_init"
+compatibility_minimum = 4.3
+reloadable = true
+
+[libraries]
+windows.debug.x86_64 = "res://../rust/target/debug/openheart.dll"
+windows.release.x86_64 = "res://../rust/target/release/openheart.dll"
+linux.debug.x86_64 = "res://../rust/target/debug/libopenheart.so"
+linux.release.x86_64 = "res://../rust/target/release/libopenheart.so"
+macos.debug = "res://../rust/target/debug/libopenheart.dylib"
+macos.release = "res://../rust/target/release/libopenheart.dylib"
+macos.debug.arm64 = "res://../rust/target/debug/libopenheart.dylib"
+macos.release.arm64 = "res://../rust/target/release/libopenheart.dylib"

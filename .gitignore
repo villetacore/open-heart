@@ -1,0 +1,8 @@
+# Rust
+/rust/target/
+**/*.rs.bk
+
+# Godot / Redot
+.godot/
+*.import
+export_presets.cfg

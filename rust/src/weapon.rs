@@ -1,4 +1,11 @@
 //! Арсенал: типы боеприпасов, описания оружия, состояние оружия игрока.
+//!
+//! Оружие — data-driven: параметры грузятся из `data/weapons.json` через [`init`].
+//! Если файл сломан/отсутствует — используется встроенная копия (`include_str!`),
+//! так что игра никогда не падает из-за опечатки в конфиге.
+
+use serde::Deserialize;
+use std::sync::OnceLock;
 
 // ── Боеприпасы ────────────────────────────────────────────────────────────────
 
@@ -12,6 +19,17 @@ impl AmmoType {
         match self { Self::Bullets => 0, Self::Shells => 1, Self::Rockets => 2, Self::Cells => 3 }
     }
     pub fn from_idx(i: usize) -> Self { Self::ALL[i % 4] }
+
+    /// Разбор строкового id из конфигов.
+    pub fn from_id(s: &str) -> Option<Self> {
+        Some(match s {
+            "bullets" => Self::Bullets,
+            "shells"  => Self::Shells,
+            "rockets" => Self::Rockets,
+            "cells"   => Self::Cells,
+            _         => return None,
+        })
+    }
 
     pub fn name_ru(&self) -> &'static str {
         match self {
@@ -56,102 +74,156 @@ impl WeaponId {
         }
     }
     pub fn from_slot(i: usize) -> Self { Self::ALL[i % 8] }
+
+    /// Разбор строкового id из конфигов.
+    pub fn from_id(s: &str) -> Option<Self> {
+        Some(match s {
+            "sword"    => Self::Sword,
+            "chainsaw" => Self::Chainsaw,
+            "pistol"   => Self::Pistol,
+            "shotgun"  => Self::Shotgun,
+            "rifle"    => Self::Rifle,
+            "nailgun"  => Self::Nailgun,
+            "plasma"   => Self::Plasma,
+            "rocket"   => Self::Rocket,
+            _          => return None,
+        })
+    }
 }
 
 /// Тип выстрела.
 #[derive(Clone, Copy, PartialEq)]
 pub enum FireKind {
-    Melee,                       // ближний удар (дуга перед собой)
-    Hitscan { pellets: u32, spread: f32 }, // мгновенные лучи
+    Melee,                                  // ближний удар (дуга перед собой)
+    Hitscan { pellets: u32, spread: f32 },  // мгновенные лучи
     Projectile { speed: f32, splash: f32 }, // летящий снаряд (сплэш > 0 — взрыв)
 }
 
+/// Рантайм-описание оружия (владеет строками — грузится из JSON).
 pub struct WeaponDef {
     pub id:          WeaponId,
-    pub name_ru:     &'static str,
-    pub damage:      f32,          // урон за луч/удар/снаряд
+    pub name_ru:     String,
+    pub damage:      f32,
     pub cooldown:    f32,
     pub range:       f32,
     pub kind:        FireKind,
     pub ammo:        Option<(AmmoType, u32)>, // тип и расход за выстрел
-    pub auto:        bool,         // стреляет при удержании
+    pub auto:        bool,
     // FP-спрайт
-    pub sheet:       &'static str,
+    pub sheet:       String,
     pub frame_h:     f32,
-    pub idle_frames: &'static [usize],
-    pub fire_frames: &'static [usize],
+    pub idle_frames: Vec<usize>,
+    pub fire_frames: Vec<usize>,
     pub fire_fps:    f32,
 }
 
 pub const FRAME_W: f32 = 84.0;
 
-pub const WEAPONS: [WeaponDef; 8] = [
-    WeaponDef {
-        id: WeaponId::Sword, name_ru: "Энергоклинок",
-        damage: 34.0, cooldown: 0.5, range: 2.8,
-        kind: FireKind::Melee, ammo: None, auto: false,
-        sheet: "res://assets/sprites/weapons_fp/wf_sword.png",
-        frame_h: 59.0, idle_frames: &[0], fire_frames: &[1, 2, 3, 4, 5, 6], fire_fps: 16.0,
-    },
-    WeaponDef {
-        id: WeaponId::Chainsaw, name_ru: "Цепная пила",
-        damage: 9.0, cooldown: 0.12, range: 2.5,
-        kind: FireKind::Melee, ammo: None, auto: true,
-        sheet: "res://assets/sprites/weapons_fp/wf_chainsaw.png",
-        frame_h: 70.0, idle_frames: &[0, 1], fire_frames: &[4, 5, 6, 7], fire_fps: 14.0,
-    },
-    WeaponDef {
-        id: WeaponId::Pistol, name_ru: "Пистолет",
-        damage: 16.0, cooldown: 0.38, range: 32.0,
-        kind: FireKind::Hitscan { pellets: 1, spread: 0.012 },
-        ammo: Some((AmmoType::Bullets, 1)), auto: false,
-        sheet: "res://assets/sprites/weapons_fp/wf_pistol.png",
-        frame_h: 86.0, idle_frames: &[0], fire_frames: &[6, 7, 2], fire_fps: 14.0,
-    },
-    WeaponDef {
-        id: WeaponId::Shotgun, name_ru: "Дробовик",
-        damage: 9.0, cooldown: 0.95, range: 16.0,
-        kind: FireKind::Hitscan { pellets: 7, spread: 0.09 },
-        ammo: Some((AmmoType::Shells, 1)), auto: false,
-        sheet: "res://assets/sprites/weapons_fp/wf_shotgun.png",
-        frame_h: 95.0, idle_frames: &[0], fire_frames: &[6, 7, 3, 4], fire_fps: 10.0,
-    },
-    WeaponDef {
-        id: WeaponId::Rifle, name_ru: "Автомат",
-        damage: 12.0, cooldown: 0.12, range: 38.0,
-        kind: FireKind::Hitscan { pellets: 1, spread: 0.03 },
-        ammo: Some((AmmoType::Bullets, 1)), auto: true,
-        sheet: "res://assets/sprites/weapons_fp/wf_rifle.png",
-        frame_h: 91.0, idle_frames: &[0], fire_frames: &[6, 7], fire_fps: 18.0,
-    },
-    WeaponDef {
-        id: WeaponId::Nailgun, name_ru: "Гвоздемёт",
-        damage: 30.0, cooldown: 0.3, range: 30.0,
-        kind: FireKind::Hitscan { pellets: 1, spread: 0.006 },
-        ammo: Some((AmmoType::Bullets, 2)), auto: true,
-        sheet: "res://assets/sprites/weapons_fp/wf_nailgun.png",
-        frame_h: 80.0, idle_frames: &[0], fire_frames: &[6, 7], fire_fps: 12.0,
-    },
-    WeaponDef {
-        id: WeaponId::Plasma, name_ru: "Плазмаган",
-        damage: 26.0, cooldown: 0.22, range: 45.0,
-        kind: FireKind::Projectile { speed: 26.0, splash: 0.0 },
-        ammo: Some((AmmoType::Cells, 1)), auto: true,
-        sheet: "res://assets/sprites/weapons_fp/wf_plasma.png",
-        frame_h: 65.0, idle_frames: &[0], fire_frames: &[5, 6, 7], fire_fps: 16.0,
-    },
-    WeaponDef {
-        id: WeaponId::Rocket, name_ru: "Ракетница",
-        damage: 95.0, cooldown: 1.15, range: 60.0,
-        kind: FireKind::Projectile { speed: 19.0, splash: 4.2 },
-        ammo: Some((AmmoType::Rockets, 1)), auto: false,
-        sheet: "res://assets/sprites/weapons_fp/wf_rocket.png",
-        frame_h: 82.0, idle_frames: &[0], fire_frames: &[6, 7], fire_fps: 10.0,
-    },
-];
+// ── Загрузка из JSON ──────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct FireRaw {
+    kind: String,
+    #[serde(default)] pellets: u32,
+    #[serde(default)] spread:  f32,
+    #[serde(default)] speed:   f32,
+    #[serde(default)] splash:  f32,
+}
+
+#[derive(Deserialize)]
+struct AmmoRaw {
+    #[serde(rename = "type")] ty: String,
+    per_shot: u32,
+}
+
+#[derive(Deserialize)]
+struct WeaponRaw {
+    id:          String,
+    name_ru:     String,
+    damage:      f32,
+    cooldown:    f32,
+    range:       f32,
+    fire:        FireRaw,
+    #[serde(default)] ammo: Option<AmmoRaw>,
+    auto:        bool,
+    sheet:       String,
+    frame_h:     f32,
+    idle_frames: Vec<usize>,
+    fire_frames: Vec<usize>,
+    fire_fps:    f32,
+}
+
+impl WeaponRaw {
+    fn into_def(self, id: WeaponId) -> Result<WeaponDef, String> {
+        let kind = match self.fire.kind.as_str() {
+            "melee"      => FireKind::Melee,
+            "hitscan"    => FireKind::Hitscan { pellets: self.fire.pellets.max(1), spread: self.fire.spread },
+            "projectile" => FireKind::Projectile { speed: self.fire.speed, splash: self.fire.splash },
+            other        => return Err(format!("weapon '{}': unknown fire kind '{}'", self.id, other)),
+        };
+        let ammo = match self.ammo {
+            None => None,
+            Some(a) => {
+                let t = AmmoType::from_id(&a.ty)
+                    .ok_or_else(|| format!("weapon '{}': unknown ammo '{}'", self.id, a.ty))?;
+                Some((t, a.per_shot))
+            }
+        };
+        Ok(WeaponDef {
+            id, name_ru: self.name_ru, damage: self.damage, cooldown: self.cooldown,
+            range: self.range, kind, ammo, auto: self.auto, sheet: self.sheet,
+            frame_h: self.frame_h, idle_frames: self.idle_frames,
+            fire_frames: self.fire_frames, fire_fps: self.fire_fps,
+        })
+    }
+}
+
+fn parse(json: &str) -> Result<Vec<WeaponDef>, String> {
+    let raws: Vec<WeaponRaw> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+    let mut slots: Vec<Option<WeaponDef>> = (0..8).map(|_| None).collect();
+    for r in raws {
+        let id = WeaponId::from_id(&r.id)
+            .ok_or_else(|| format!("unknown weapon id '{}'", r.id))?;
+        slots[id.slot()] = Some(r.into_def(id)?);
+    }
+    let mut out = Vec::with_capacity(8);
+    for (i, s) in slots.into_iter().enumerate() {
+        out.push(s.ok_or_else(|| format!("missing weapon for slot {i}"))?);
+    }
+    Ok(out)
+}
+
+/// Встроенная копия конфига — гарантированный фолбэк.
+const EMBEDDED: &str = include_str!("../../godot/data/weapons.json");
+
+static WEAPONS: OnceLock<Vec<WeaponDef>> = OnceLock::new();
+
+fn embedded() -> Vec<WeaponDef> {
+    parse(EMBEDDED).expect("встроенный weapons.json должен быть валиден")
+}
+
+/// Инициализировать таблицу оружия. `runtime_json` — содержимое `data/weapons.json`
+/// (или None). При ошибке разбора — фолбэк на встроенную копию с предупреждением.
+pub fn init(runtime_json: Option<&str>) {
+    if WEAPONS.get().is_some() { return; }
+    let defs = match runtime_json {
+        Some(j) => match parse(j) {
+            Ok(d) => d,
+            Err(e) => { godot::global::godot_warn!("weapons.json: {e}; using embedded"); embedded() }
+        },
+        None => embedded(),
+    };
+    let _ = WEAPONS.set(defs);
+}
+
+fn store() -> &'static [WeaponDef] {
+    WEAPONS.get_or_init(embedded).as_slice()
+}
+
+pub fn weapons() -> &'static [WeaponDef] { store() }
 
 pub fn weapon_def(id: WeaponId) -> &'static WeaponDef {
-    &WEAPONS[id.slot()]
+    &store()[id.slot()]
 }
 
 // ── Состояние арсенала игрока ─────────────────────────────────────────────────

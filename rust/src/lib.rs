@@ -5,6 +5,7 @@ use godot::prelude::*;
 pub mod character;
 pub mod classes;
 pub mod config;
+pub mod content;
 pub mod dialogue;
 pub mod dungeon;
 pub mod enemy;

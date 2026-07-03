@@ -13,7 +13,7 @@ use godot::classes::{
 use godot::classes::environment::{AmbientSource, BgMode};
 use godot::global::HorizontalAlignment;
 
-use crate::classes::{compute_loadout, xp_to_next, ClassDef, Loadout, CLASSES};
+use crate::classes::{classes, compute_loadout, xp_to_next, ClassDef, Loadout};
 use crate::config::GameConfig;
 use crate::dialogue::Scene;
 use crate::dungeon::{self, DungeonPlan};
@@ -294,6 +294,9 @@ impl INode3D for Game3D {
     }
 
     fn ready(&mut self) {
+        // ContentDb: оружие, классы и прочий data-driven контент — до всего остального.
+        crate::content::load_all();
+
         self.settings = Settings::load();
         let lang = self.settings.lang.clone();
 
@@ -533,7 +536,7 @@ impl Game3D {
         let def = weapon_def(w);
         let mut node = Node3D::new_alloc();
         node.set_position(pos + Vector3::new(0.0, 0.65, 0.0));
-        if let Some(mut sp) = make_billboard(&mut self.cache, def.sheet, Vector3::ZERO, 0.012) {
+        if let Some(mut sp) = make_billboard(&mut self.cache, &def.sheet, Vector3::ZERO, 0.012) {
             sp.set_region_enabled(true);
             sp.set_region_rect(Rect2::new(Vector2::ZERO, Vector2::new(FRAME_W, def.frame_h)));
             node.add_child(&sp);
@@ -756,7 +759,7 @@ impl Game3D {
         self.freeze_player(true);
         Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::VISIBLE);
         if let Some(ref mut t) = self.select_title { t.set_text("ВЫБЕРИ КЛАСС"); }
-        for (i, c) in CLASSES.iter().enumerate() {
+        for (i, c) in classes().iter().enumerate() {
             self.fill_class_card(i, c);
         }
         if let Some(ref mut p) = self.select_panel { p.set_visible(true); }
@@ -764,11 +767,11 @@ impl Game3D {
 
     fn fill_class_card(&mut self, i: usize, c: &ClassDef) {
         if let Some(t) = self.card_titles.get_mut(i) {
-            t.set_text(c.name_ru);
+            t.set_text(&c.name_ru);
         }
         if let Some(b) = self.card_bodies.get_mut(i) {
             let weapons: Vec<&str> = c.start_weapons.iter()
-                .map(|w| weapon_def(*w).name_ru).collect();
+                .map(|w| weapon_def(*w).name_ru.as_str()).collect();
             b.set_text(&format!(
                 "Роль: {}\n\n{}\n\nHP: {:.0}\nСкорость: {:.1}\nОружие: {}\n\nСпеки:\n• {}\n• {}\n• {}",
                 c.role_ru, c.desc_ru, c.base_hp, c.speed, weapons.join(", "),
@@ -780,14 +783,14 @@ impl Game3D {
     fn open_spec_select(&mut self, class_idx: usize) {
         self.mode = Mode::SpecSelect;
         self.class_pick = class_idx;
-        let c = &CLASSES[class_idx];
+        let c = &classes()[class_idx];
         if let Some(ref mut t) = self.select_title {
             t.set_text(&format!("{} — ВЫБЕРИ СПЕЦИАЛИЗАЦИЮ", c.name_ru));
         }
         for i in 0..3 {
             let s = &c.specs[i];
             if let Some(t) = self.card_titles.get_mut(i) {
-                t.set_text(s.name_ru);
+                t.set_text(&s.name_ru);
             }
             if let Some(b) = self.card_bodies.get_mut(i) {
                 b.set_text(&format!("{}\n\n(Esc — назад к классам)", s.desc_ru));
@@ -831,7 +834,7 @@ impl Game3D {
         if let Some(ref mut p) = self.select_panel { p.set_visible(false); }
         self.set_mode_explore();
         self.refresh_weapon_sheet();
-        let c = &CLASSES[class_idx];
+        let c = &classes()[class_idx];
         self.show_flash(&format!("{} / {}. Вперёд!", c.name_ru, c.specs[spec_idx].name_ru));
         self.update_loc_label();
         self.auto_save();
@@ -844,12 +847,12 @@ impl Game3D {
         let hearts = self.state.as_ref().map(|s| s.stat_hearts()).unwrap_or(0);
         self.loadout.max_hp += hearts as f32 * 15.0;
 
-        let c = &CLASSES[class_idx];
+        let c = &classes()[class_idx];
         let s = &c.specs[spec_idx];
 
         if give_kit {
             self.arsenal = Arsenal::new();
-            for w in c.start_weapons {
+            for w in &c.start_weapons {
                 self.arsenal.give_weapon(*w);
             }
             if let Some(w) = s.extra_weapon {
@@ -858,7 +861,7 @@ impl Game3D {
                     self.arsenal.add_ammo(t, t.pack_size() * 2, self.loadout.ammo_mult);
                 }
             }
-            for (t, n) in c.start_ammo {
+            for (t, n) in &c.start_ammo {
                 self.arsenal.add_ammo(*t, *n, self.loadout.ammo_mult);
             }
             self.arsenal.current = c.start_weapons[0];
@@ -1179,7 +1182,7 @@ impl Game3D {
             dp.add_child(&lbl);
 
             let mut sub = Label::new_alloc();
-            sub.set_text("E / Enter — начать заново");
+            sub.set_text("E — вернуться в хаб (−25% золота)");
             sub.set_position(Vector2::new(0.0, HUD_H * 0.4 + 70.0));
             sub.set_size(Vector2::new(HUD_W, 30.0));
             sub.set_horizontal_alignment(HorizontalAlignment::CENTER);
@@ -1195,7 +1198,7 @@ impl Game3D {
     /// Обновить AtlasTexture под текущее оружие.
     fn refresh_weapon_sheet(&mut self) {
         let def = weapon_def(self.arsenal.current);
-        let Some(tex) = self.cache.get(def.sheet) else { return };
+        let Some(tex) = self.cache.get(&def.sheet) else { return };
         let mut at = AtlasTexture::new_gd();
         at.set_atlas(&tex);
         at.set_region(Rect2::new(Vector2::ZERO, Vector2::new(FRAME_W, def.frame_h)));
@@ -1435,15 +1438,46 @@ impl Game3D {
             self.mode = Mode::Dead;
             if let Some(ref mut dp) = self.dead_panel { dp.set_visible(true); }
             Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::VISIBLE);
-            save::delete();
+            // Сейв НЕ стирается: смерть = возврат в хаб со штрафом (см. DESIGN_PLAN §13).
         }
     }
 
     fn process_dead(&mut self) {
         let input = Input::singleton();
         if input.is_action_just_pressed("interact") {
-            self.base().get_tree().reload_current_scene();
+            self.respawn_at_hub();
         }
+    }
+
+    /// Смерть → возврат в хаб: −25 % золота, данж сгорает, сейв сохраняется.
+    fn respawn_at_hub(&mut self) {
+        let lost = {
+            let st = self.state.as_mut().unwrap();
+            let lost = st.gold / 4;
+            st.gold -= lost;
+            lost
+        };
+        if self.loc == Loc::Dungeon {
+            self.clear_dungeon();
+            self.loc = Loc::World;
+        }
+        if let Some(ref p) = self.player {
+            if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                let max = pl.bind().max_hp;
+                {
+                    let mut b = pl.bind_mut();
+                    b.dead = false;
+                    b.hp = max;
+                }
+                pl.bind_mut().teleport(Vector3::new(0.0, 1.1, 10.0));
+            }
+        }
+        self.mode = Mode::Explore;
+        if let Some(ref mut dp) = self.dead_panel { dp.set_visible(false); }
+        Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::CAPTURED);
+        self.update_loc_label();
+        self.show_flash(&format!("Ты очнулся в хабе. Потеряно золота: {}.", lost));
+        self.auto_save();
     }
 
     fn process_dialogue(&mut self) {
@@ -2108,7 +2142,7 @@ impl Game3D {
         let text = if let Some(ref state) = self.state {
             let mut lines = Vec::new();
             if let Some(ci) = state.class_idx {
-                let c = &CLASSES[ci];
+                let c = &classes()[ci.min(classes().len() - 1)];
                 lines.push(format!("{} / {}   ур. {}   XP {}/{}",
                     c.name_ru, c.specs[state.spec_idx.min(2)].name_ru,
                     state.level, state.xp, xp_to_next(state.level)));

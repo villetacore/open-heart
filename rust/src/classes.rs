@@ -1,126 +1,147 @@
-//! Классы персонажа: 3 класса × 3 специализации.
+//! Классы персонажа: 3 класса × 3 специализации. Data-driven (`data/classes.json`).
 //!
-//! Мили («Берсерк»)      — пила/клинок, толстый, быстрый, урон в упор.
+//! Мили («Берсерк»)         — пила/клинок, толстый, урон в упор.
 //! Клоус-рэнж («Штурмовик») — пистолет/дробовик, ближняя перестрелка.
-//! Мид-рэнж («Оператор»)  — автомат/плазма, держит дистанцию.
+//! Мид-рэнж («Оператор»)    — автомат/плазма, держит дистанцию.
 
+use serde::Deserialize;
+use std::sync::OnceLock;
 use crate::weapon::{AmmoType, WeaponId};
 
 pub struct SpecDef {
-    pub id:            &'static str,
-    pub name_ru:       &'static str,
-    pub desc_ru:       &'static str,
-    pub hp_bonus:      f32,   // + к максимуму HP
+    pub id:            String,
+    pub name_ru:       String,
+    pub desc_ru:       String,
+    pub hp_bonus:      f32,
     pub speed_mult:    f32,
     pub dmg_mult:      f32,
-    pub cd_mult:       f32,   // множитель кулдауна оружия (меньше = быстрее)
-    pub lifesteal:     f32,   // доля нанесённого урона, возвращаемая в HP
-    pub ammo_mult:     f32,   // множитель максимального боезапаса
+    pub cd_mult:       f32,
+    pub lifesteal:     f32,
+    pub ammo_mult:     f32,
     pub extra_weapon:  Option<WeaponId>,
 }
 
 pub struct ClassDef {
-    pub id:          &'static str,
-    pub name_ru:     &'static str,
-    pub role_ru:     &'static str,
-    pub desc_ru:     &'static str,
-    pub base_hp:     f32,
-    pub speed:       f32,
-    pub dmg_mult:    f32,
-    pub start_weapons: &'static [WeaponId],
-    pub start_ammo:  &'static [(AmmoType, u32)],
-    pub specs:       [SpecDef; 3],
+    pub id:            String,
+    pub name_ru:       String,
+    pub role_ru:       String,
+    pub desc_ru:       String,
+    pub base_hp:       f32,
+    pub speed:         f32,
+    pub dmg_mult:      f32,
+    pub start_weapons: Vec<WeaponId>,
+    pub start_ammo:    Vec<(AmmoType, u32)>,
+    pub specs:         Vec<SpecDef>,
 }
 
-pub const CLASSES: [ClassDef; 3] = [
-    ClassDef {
-        id: "berserk", name_ru: "БЕРСЕРК", role_ru: "Мили",
-        desc_ru: "Пила и клинок. Живёт в гуще боя, лечится чужой болью.",
-        base_hp: 150.0, speed: 5.8, dmg_mult: 1.0,
-        start_weapons: &[WeaponId::Sword, WeaponId::Chainsaw],
-        start_ammo: &[(AmmoType::Shells, 8)],
-        specs: [
-            SpecDef {
-                id: "bloodreaper", name_ru: "Кровожнец",
-                desc_ru: "25% урона в ближнем бою возвращается здоровьем.",
-                hp_bonus: 0.0, speed_mult: 1.0, dmg_mult: 1.0,
-                cd_mult: 1.0, lifesteal: 0.25, ammo_mult: 1.0, extra_weapon: None,
-            },
-            SpecDef {
-                id: "juggernaut", name_ru: "Таран",
-                desc_ru: "+60 к здоровью. Медленнее, но почти неубиваем.",
-                hp_bonus: 60.0, speed_mult: 0.92, dmg_mult: 1.0,
-                cd_mult: 1.0, lifesteal: 0.0, ammo_mult: 1.0, extra_weapon: None,
-            },
-            SpecDef {
-                id: "whirlwind", name_ru: "Вихрь",
-                desc_ru: "+20% скорость бега, удары на 25% быстрее.",
-                hp_bonus: -20.0, speed_mult: 1.2, dmg_mult: 1.0,
-                cd_mult: 0.75, lifesteal: 0.0, ammo_mult: 1.0, extra_weapon: None,
-            },
-        ],
-    },
-    ClassDef {
-        id: "vanguard", name_ru: "ШТУРМОВИК", role_ru: "Клоус-рэнж",
-        desc_ru: "Пистолет и дробовик. Врывается, стреляет в упор, уходит.",
-        base_hp: 115.0, speed: 5.3, dmg_mult: 1.0,
-        start_weapons: &[WeaponId::Pistol, WeaponId::Shotgun],
-        start_ammo: &[(AmmoType::Bullets, 60), (AmmoType::Shells, 20)],
-        specs: [
-            SpecDef {
-                id: "executioner", name_ru: "Экзекутор",
-                desc_ru: "+20% урона всем оружием.",
-                hp_bonus: 0.0, speed_mult: 1.0, dmg_mult: 1.2,
-                cd_mult: 1.0, lifesteal: 0.0, ammo_mult: 1.0, extra_weapon: None,
-            },
-            SpecDef {
-                id: "bastion", name_ru: "Бастион",
-                desc_ru: "+45 к здоровью — щит на передовой.",
-                hp_bonus: 45.0, speed_mult: 0.96, dmg_mult: 1.0,
-                cd_mult: 1.0, lifesteal: 0.0, ammo_mult: 1.0, extra_weapon: None,
-            },
-            SpecDef {
-                id: "duelist", name_ru: "Дуэлянт",
-                desc_ru: "Перезарядка на 20% быстрее, +10% скорость.",
-                hp_bonus: 0.0, speed_mult: 1.1, dmg_mult: 1.0,
-                cd_mult: 0.8, lifesteal: 0.0, ammo_mult: 1.0, extra_weapon: None,
-            },
-        ],
-    },
-    ClassDef {
-        id: "operator", name_ru: "ОПЕРАТОР", role_ru: "Мид-рэнж",
-        desc_ru: "Автомат и плазма. Контролирует дистанцию и толпу.",
-        base_hp: 100.0, speed: 5.0, dmg_mult: 1.0,
-        start_weapons: &[WeaponId::Rifle, WeaponId::Plasma],
-        start_ammo: &[(AmmoType::Bullets, 120), (AmmoType::Cells, 60)],
-        specs: [
-            SpecDef {
-                id: "sniper", name_ru: "Снайпер",
-                desc_ru: "+30% урона, стартовый гвоздемёт.",
-                hp_bonus: -10.0, speed_mult: 1.0, dmg_mult: 1.3,
-                cd_mult: 1.0, lifesteal: 0.0, ammo_mult: 1.0,
-                extra_weapon: Some(WeaponId::Nailgun),
-            },
-            SpecDef {
-                id: "demolition", name_ru: "Подрывник",
-                desc_ru: "Стартовая ракетница и 8 ракет.",
-                hp_bonus: 0.0, speed_mult: 1.0, dmg_mult: 1.0,
-                cd_mult: 1.0, lifesteal: 0.0, ammo_mult: 1.0,
-                extra_weapon: Some(WeaponId::Rocket),
-            },
-            SpecDef {
-                id: "technician", name_ru: "Техник",
-                desc_ru: "+50% максимум боезапаса, перезарядка -10%.",
-                hp_bonus: 0.0, speed_mult: 1.0, dmg_mult: 1.0,
-                cd_mult: 0.9, lifesteal: 0.0, ammo_mult: 1.5, extra_weapon: None,
-            },
-        ],
-    },
-];
+// ── Загрузка из JSON ──────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct SpecRaw {
+    id: String, name_ru: String, desc_ru: String,
+    hp_bonus: f32, speed_mult: f32, dmg_mult: f32,
+    cd_mult: f32, lifesteal: f32, ammo_mult: f32,
+    #[serde(default)] extra_weapon: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct AmmoStartRaw { #[serde(rename = "type")] ty: String, amount: u32 }
+
+#[derive(Deserialize)]
+struct ClassRaw {
+    id: String, name_ru: String, role_ru: String, desc_ru: String,
+    base_hp: f32, speed: f32, dmg_mult: f32,
+    start_weapons: Vec<String>,
+    start_ammo: Vec<AmmoStartRaw>,
+    specs: Vec<SpecRaw>,
+}
+
+impl SpecRaw {
+    fn into_def(self) -> Result<SpecDef, String> {
+        let extra = match self.extra_weapon {
+            None => None,
+            Some(ref s) => Some(WeaponId::from_id(s)
+                .ok_or_else(|| format!("spec '{}': unknown weapon '{}'", self.id, s))?),
+        };
+        Ok(SpecDef {
+            id: self.id, name_ru: self.name_ru, desc_ru: self.desc_ru,
+            hp_bonus: self.hp_bonus, speed_mult: self.speed_mult, dmg_mult: self.dmg_mult,
+            cd_mult: self.cd_mult, lifesteal: self.lifesteal, ammo_mult: self.ammo_mult,
+            extra_weapon: extra,
+        })
+    }
+}
+
+impl ClassRaw {
+    fn into_def(self) -> Result<ClassDef, String> {
+        let mut weapons = Vec::new();
+        for w in &self.start_weapons {
+            weapons.push(WeaponId::from_id(w)
+                .ok_or_else(|| format!("class '{}': unknown weapon '{}'", self.id, w))?);
+        }
+        let mut ammo = Vec::new();
+        for a in &self.start_ammo {
+            let t = AmmoType::from_id(&a.ty)
+                .ok_or_else(|| format!("class '{}': unknown ammo '{}'", self.id, a.ty))?;
+            ammo.push((t, a.amount));
+        }
+        let mut specs = Vec::new();
+        for s in self.specs {
+            specs.push(s.into_def()?);
+        }
+        if specs.len() < 3 {
+            return Err(format!("class '{}': needs 3 specs, got {}", self.id, specs.len()));
+        }
+        Ok(ClassDef {
+            id: self.id, name_ru: self.name_ru, role_ru: self.role_ru, desc_ru: self.desc_ru,
+            base_hp: self.base_hp, speed: self.speed, dmg_mult: self.dmg_mult,
+            start_weapons: weapons, start_ammo: ammo, specs,
+        })
+    }
+}
+
+fn parse(json: &str) -> Result<Vec<ClassDef>, String> {
+    let raws: Vec<ClassRaw> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+    if raws.len() < 3 {
+        return Err(format!("classes.json: needs 3 classes, got {}", raws.len()));
+    }
+    let mut out = Vec::with_capacity(raws.len());
+    for r in raws {
+        out.push(r.into_def()?);
+    }
+    Ok(out)
+}
+
+const EMBEDDED: &str = include_str!("../../godot/data/classes.json");
+
+static CLASSES: OnceLock<Vec<ClassDef>> = OnceLock::new();
+
+fn embedded() -> Vec<ClassDef> {
+    parse(EMBEDDED).expect("встроенный classes.json должен быть валиден")
+}
+
+/// Инициализировать таблицу классов из `data/classes.json` (или встроенной копии).
+pub fn init(runtime_json: Option<&str>) {
+    if CLASSES.get().is_some() { return; }
+    let defs = match runtime_json {
+        Some(j) => match parse(j) {
+            Ok(d) => d,
+            Err(e) => { godot::global::godot_warn!("classes.json: {e}; using embedded"); embedded() }
+        },
+        None => embedded(),
+    };
+    let _ = CLASSES.set(defs);
+}
+
+pub fn classes() -> &'static [ClassDef] {
+    CLASSES.get_or_init(embedded).as_slice()
+}
 
 pub fn class_by_id(id: &str) -> Option<&'static ClassDef> {
-    CLASSES.iter().find(|c| c.id == id)
+    classes().iter().find(|c| c.id == id)
 }
+
+// ── Расчёт лоадаута ───────────────────────────────────────────────────────────
 
 /// Итоговые боевые параметры: класс + спек + уровень.
 pub struct Loadout {
@@ -133,8 +154,9 @@ pub struct Loadout {
 }
 
 pub fn compute_loadout(class_idx: usize, spec_idx: usize, level: u32) -> Loadout {
-    let c = &CLASSES[class_idx.min(2)];
-    let s = &c.specs[spec_idx.min(2)];
+    let list = classes();
+    let c = &list[class_idx.min(list.len() - 1)];
+    let s = &c.specs[spec_idx.min(c.specs.len() - 1)];
     let lvl_bonus = (level.saturating_sub(1)) as f32;
     Loadout {
         max_hp:    (c.base_hp + s.hp_bonus + lvl_bonus * 8.0).max(40.0),

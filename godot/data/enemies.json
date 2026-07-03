@@ -1,4 +1,4 @@
-﻿{
+{
   "enemies": [
     {
       "id": "grunt",
@@ -10,7 +10,10 @@
       "attack_cooldown": 1.5,
       "chase_range": 9.0,
       "patrol_radius": 4.0,
-      "color_r": 0.85, "color_g": 0.1, "color_b": 0.1
+      "color_r": 0.85,
+      "color_g": 0.1,
+      "color_b": 0.1,
+      "xp": 15.0
     },
     {
       "id": "heavy",
@@ -22,7 +25,10 @@
       "attack_cooldown": 2.2,
       "chase_range": 10.0,
       "patrol_radius": 3.0,
-      "color_r": 0.5, "color_g": 0.1, "color_b": 0.75
+      "color_r": 0.5,
+      "color_g": 0.1,
+      "color_b": 0.75,
+      "xp": 40.0
     },
     {
       "id": "fast",
@@ -34,7 +40,10 @@
       "attack_cooldown": 0.9,
       "chase_range": 12.0,
       "patrol_radius": 6.0,
-      "color_r": 0.1, "color_g": 0.8, "color_b": 0.3
+      "color_r": 0.1,
+      "color_g": 0.8,
+      "color_b": 0.3,
+      "xp": 12.0
     },
     {
       "id": "brute",
@@ -46,7 +55,10 @@
       "attack_cooldown": 3.0,
       "chase_range": 7.0,
       "patrol_radius": 2.0,
-      "color_r": 0.9, "color_g": 0.4, "color_b": 0.0
+      "color_r": 0.9,
+      "color_g": 0.4,
+      "color_b": 0.0,
+      "xp": 80.0
     },
     {
       "id": "sniper",
@@ -58,7 +70,10 @@
       "attack_cooldown": 2.5,
       "chase_range": 14.0,
       "patrol_radius": 5.0,
-      "color_r": 1.0, "color_g": 0.9, "color_b": 0.1
+      "color_r": 1.0,
+      "color_g": 0.9,
+      "color_b": 0.1,
+      "xp": 25.0
     },
     {
       "id": "cultist",
@@ -70,7 +85,10 @@
       "attack_cooldown": 1.2,
       "chase_range": 11.0,
       "patrol_radius": 4.0,
-      "color_r": 0.3, "color_g": 0.2, "color_b": 0.9
+      "color_r": 0.3,
+      "color_g": 0.2,
+      "color_b": 0.9,
+      "xp": 20.0
     }
   ]
 }

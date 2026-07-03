@@ -1,0 +1,50 @@
+{
+  "pistol": {
+    "frames": 8,
+    "frame_w": 84,
+    "frame_h": 86,
+    "path": "res://assets/sprites/weapons_fp/wf_pistol.png"
+  },
+  "shotgun": {
+    "frames": 8,
+    "frame_w": 84,
+    "frame_h": 95,
+    "path": "res://assets/sprites/weapons_fp/wf_shotgun.png"
+  },
+  "rifle": {
+    "frames": 8,
+    "frame_w": 84,
+    "frame_h": 91,
+    "path": "res://assets/sprites/weapons_fp/wf_rifle.png"
+  },
+  "plasma": {
+    "frames": 8,
+    "frame_w": 84,
+    "frame_h": 65,
+    "path": "res://assets/sprites/weapons_fp/wf_plasma.png"
+  },
+  "rocket": {
+    "frames": 8,
+    "frame_w": 84,
+    "frame_h": 82,
+    "path": "res://assets/sprites/weapons_fp/wf_rocket.png"
+  },
+  "nailgun": {
+    "frames": 8,
+    "frame_w": 84,
+    "frame_h": 80,
+    "path": "res://assets/sprites/weapons_fp/wf_nailgun.png"
+  },
+  "chainsaw": {
+    "frames": 8,
+    "frame_w": 84,
+    "frame_h": 70,
+    "path": "res://assets/sprites/weapons_fp/wf_chainsaw.png"
+  },
+  "sword": {
+    "frames": 8,
+    "frame_w": 84,
+    "frame_h": 59,
+    "path": "res://assets/sprites/weapons_fp/wf_sword.png"
+  }
+}

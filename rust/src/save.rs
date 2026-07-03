@@ -1,5 +1,4 @@
-//! Сохранение / загрузка игры в user://save.json.
-//! Обходимся без serde-деривов на GameState — маппим вручную.
+//! Сохранение / загрузка игры в user://save.json (версия 2: класс + арсенал).
 
 use serde::{Deserialize, Serialize};
 use godot::classes::{FileAccess, file_access::ModeFlags};
@@ -7,8 +6,12 @@ use std::collections::{HashMap, HashSet};
 use crate::game_state::GameState;
 use crate::item::Item;
 use crate::quest::QuestState;
+use crate::weapon::{Arsenal, WeaponId};
 
 const SAVE_PATH: &str = "user://save.json";
+
+fn default_level() -> u32 { 1 }
+fn default_seed() -> u64 { 0x5EED_0001 }
 
 #[derive(Serialize, Deserialize)]
 pub struct SaveData {
@@ -22,15 +25,27 @@ pub struct SaveData {
     pub wil:        i32,
     pub relations:  HashMap<String, i32>,
     pub flags:      Vec<String>,
-    pub quests:     Vec<(String, String, bool)>, // (id, title, completed)
-    pub inventory:  Vec<(String, String, u32)>,  // (id, name, qty)
+    pub quests:     Vec<(String, String, bool)>,
+    pub inventory:  Vec<(String, String, u32)>,
     pub player_hp:  f32,
+
+    // ── v2 ──
+    #[serde(default)] pub class_idx:  i32,   // -1 = класс не выбран
+    #[serde(default)] pub spec_idx:   u32,
+    #[serde(default = "default_level")] pub level: u32,
+    #[serde(default)] pub xp:         u32,
+    #[serde(default)] pub ammo:       Vec<u32>,     // 4 типа
+    #[serde(default)] pub weapons:    Vec<u32>,     // слоты имеющегося оружия
+    #[serde(default)] pub cur_weapon: u32,
+    #[serde(default = "default_seed")] pub dungeon_seed: u64,
+    #[serde(default)] pub dungeons_cleared: u32,
+    #[serde(default)] pub hearts: u32,
 }
 
 impl SaveData {
-    pub fn from_game(state: &GameState, player_hp: f32) -> Self {
+    pub fn from_game(state: &GameState, player_hp: f32, ars: &Arsenal) -> Self {
         Self {
-            version:   1,
+            version:   2,
             day:       state.day,
             gold:      state.gold,
             int_:      state.stats.intelligence,
@@ -47,10 +62,20 @@ impl SaveData {
                 .map(|i| (i.id.clone(), i.name.clone(), i.qty))
                 .collect(),
             player_hp,
+            class_idx: state.class_idx.map(|c| c as i32).unwrap_or(-1),
+            spec_idx:  state.spec_idx as u32,
+            level:     state.level,
+            xp:        state.xp,
+            ammo:      ars.ammo.to_vec(),
+            weapons:   (0..8).filter(|s| ars.owned[*s]).map(|s| s as u32).collect(),
+            cur_weapon: ars.current.slot() as u32,
+            dungeon_seed:     state.dungeon_seed,
+            dungeons_cleared: state.dungeons_cleared,
+            hearts:           state.hearts,
         }
     }
 
-    pub fn into_game(self) -> (GameState, f32) {
+    pub fn into_game(self) -> (GameState, f32, Arsenal) {
         let mut s = GameState::new("Игрок");
         s.day   = self.day;
         s.gold  = self.gold;
@@ -68,12 +93,34 @@ impl SaveData {
         for (id, name, qty) in self.inventory {
             s.inventory.add(Item::new(&id, &name, "", qty));
         }
-        (s, self.player_hp)
+        s.class_idx = if self.class_idx >= 0 { Some(self.class_idx as usize) } else { None };
+        s.spec_idx  = self.spec_idx as usize;
+        s.level     = self.level.max(1);
+        s.xp        = self.xp;
+        s.dungeon_seed     = self.dungeon_seed;
+        s.dungeons_cleared = self.dungeons_cleared;
+        s.hearts           = self.hearts;
+
+        let mut ars = Arsenal::new();
+        for (i, v) in self.ammo.iter().take(4).enumerate() {
+            ars.ammo[i] = *v;
+        }
+        for slot in &self.weapons {
+            ars.owned[(*slot as usize).min(7)] = true;
+        }
+        ars.current = WeaponId::from_slot(self.cur_weapon as usize);
+        if !ars.owned[ars.current.slot()] {
+            // подстраховка: хоть какое-то оружие
+            if let Some(s0) = (0..8).find(|s| ars.owned[*s]) {
+                ars.current = WeaponId::from_slot(s0);
+            }
+        }
+        (s, self.player_hp, ars)
     }
 }
 
-pub fn save(state: &GameState, player_hp: f32) -> bool {
-    let data = SaveData::from_game(state, player_hp);
+pub fn save(state: &GameState, player_hp: f32, ars: &Arsenal) -> bool {
+    let data = SaveData::from_game(state, player_hp, ars);
     match serde_json::to_string_pretty(&data) {
         Ok(json) => {
             if let Some(mut f) = FileAccess::open(SAVE_PATH, ModeFlags::WRITE) {
@@ -86,7 +133,7 @@ pub fn save(state: &GameState, player_hp: f32) -> bool {
     }
 }
 
-pub fn load() -> Option<(GameState, f32)> {
+pub fn load() -> Option<(GameState, f32, Arsenal)> {
     let f    = FileAccess::open(SAVE_PATH, ModeFlags::READ)?;
     let text = f.get_as_text().to_string();
     let data: SaveData = serde_json::from_str(&text).ok()?;

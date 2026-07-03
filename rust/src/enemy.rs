@@ -1,19 +1,18 @@
 //! Enemy — CharacterBody3D с AI: патруль → преследование → атака.
-//! Визуал: Sprite3D billboard с анимацией (DOOM-стиль), как NPC.
+//! Визуал: Sprite3D billboard с анимацией (DOOM-стиль).
+//! Дальнобойные (sniper) бьют только при прямой видимости.
 
 use godot::prelude::*;
 use godot::classes::{
     CapsuleShape3D, CharacterBody3D, CollisionShape3D,
-    ICharacterBody3D, Image, ImageTexture, Sprite3D, Texture2D,
+    ICharacterBody3D, Image, ImageTexture, PhysicsRayQueryParameters3D,
+    Sprite3D, Texture2D,
 };
-use godot::classes::base_material_3d::BillboardMode;
+use godot::classes::base_material_3d::{BillboardMode, TextureFilter};
 use godot::classes::sprite_base_3d::AlphaCutMode;
 
-// ── Стандартный формат спрайтшита (512×256, 4 фрейма по 128×256) ─────────────
-//    Фреймы: 0-1 = idle, 2-3 = walk
+// ── Спрайтшит 512×256: 4 кадра по 128×256 (idle×2, walk×2) ───────────────────
 
-const FRAME_W:    f32 = 128.0;
-const FRAME_H:    f32 = 256.0;
 const IDLE_FRAMES: [(f32, f32, f32, f32); 2] = [
     (0.0,   0.0, 128.0, 256.0),
     (128.0, 0.0, 128.0, 256.0),
@@ -23,8 +22,6 @@ const WALK_FRAMES: [(f32, f32, f32, f32); 2] = [
     (384.0, 0.0, 128.0, 256.0),
 ];
 
-// Новые пути — assets/sprites/characters/enemy_<id>.png
-// Fallback на старые спрайты до момента генерации новых.
 fn enemy_tex(id: &str) -> &'static str {
     match id {
         "grunt"   => "res://assets/sprites/characters/enemy_grunt.png",
@@ -37,19 +34,8 @@ fn enemy_tex(id: &str) -> &'static str {
     }
 }
 
-fn enemy_tex_fallback(id: &str) -> &'static str {
-    match id {
-        "cultist" => "res://assets/sprites/femboy_pink.png",
-        _         => "res://assets/sprites/femboy_dark1.png",
-    }
-}
-
-// ── Состояния AI ──────────────────────────────────────────────────────────────
-
 #[derive(PartialEq, Clone, Copy)]
 enum EState { Patrol, Chase, Attack, Dead }
-
-// ── Структура врага ───────────────────────────────────────────────────────────
 
 #[derive(GodotClass)]
 #[class(base = CharacterBody3D)]
@@ -66,6 +52,8 @@ pub struct Enemy {
     atk_cooldown:     f32,
     chase_range:      f32,
     patrol_radius:    f32,
+    pub xp_value:     f32,
+    pub is_boss:      bool,
 
     // runtime
     state:            EState,
@@ -85,22 +73,22 @@ pub struct Enemy {
     sprite:           Option<Gd<Sprite3D>>,
     anim_timer:       f32,
     anim_frame:       usize,
+    hurt_flash:       f32,
 }
 
-// ── Публичный API ─────────────────────────────────────────────────────────────
-
 impl Enemy {
+    #[allow(clippy::too_many_arguments)]
     pub fn configure(
         &mut self,
         id: &str, hp: f32, speed: f32, damage: f32,
         atk_range: f32, cooldown: f32, chase: f32, patrol: f32,
-        color: Color, spawn: Vector3,
+        color: Color, spawn: Vector3, xp: f32, mult: f32, is_boss: bool,
     ) {
         self.cfg_id        = GString::from(id);
-        self.hp            = hp;
-        self.max_hp        = hp;
+        self.hp            = hp * mult;
+        self.max_hp        = hp * mult;
         self.speed         = speed;
-        self.atk_damage    = damage;
+        self.atk_damage    = damage * mult;
         self.atk_range     = atk_range;
         self.atk_cooldown  = cooldown;
         self.chase_range   = chase;
@@ -110,25 +98,49 @@ impl Enemy {
         self.alive         = true;
         self.pending_color = color;
         self.tex_path      = enemy_tex(id);
+        self.xp_value      = xp * mult;
+        self.is_boss       = is_boss;
     }
 
     pub fn take_damage(&mut self, amount: f32) {
         if !self.alive { return; }
         self.hp -= amount;
+        self.hurt_flash = 0.15;
+        // проснуться при уроне
+        if self.state == EState::Patrol { self.state = EState::Chase; }
         if self.hp <= 0.0 {
             self.hp    = 0.0;
             self.state = EState::Dead;
             self.alive = false;
-            self.base_mut().queue_free();
         }
     }
 
     pub fn set_player(&mut self, player: Gd<CharacterBody3D>) {
         self.player = Some(player);
     }
-}
 
-// ── GodotClass callbacks ──────────────────────────────────────────────────────
+    /// Есть ли прямая видимость до игрока (для дальнобойных атак).
+    fn has_los(&mut self, player_pos: Vector3) -> bool {
+        let from = self.base().get_global_position() + Vector3::new(0.0, 1.3, 0.0);
+        let to   = player_pos + Vector3::new(0.0, 1.3, 0.0);
+        let Some(world) = self.base().get_world_3d() else { return true };
+        let Some(mut space) = world.clone().get_direct_space_state() else { return true };
+        let Some(mut query) = PhysicsRayQueryParameters3D::create(from, to) else { return true };
+        let mut excl: godot::builtin::Array<Rid> = godot::builtin::Array::new();
+        excl.push(self.base().get_rid());
+        query.set_exclude(&excl);
+        let hit = space.intersect_ray(&query);
+        if hit.is_empty() { return true; }
+        if let Some(cv) = hit.get("collider") {
+            if let Ok(node) = cv.try_to::<Gd<godot::classes::Node>>() {
+                if let Some(ref p) = self.player {
+                    return node.instance_id() == p.instance_id();
+                }
+            }
+        }
+        false
+    }
+}
 
 #[godot_api]
 impl ICharacterBody3D for Enemy {
@@ -140,6 +152,7 @@ impl ICharacterBody3D for Enemy {
             speed: 2.5, atk_damage: 10.0,
             atk_range: 1.8, atk_cooldown: 1.5,
             chase_range: 8.0, patrol_radius: 3.0,
+            xp_value: 10.0, is_boss: false,
             state: EState::Patrol,
             atk_timer: 0.0,
             patrol_target: Vector3::ZERO,
@@ -149,29 +162,28 @@ impl ICharacterBody3D for Enemy {
             player: None,
             alive: true,
             pending_dmg: 0.0,
-            pending_color: Color::from_rgba(0.85, 0.1, 0.1, 1.0),
-            tex_path: "res://assets/sprites/femboy_dark1.png",
+            pending_color: Color::from_rgba(1.0, 1.0, 1.0, 1.0),
+            tex_path: "res://assets/sprites/characters/enemy_grunt.png",
             sprite: None,
             anim_timer: 0.0,
             anim_frame: 0,
+            hurt_flash: 0.0,
         }
     }
 
     fn ready(&mut self) {
-        // ── Sprite3D (billboard) ──────────────────────────────────────────────
         let color = self.pending_color;
         let tex_path = self.tex_path;
+        let scale = if self.is_boss { 0.014 } else { 0.010 };
 
         let mut sp = Sprite3D::new_alloc();
-        sp.set_pixel_size(0.010);
+        sp.set_pixel_size(scale);
         sp.set_billboard_mode(BillboardMode::ENABLED);
         sp.set_alpha_cut_mode(AlphaCutMode::DISCARD);
-        sp.set_position(Vector3::new(0.0, 0.8, 0.0));
+        sp.set_texture_filter(TextureFilter::NEAREST);
+        sp.set_position(Vector3::new(0.0, if self.is_boss { 1.7 } else { 1.2 }, 0.0));
 
-        // Пробуем новый путь, fallback на старый спрайтшит
-        let loaded = Image::load_from_file(tex_path)
-            .or_else(|| Image::load_from_file(enemy_tex_fallback(&self.cfg_id.to_string())));
-        if let Some(img) = loaded {
+        if let Some(img) = Image::load_from_file(tex_path) {
             if let Some(itex) = ImageTexture::create_from_image(&img) {
                 sp.set_texture(&itex.upcast::<Texture2D>());
                 sp.set_region_enabled(true);
@@ -184,13 +196,12 @@ impl ICharacterBody3D for Enemy {
         self.base_mut().add_child(&sp);
         self.sprite = Some(sp_clone);
 
-        // ── Коллайдер ─────────────────────────────────────────────────────────
         let mut col = CollisionShape3D::new_alloc();
         let mut cap = CapsuleShape3D::new_gd();
-        cap.set_radius(0.3);
-        cap.set_height(1.6);
+        cap.set_radius(if self.is_boss { 0.45 } else { 0.3 });
+        cap.set_height(if self.is_boss { 2.2 } else { 1.6 });
         col.set_shape(&cap);
-        col.set_position(Vector3::new(0.0, 0.8, 0.0));
+        col.set_position(Vector3::new(0.0, if self.is_boss { 1.1 } else { 0.8 }, 0.0));
         self.base_mut().add_child(&col);
 
         self.base_mut().add_to_group("enemies");
@@ -202,6 +213,17 @@ impl ICharacterBody3D for Enemy {
         if !self.alive || self.state == EState::Dead { return; }
         let dt = delta as f32;
 
+        // флэш урона
+        if self.hurt_flash > 0.0 {
+            self.hurt_flash -= dt;
+            let c = if self.hurt_flash > 0.0 {
+                Color::from_rgba(1.0, 0.25, 0.25, 1.0)
+            } else {
+                self.pending_color
+            };
+            if let Some(ref mut sp) = self.sprite { sp.set_modulate(c); }
+        }
+
         let player_pos = match self.player.as_ref() {
             Some(p) => p.get_global_position(),
             None    => return,
@@ -210,14 +232,13 @@ impl ICharacterBody3D for Enemy {
         let my_pos = self.base().get_global_position();
         let dist   = Vector3::new(player_pos.x - my_pos.x, 0.0, player_pos.z - my_pos.z).length();
 
-        // ── Переходы состояний ────────────────────────────────────────────────
         self.state = match self.state {
             EState::Patrol => {
                 if dist < self.chase_range { EState::Chase } else { EState::Patrol }
             }
             EState::Chase => {
-                if dist < self.atk_range          { self.atk_timer = self.atk_cooldown; EState::Attack }
-                else if dist > self.chase_range * 1.5 { EState::Patrol }
+                if dist < self.atk_range { self.atk_timer = self.atk_cooldown * 0.5; EState::Attack }
+                else if dist > self.chase_range * 1.8 { EState::Patrol }
                 else { EState::Chase }
             }
             EState::Attack => {
@@ -226,7 +247,6 @@ impl ICharacterBody3D for Enemy {
             EState::Dead => EState::Dead,
         };
 
-        // ── Поведение ─────────────────────────────────────────────────────────
         let mut vel = Vector3::ZERO;
         match self.state {
             EState::Patrol => {
@@ -234,8 +254,7 @@ impl ICharacterBody3D for Enemy {
                     self.patrol_wait -= dt;
                 } else {
                     let flat = Vector3::new(
-                        self.patrol_target.x - my_pos.x,
-                        0.0,
+                        self.patrol_target.x - my_pos.x, 0.0,
                         self.patrol_target.z - my_pos.z,
                     );
                     if flat.length() < 0.6 {
@@ -263,8 +282,11 @@ impl ICharacterBody3D for Enemy {
             EState::Attack => {
                 self.atk_timer -= dt;
                 if self.atk_timer <= 0.0 {
-                    self.atk_timer   = self.atk_cooldown;
-                    self.pending_dmg += self.atk_damage;
+                    self.atk_timer = self.atk_cooldown;
+                    // дальнобойные атаки требуют прямой видимости
+                    if dist <= 3.0 || self.has_los(player_pos) {
+                        self.pending_dmg += self.atk_damage;
+                    }
                 }
                 let dir = Vector3::new(
                     player_pos.x - my_pos.x, 0.0, player_pos.z - my_pos.z,
@@ -274,13 +296,12 @@ impl ICharacterBody3D for Enemy {
             EState::Dead => return,
         }
 
-        // ── Физика ────────────────────────────────────────────────────────────
         let mut full_vel = vel;
-        if !self.base().is_on_floor() { full_vel.y = -9.8 * dt; }
+        if !self.base().is_on_floor() { full_vel.y = -9.8; }
         self.base_mut().set_velocity(full_vel);
         self.base_mut().move_and_slide();
 
-        // ── Анимация спрайта ──────────────────────────────────────────────────
+        // анимация
         let is_moving = vel.length_squared() > 0.1;
         let fps    = if is_moving { 7.0 } else { 2.0 };
         let frames = if is_moving { &WALK_FRAMES } else { &IDLE_FRAMES };

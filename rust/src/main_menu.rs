@@ -147,7 +147,7 @@ impl MainMenu {
 
         // Подзаголовок
         add_label(
-            &mut self.base_mut(), "DOOM-style 3D quest",
+            &mut self.base_mut(), "DOOM-style Action-RPG — открытый мир и процедурные данжи",
             Vector2::new(0.0, H * 0.18 + 88.0), Vector2::new(W, 30.0),
             18, Color::from_rgba(0.55, 0.44, 0.66, 1.0),
             HorizontalAlignment::CENTER,

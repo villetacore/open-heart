@@ -1,29 +1,34 @@
-//! Game3D — главный узел 3D-мира.
-//! Строит уровень (6 комнат + коридоры), управляет NPC/врагами/предметами, HUD.
+//! Game3D — главный узел игры.
+//!
+//! Открытый мир (хаб + пустоши) и процедурные данжи, RPG-классы (3×3 спека),
+//! DOOM-боёвка: hitscan / мили / снаряды, FP-спрайт оружия на HUD.
 
 use godot::prelude::*;
 use godot::classes::{
-    CanvasLayer, CharacterBody3D, CollisionShape3D, BoxShape3D,
-    DirectionalLight3D, INode3D, Image, ImageTexture, Input,
-    Label, MeshInstance3D, BoxMesh, StandardMaterial3D,
-    Node3D, OmniLight3D, Panel, Sprite3D,
-    StaticBody3D, StyleBoxFlat, Texture2D, VBoxContainer,
+    AtlasTexture, CanvasLayer, CharacterBody3D, DirectionalLight3D,
+    Environment, Input, Label, Node3D, OmniLight3D, PanoramaSkyMaterial, Panel,
+    PhysicsRayQueryParameters3D, Sky, Sprite3D, StyleBoxFlat, TextureRect,
+    VBoxContainer, WorldEnvironment, INode3D,
 };
-use godot::classes::base_material_3d::{BillboardMode, TextureParam};
-use godot::classes::sprite_base_3d::AlphaCutMode;
+use godot::classes::environment::{AmbientSource, BgMode};
 use godot::global::HorizontalAlignment;
 
+use crate::classes::{compute_loadout, xp_to_next, ClassDef, Loadout, CLASSES};
 use crate::config::GameConfig;
 use crate::dialogue::Scene;
+use crate::dungeon::{self, DungeonPlan};
 use crate::enemy::Enemy;
 use crate::game_state::GameState;
+use crate::gfx::{make_billboard, make_light, Rng, TexCache};
 use crate::locale::t;
 use crate::player::Player;
 use crate::save;
 use crate::settings::Settings;
 use crate::story::get_scene;
+use crate::weapon::{weapon_def, AmmoType, Arsenal, FireKind, WeaponId, FRAME_W};
+use crate::world;
 
-// ── NPC-конфигурация ─────────────────────────────────────────────────────────
+// ── NPC ───────────────────────────────────────────────────────────────────────
 
 struct NpcCfg {
     id:       &'static str,
@@ -31,21 +36,30 @@ struct NpcCfg {
     scene_id: &'static str,
     pos:      Vector3,
     color:    Color,
-    tex:      &'static str,
 }
 
-// Пути: assets/sprites/characters/npc_<id>.png (новые) с fallback на старые.
+const NPC_DATA: &[NpcCfg] = &[
+    NpcCfg { id: "vale",      name: "Ms. Вейл",   scene_id: "meet_vale",      pos: Vector3::new(-6.0, 0.0, -8.0),  color: Color::from_rgba(1.0, 0.75, 0.85, 1.0) },
+    NpcCfg { id: "victor",    name: "Виктор",     scene_id: "intro_victor",   pos: Vector3::new(6.0, 0.0, -8.0),   color: Color::from_rgba(0.75, 1.0, 0.8, 1.0) },
+    NpcCfg { id: "elena",     name: "Елена",      scene_id: "first_elena",    pos: Vector3::new(-11.0, 0.0, 3.0),  color: Color::from_rgba(0.75, 0.8, 1.0, 1.0) },
+    NpcCfg { id: "sofia",     name: "София",      scene_id: "meet_sofia",     pos: Vector3::new(11.0, 0.0, 3.0),   color: Color::from_rgba(1.0, 0.95, 0.7, 1.0) },
+    NpcCfg { id: "guard",     name: "Охранник",   scene_id: "meet_guard",     pos: Vector3::new(-2.5, 0.0, -18.0), color: Color::from_rgba(0.85, 0.85, 0.85, 1.0) },
+    NpcCfg { id: "merchant",  name: "Торговец",   scene_id: "meet_merchant",  pos: Vector3::new(17.5, 0.0, -1.0),  color: Color::from_rgba(1.0, 0.85, 0.6, 1.0) },
+    NpcCfg { id: "scientist", name: "Учёный",     scene_id: "meet_scientist", pos: Vector3::new(-18.0, 0.0, 0.0),  color: Color::from_rgba(0.7, 1.0, 1.0, 1.0) },
+    NpcCfg { id: "stranger",  name: "Незнакомец", scene_id: "meet_stranger",  pos: Vector3::new(5.0, 0.0, 16.0),   color: Color::from_rgba(0.8, 0.65, 0.95, 1.0) },
+];
+
 fn npc_sprite_tex(id: &str) -> (&'static str, &'static str) {
     match id {
-        "vale"       => ("res://assets/sprites/characters/npc_vale.png",       "res://assets/sprites/femboy_pink.png"),
-        "victor"     => ("res://assets/sprites/characters/npc_victor.png",     "res://assets/sprites/femboy_dark2.png"),
-        "elena"      => ("res://assets/sprites/characters/npc_elena.png",      "res://assets/sprites/femboy_dark1.png"),
-        "sofia"      => ("res://assets/sprites/characters/npc_sofia.png",      "res://assets/sprites/femboy_pink.png"),
-        "guard"      => ("res://assets/sprites/characters/npc_guard.png",      "res://assets/sprites/femboy_dark2.png"),
-        "merchant"   => ("res://assets/sprites/characters/npc_merchant.png",   "res://assets/sprites/femboy_pink.png"),
-        "scientist"  => ("res://assets/sprites/characters/npc_scientist.png",  "res://assets/sprites/femboy_dark1.png"),
-        "stranger"   => ("res://assets/sprites/characters/npc_stranger.png",   "res://assets/sprites/femboy_dark2.png"),
-        _            => ("res://assets/sprites/femboy_dark1.png",              "res://assets/sprites/femboy_dark1.png"),
+        "vale"      => ("res://assets/sprites/characters/npc_vale.png",      "res://assets/sprites/femboy_pink.png"),
+        "victor"    => ("res://assets/sprites/characters/npc_victor.png",    "res://assets/sprites/femboy_dark2.png"),
+        "elena"     => ("res://assets/sprites/characters/npc_elena.png",     "res://assets/sprites/femboy_dark1.png"),
+        "sofia"     => ("res://assets/sprites/characters/npc_sofia.png",     "res://assets/sprites/femboy_pink.png"),
+        "guard"     => ("res://assets/sprites/characters/npc_guard.png",     "res://assets/sprites/femboy_dark2.png"),
+        "merchant"  => ("res://assets/sprites/characters/npc_merchant.png",  "res://assets/sprites/femboy_pink.png"),
+        "scientist" => ("res://assets/sprites/characters/npc_scientist.png", "res://assets/sprites/femboy_dark1.png"),
+        "stranger"  => ("res://assets/sprites/characters/npc_stranger.png",  "res://assets/sprites/femboy_dark2.png"),
+        _           => ("res://assets/sprites/femboy_dark1.png",             "res://assets/sprites/femboy_dark1.png"),
     }
 }
 
@@ -58,75 +72,56 @@ fn item_sprite_tex(id: &str) -> &'static str {
         "energy_drink" => "res://assets/sprites/items/item_energy_drink.png",
         "potion"       => "res://assets/sprites/items/item_potion.png",
         "ancient_ruby" => "res://assets/sprites/items/item_ruby.png",
+        "heart_1up"    => "res://assets/sprites/pickups/heart_1up.png",
+        "soul"         => "res://assets/sprites/pickups/soul.png",
         _              => "",
     }
 }
 
-const NPC_DATA: &[NpcCfg] = &[
-    NpcCfg {
-        id: "vale", name: "Ms. Вейл", scene_id: "meet_vale",
-        pos: Vector3::new(-5.0, 0.0, -7.0),
-        color: Color::from_rgba(1.0, 0.5, 0.7, 1.0),
-        tex: "res://assets/sprites/femboy_pink.png",
-    },
-    NpcCfg {
-        id: "victor", name: "Виктор", scene_id: "intro_victor",
-        pos: Vector3::new(5.0, 0.0, -7.0),
-        color: Color::from_rgba(0.4, 0.8, 0.5, 1.0),
-        tex: "res://assets/sprites/femboy_dark2.png",
-    },
-    NpcCfg {
-        id: "elena", name: "Елена", scene_id: "first_elena",
-        pos: Vector3::new(-4.0, 0.0, -26.0),
-        color: Color::from_rgba(0.4, 0.5, 0.9, 1.0),
-        tex: "res://assets/sprites/femboy_dark1.png",
-    },
-    NpcCfg {
-        id: "sofia", name: "София", scene_id: "meet_sofia",
-        pos: Vector3::new(0.0, 0.0, 27.0),
-        color: Color::from_rgba(0.9, 0.8, 0.3, 1.0),
-        tex: "res://assets/sprites/femboy_pink.png",
-    },
-    NpcCfg {
-        id: "guard", name: "Охранник", scene_id: "meet_guard",
-        pos: Vector3::new(14.0, 0.0, 0.0),
-        color: Color::from_rgba(0.6, 0.6, 0.6, 1.0),
-        tex: "res://assets/sprites/femboy_dark2.png",
-    },
-    NpcCfg {
-        id: "merchant", name: "Торговец", scene_id: "meet_merchant",
-        pos: Vector3::new(26.0, 0.0, -5.0),
-        color: Color::from_rgba(0.9, 0.65, 0.2, 1.0),
-        tex: "res://assets/sprites/femboy_pink.png",
-    },
-    NpcCfg {
-        id: "scientist", name: "Учёный", scene_id: "meet_scientist",
-        pos: Vector3::new(-26.0, 0.0, -5.0),
-        color: Color::from_rgba(0.3, 0.9, 0.9, 1.0),
-        tex: "res://assets/sprites/femboy_dark1.png",
-    },
-    NpcCfg {
-        id: "stranger", name: "Незнакомец", scene_id: "meet_stranger",
-        pos: Vector3::new(0.0, 0.0, -43.0),
-        color: Color::from_rgba(0.5, 0.3, 0.7, 1.0),
-        tex: "res://assets/sprites/femboy_dark2.png",
-    },
-];
-
-// ── Режим игры ────────────────────────────────────────────────────────────────
+// ── Режимы и полезная нагрузка предметов ─────────────────────────────────────
 
 #[derive(PartialEq, Clone, Copy)]
-enum Mode { Explore, Dialogue, Dead, Inventory }
+enum Mode { ClassSelect, SpecSelect, Explore, Dialogue, Dead, Inventory }
 
-// ── Предмет в мире ────────────────────────────────────────────────────────────
+#[derive(PartialEq, Clone, Copy)]
+enum Loc { World, Dungeon }
+
+enum Payload {
+    Consumable { heal: f32 },
+    Gold(i32),
+    Ammo(AmmoType, u32),
+    Weapon(WeaponId),
+    Heart,
+    KeyItem,
+}
 
 struct WorldItemNode {
-    node:    Gd<StaticBody3D>,
+    node:    Gd<Node3D>,
     item_id: String,
     name:    String,
-    heal:    Option<f32>,
-    gold:    i32,
+    payload: Payload,
+    in_dungeon: bool,
 }
+
+struct SpriteFx { node: Gd<Sprite3D>, ttl: f32, total: f32 }
+struct LightFx  { node: Gd<OmniLight3D>, ttl: f32, total: f32, energy: f32 }
+
+struct Projectile {
+    node:   Gd<Node3D>,
+    pos:    Vector3,
+    vel:    Vector3,
+    dmg:    f32,
+    splash: f32,
+    ttl:    f32,
+}
+
+#[derive(PartialEq, Clone, Copy)]
+enum PortalKind { EnterDungeon, ExitDungeon, DeeperDungeon }
+
+// ── Анимация FP-оружия ────────────────────────────────────────────────────────
+
+#[derive(PartialEq, Clone, Copy)]
+enum WeaponAnim { Idle, Fire(usize), Switch(f32) }
 
 // ── Главная структура ─────────────────────────────────────────────────────────
 
@@ -135,31 +130,62 @@ struct WorldItemNode {
 pub struct Game3D {
     base: Base<Node3D>,
 
+    cache:       TexCache,
+    rng:         Rng,
+    cfg:         Option<GameConfig>,
+
     player:      Option<Gd<CharacterBody3D>>,
     npc_sprites: Vec<Gd<Sprite3D>>,
     enemies:     Vec<Gd<Enemy>>,
     world_items: Vec<WorldItemNode>,
+    projectiles: Vec<Projectile>,
+    sprite_fx:   Vec<SpriteFx>,
+    light_fx:    Vec<LightFx>,
 
     state:       Option<GameState>,
     settings:    Settings,
+    arsenal:     Arsenal,
+    loadout:     Loadout,
     mode:        Mode,
+    loc:         Loc,
+
+    // данж
+    dungeon_root:   Option<Gd<Node3D>>,
+    dungeon_depth:  u32,
+    dungeon_name:   &'static str,
+    exit_portal:    Vector3,
+    next_portal:    Vector3,
+    boss_alive:     bool,
+
+    // диалог
     scene:       Option<Scene>,
     line_idx:    usize,
+    at_choices:  bool,
+
     near_npc:    Option<usize>,
     near_enemy:  Option<usize>,
     near_item:   Option<usize>,
-    at_choices:  bool,
+    near_portal: Option<PortalKind>,
 
     shoot_cd:    f32,
+    weapon_anim: WeaponAnim,
+    anim_timer:  f32,
+    idle_frame:  usize,
 
     npc_anim_timer: f32,
     npc_anim_frame: usize,
 
-    // HUD виджеты
+    class_pick:  usize,   // выбранный класс на этапе выбора спека
+
+    // HUD
     hint_label:      Option<Gd<Label>>,
-    hp_bar_bg:       Option<Gd<Panel>>,
     hp_bar_fg:       Option<Gd<Panel>>,
     hp_label:        Option<Gd<Label>>,
+    xp_bar_fg:       Option<Gd<Panel>>,
+    xp_label:        Option<Gd<Label>>,
+    ammo_label:      Option<Gd<Label>>,
+    weapon_label:    Option<Gd<Label>>,
+    loc_label:       Option<Gd<Label>>,
     dlg_panel:       Option<Gd<Panel>>,
     dlg_speaker:     Option<Gd<Label>>,
     dlg_text:        Option<Gd<Label>>,
@@ -178,33 +204,38 @@ pub struct Game3D {
     targeting_label: Option<Gd<Label>>,
     damage_flash:    Option<Gd<Panel>>,
     damage_flash_timer: f32,
-    weapon_sprite:   Option<Gd<Sprite3D>>,  // HUD-оружие (2D overlay через 3D нет — будет Sprite2D)
+
+    weapon_rect:     Option<Gd<TextureRect>>,
+    weapon_atlas:    Option<Gd<AtlasTexture>>,
+    muzzle_light:    Option<Gd<OmniLight3D>>,
+    muzzle_timer:    f32,
+
+    // выбор класса
+    select_panel:    Option<Gd<Panel>>,
+    select_title:    Option<Gd<Label>>,
+    card_titles:     Vec<Gd<Label>>,
+    card_bodies:     Vec<Gd<Label>>,
+
     game_time:       f32,
 }
 
 // ── Константы ─────────────────────────────────────────────────────────────────
 
-const WALL_H: f32     = 3.2;
 const INTERACT_R: f32 = 2.8;
-const PICKUP_R: f32   = 1.4;
-const SHOOT_RANGE: f32 = 18.0;
-const SHOOT_CD: f32    = 0.4;
+const PICKUP_R: f32   = 1.6;
+const PORTAL_R: f32   = 2.4;
 const PIXEL_SZ: f32   = 0.010;
 const HUD_W: f32      = 1920.0;
 const HUD_H: f32      = 1080.0;
 
-// Стандартный формат: 512×256, 4 фрейма 128×256 (idle_0|idle_1|walk_0|walk_1)
-const NPC_FRAME_W: f32 = 128.0;
-const NPC_FRAME_H: f32 = 256.0;
-const NPC_IDLE_FRAMES: [(f32,f32,f32,f32); 2] = [
+const DUNGEON_OFFSET: Vector3 = Vector3::new(500.0, 0.0, 500.0);
+
+const NPC_IDLE_FRAMES: [(f32, f32, f32, f32); 2] = [
     (0.0,   0.0, 128.0, 256.0),
     (128.0, 0.0, 128.0, 256.0),
 ];
 const IDLE_FPS: f32 = 3.0;
 
-const C_WALL:   Color = Color::from_rgba(0.10, 0.06, 0.08, 1.0);
-const C_FLOOR:  Color = Color::from_rgba(0.08, 0.04, 0.06, 1.0);
-const C_CEIL:   Color = Color::from_rgba(0.04, 0.02, 0.04, 1.0);
 const C_UI_BG:  Color = Color::from_rgba(0.04, 0.03, 0.07, 0.94);
 const C_BORDER: Color = Color::from_rgba(0.65, 0.30, 0.52, 1.0);
 const C_MAIN:   Color = Color::from_rgba(0.95, 0.92, 0.98, 1.0);
@@ -212,8 +243,8 @@ const C_DIM:    Color = Color::from_rgba(0.58, 0.52, 0.66, 1.0);
 const C_PINK:   Color = Color::from_rgba(1.00, 0.55, 0.80, 1.0);
 const C_GOLD:   Color = Color::from_rgba(1.00, 0.84, 0.30, 1.0);
 const C_RED:    Color = Color::from_rgba(0.90, 0.15, 0.15, 1.0);
-const C_GREEN:  Color = Color::from_rgba(0.20, 0.85, 0.30, 1.0);
 const C_CYAN:   Color = Color::from_rgba(0.40, 0.90, 1.00, 1.0);
+const C_XP:     Color = Color::from_rgba(0.55, 0.35, 0.95, 1.0);
 
 // ── INode3D ───────────────────────────────────────────────────────────────────
 
@@ -222,15 +253,29 @@ impl INode3D for Game3D {
     fn init(base: Base<Node3D>) -> Self {
         Self {
             base,
+            cache: TexCache::new(),
+            rng: Rng::new(0xBADA55),
+            cfg: None,
             player: None, npc_sprites: Vec::new(),
             enemies: Vec::new(), world_items: Vec::new(),
+            projectiles: Vec::new(), sprite_fx: Vec::new(), light_fx: Vec::new(),
             state: None, settings: Settings::default(),
-            mode: Mode::Explore, scene: None, line_idx: 0,
-            near_npc: None, near_enemy: None, near_item: None,
-            at_choices: false, shoot_cd: 0.0,
+            arsenal: Arsenal::new(),
+            loadout: compute_loadout(0, 0, 1),
+            mode: Mode::Explore, loc: Loc::World,
+            dungeon_root: None, dungeon_depth: 0, dungeon_name: "",
+            exit_portal: Vector3::ZERO, next_portal: Vector3::ZERO,
+            boss_alive: false,
+            scene: None, line_idx: 0, at_choices: false,
+            near_npc: None, near_enemy: None, near_item: None, near_portal: None,
+            shoot_cd: 0.0,
+            weapon_anim: WeaponAnim::Idle, anim_timer: 0.0, idle_frame: 0,
             npc_anim_timer: 0.0, npc_anim_frame: 0,
+            class_pick: 0,
             hint_label: None,
-            hp_bar_bg: None, hp_bar_fg: None, hp_label: None,
+            hp_bar_fg: None, hp_label: None,
+            xp_bar_fg: None, xp_label: None,
+            ammo_label: None, weapon_label: None, loc_label: None,
             dlg_panel: None, dlg_speaker: None, dlg_text: None,
             choice_box: None,
             cl0: None, cl1: None, cl2: None, cl3: None,
@@ -240,7 +285,11 @@ impl INode3D for Game3D {
             crosshair: None, dead_panel: None,
             compass_label: None, targeting_label: None,
             damage_flash: None, damage_flash_timer: 0.0,
-            weapon_sprite: None, game_time: 0.0,
+            weapon_rect: None, weapon_atlas: None,
+            muzzle_light: None, muzzle_timer: 0.0,
+            select_panel: None, select_title: None,
+            card_titles: Vec::new(), card_bodies: Vec::new(),
+            game_time: 0.0,
         }
     }
 
@@ -248,26 +297,56 @@ impl INode3D for Game3D {
         self.settings = Settings::load();
         let lang = self.settings.lang.clone();
 
-        let (state, player_hp) = if let Some((st, hp)) = save::load() {
-            (st, hp)
-        } else {
-            (GameState::new("Игрок"), 100.0)
+        let loaded = save::load();
+        let has_class = loaded.as_ref().map(|(s, _, _)| s.class_idx.is_some()).unwrap_or(false);
+        let (state, player_hp, arsenal) = match loaded {
+            Some(v) => v,
+            None => (GameState::new("Игрок"), 100.0, Arsenal::new()),
         };
         self.state = Some(state);
+        self.arsenal = arsenal;
 
-        let cfg = GameConfig::load();
-        self.build_level();
-        self.build_lighting();
+        self.cfg = Some(GameConfig::load());
+
+        self.build_environment();
+        let plan = world::build_world(&mut self.cache);
+        let spawn = plan.player_spawn;
+        self.base_mut().add_child(&plan.root);
         self.build_npcs();
-        self.build_enemies(&cfg);
-        self.build_world_items(&cfg);
+        self.build_world_spawns();
         self.build_hud(&lang);
+        self.build_select_ui();
 
         let player_gd = self.base().get_node_as::<CharacterBody3D>("Player");
-        if let Ok(mut p) = player_gd.clone().try_cast::<Player>() {
-            p.bind_mut().hp = player_hp;
+        self.player = Some(player_gd.clone());
+        if let Ok(mut p) = player_gd.try_cast::<Player>() {
+            p.bind_mut().teleport(spawn);
         }
-        self.player = Some(player_gd);
+        // врагам нужна ссылка на игрока
+        let pl = self.player.clone();
+        if let Some(pl) = pl {
+            for e in self.enemies.iter_mut() {
+                e.bind_mut().set_player(pl.clone());
+            }
+        }
+
+        if has_class {
+            let (ci, si) = {
+                let st = self.state.as_ref().unwrap();
+                (st.class_idx.unwrap_or(0), st.spec_idx)
+            };
+            self.apply_loadout(ci, si, false);
+            if let Some(ref p) = self.player {
+                if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                    let max = pl.bind().max_hp;
+                    pl.bind_mut().hp = player_hp.min(max);
+                }
+            }
+            self.set_mode_explore();
+            self.refresh_weapon_sheet();
+        } else {
+            self.open_class_select();
+        }
     }
 
     fn process(&mut self, delta: f64) {
@@ -277,455 +356,538 @@ impl INode3D for Game3D {
         self.tick_flash(dt);
         self.tick_damage_flash(dt);
         self.tick_npc_anim(dt);
-        self.tick_items(dt);
+        self.tick_fx(dt);
+        self.tick_projectiles(dt);
+        self.tick_weapon_anim(dt);
+        self.tick_muzzle(dt);
         self.collect_enemy_damage(dt);
         self.update_compass();
 
         match self.mode {
-            Mode::Explore   => self.process_explore(),
-            Mode::Dialogue  => self.process_dialogue(),
-            Mode::Dead      => {}
-            Mode::Inventory => self.process_inventory(),
+            Mode::ClassSelect => self.process_class_select(),
+            Mode::SpecSelect  => self.process_spec_select(),
+            Mode::Explore     => self.process_explore(),
+            Mode::Dialogue    => self.process_dialogue(),
+            Mode::Inventory   => self.process_inventory(),
+            Mode::Dead        => self.process_dead(),
         }
 
         self.update_hp_bar();
+        self.update_xp_bar();
+        self.update_ammo_hud();
         self.update_targeting_hud();
     }
 }
 
-// ── Строительство уровня ──────────────────────────────────────────────────────
+// ── Окружение и мир ───────────────────────────────────────────────────────────
 
 impl Game3D {
-    fn build_level(&mut self) {
-        const H: f32  = WALL_H;
-        const T: f32  = 0.22;  // толщина стены
-        const DW: f32 = 5.0;   // ширина двери
-
-        let world = Image::load_from_file("res://assets/textures_raw/world_complete.png");
-        let img   = world.as_ref();
-        let tf  = crop_tex(img, 1344, 640, 192, 128); // пол
-        let tc  = crop_tex(img,  576,   0, 192, 128); // потолок
-        let tw1 = crop_tex(img,    0,   0, 192, 128); // стена 1
-        let tw2 = crop_tex(img,    0, 640, 192, 128); // стена 2
-        let tw3 = crop_tex(img,  192, 640, 192, 128); // стена 3
-        let tw4 = crop_tex(img, 1152, 768, 192, 128); // стена 4
-
-        // ── ЦЕНТРАЛЬНЫЙ ЗАЛ (0,0) 20×20 ─────────────────────────────────────
-        self.add_fc(0.0, 0.0, 20.0, 20.0, H, tf.as_ref(), tc.as_ref());
-        self.add_wh(0.0, -10.0, 20.0, H, T, DW, tw1.as_ref());  // N стена, дверь
-        self.add_wh(0.0,  10.0, 20.0, H, T, DW, tw1.as_ref());  // S стена, дверь
-        self.add_wv(10.0,  0.0, 20.0, H, T, DW, tw1.as_ref());  // E стена, дверь
-        self.add_wv(-10.0, 0.0, 20.0, H, T, DW, tw1.as_ref()); // W стена, дверь
-        // Колонны
-        for (px, pz) in [(-8.0f32,-8.0),(8.0,-8.0),(-8.0,8.0),(8.0,8.0)] {
-            let p = make_box(Vector3::new(px, H*0.5, pz), Vector3::new(0.75, H, 0.75), C_WALL, None, 1.0);
-            self.base_mut().add_child(&p);
-        }
-        // Центральный пьедестал
-        let ped = make_box(Vector3::new(0.0, 0.2, 0.0), Vector3::new(2.0, 0.4, 2.0), C_WALL, None, 1.0);
-        self.base_mut().add_child(&ped);
-        // Диагональные срезы углов (сглаживают 90° стыки)
-        use std::f32::consts::FRAC_PI_4;
-        self.add_diag(-9.3, -9.3, 2.8, -FRAC_PI_4, tw1.as_ref());
-        self.add_diag( 9.3, -9.3, 2.8,  FRAC_PI_4, tw1.as_ref());
-        self.add_diag(-9.3,  9.3, 2.8,  FRAC_PI_4, tw1.as_ref());
-        self.add_diag( 9.3,  9.3, 2.8, -FRAC_PI_4, tw1.as_ref());
-        // Обломки у северной стены
-        self.add_rubble(-6.0, -8.5);
-        self.add_rubble( 6.0, -8.0);
-
-        // ── N КОРИДОР (0, -14) 5×8 ───────────────────────────────────────────
-        self.add_fc(0.0, -14.0, DW, 8.0, H, tf.as_ref(), tc.as_ref());
-        let c = make_box(Vector3::new( 2.75, H*0.5, -14.0), Vector3::new(T, H, 8.0), C_WALL, tw1.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-        let c = make_box(Vector3::new(-2.75, H*0.5, -14.0), Vector3::new(T, H, 8.0), C_WALL, tw1.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-
-        // ── АРХИВ (0, -26) 24×16 ─────────────────────────────────────────────
-        self.add_fc(0.0, -26.0, 24.0, 16.0, H, tf.as_ref(), tc.as_ref());
-        self.add_wh( 0.0, -18.0, 24.0, H, T, DW, tw2.as_ref()); // S стена, дверь
-        self.add_wh( 0.0, -34.0, 24.0, H, T, DW, tw2.as_ref()); // N стена, дверь
-        self.add_wv(-12.0, -26.0, 16.0, H, T, 0.0, tw2.as_ref()); // W
-        self.add_wv( 12.0, -26.0, 16.0, H, T, 0.0, tw2.as_ref()); // E
-        // Стеллажи (слегка нерегулярно расставленные)
-        for (px, pz) in [(-9.0f32,-26.5f32),(-4.5,-25.0),(4.5,-27.0),(9.0,-26.0)] {
-            let sh = make_box(Vector3::new(px, 0.9, pz), Vector3::new(1.1, 1.8, 3.0), C_WALL, None, 1.0);
-            self.base_mut().add_child(&sh);
-        }
-        // Читальный подиум (+1 ступень)
-        self.add_step(0.0, -30.0, 5.0, 3.0, 0.35, tf.as_ref());
-        let desk = make_box(Vector3::new(0.0, 0.35+0.35, -30.0), Vector3::new(2.5, 0.35, 1.2), C_WALL, None, 1.0);
-        self.base_mut().add_child(&desk);
-        // Ниша в восточной стене архива
-        self.add_fc(15.0, -26.0, 3.0, 4.0, H, tf.as_ref(), tc.as_ref());
-        let n1 = make_box(Vector3::new(15.0, H*0.5, -24.0), Vector3::new(3.0, H, T), C_WALL, tw2.as_ref(), 1.0);
-        self.base_mut().add_child(&n1);
-        let n2 = make_box(Vector3::new(15.0, H*0.5, -28.0), Vector3::new(3.0, H, T), C_WALL, tw2.as_ref(), 1.0);
-        self.base_mut().add_child(&n2);
-        // Диагональный угол у NW
-        self.add_diag(-10.5, -33.2, 2.4, FRAC_PI_4, tw2.as_ref());
-
-        // ── N2 КОРИДОР (0, -38) 5×8 ──────────────────────────────────────────
-        self.add_fc(0.0, -38.0, DW, 8.0, H, tf.as_ref(), tc.as_ref());
-        let c = make_box(Vector3::new( 2.75, H*0.5, -38.0), Vector3::new(T, H, 8.0), C_WALL, tw3.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-        let c = make_box(Vector3::new(-2.75, H*0.5, -38.0), Vector3::new(T, H, 8.0), C_WALL, tw3.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-
-        // ── ТРОННЫЙ ЗАЛ (0, -48) 18×12 ──────────────────────────────────────
-        self.add_fc(0.0, -48.0, 18.0, 12.0, H, tf.as_ref(), tc.as_ref());
-        self.add_wh( 0.0, -42.0, 18.0, H, T, DW, tw3.as_ref()); // S дверь
-        self.add_wh( 0.0, -54.0, 18.0, H, T, 0.0, tw3.as_ref()); // N глухая
-        self.add_wv(-9.0, -48.0, 12.0, H, T, 0.0, tw3.as_ref()); // W
-        self.add_wv( 9.0, -48.0, 12.0, H, T, 0.0, tw3.as_ref()); // E
-        // Алтарь на поднятой платформе (2 ступени)
-        self.add_step(0.0, -50.5, 7.0, 4.5, 0.32, tf.as_ref());
-        self.add_step(0.0, -51.5, 4.5, 3.0, 0.64, tf.as_ref());
-        let alt = make_box(Vector3::new(0.0, 0.64+0.45, -52.0), Vector3::new(3.5, 0.7, 1.5), C_WALL, None, 1.0);
-        self.base_mut().add_child(&alt);
-        // Укрытия асимметрично
-        for (bx, bz, bw, bd) in [(-5.5f32,-44.5f32,1.2f32,0.9f32),(5.5,-44.5,0.9,1.2),(-4.2,-49.5,1.0,0.9),(4.6,-48.8,0.8,1.0)] {
-            let b = make_box(Vector3::new(bx, 0.5, bz), Vector3::new(bw, 1.0, bd), C_WALL, None, 1.0);
-            self.base_mut().add_child(&b);
-        }
-        // Диагональные углы тронного зала
-        self.add_diag(-7.8, -42.8, 2.2, -FRAC_PI_4, tw3.as_ref());
-        self.add_diag( 7.8, -42.8, 2.2,  FRAC_PI_4, tw3.as_ref());
-        self.add_diag(-7.8, -53.2, 2.2,  FRAC_PI_4, tw3.as_ref());
-        self.add_diag( 7.8, -53.2, 2.2, -FRAC_PI_4, tw3.as_ref());
-
-        // ── E КОРИДОР (14, 0) 8×5 ────────────────────────────────────────────
-        self.add_fc(14.0, 0.0, 8.0, DW, H, tf.as_ref(), tc.as_ref());
-        let c = make_box(Vector3::new(14.0, H*0.5,  2.75), Vector3::new(8.0, H, T), C_WALL, tw1.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-        let c = make_box(Vector3::new(14.0, H*0.5, -2.75), Vector3::new(8.0, H, T), C_WALL, tw1.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-
-        // ── ВОСТОЧНЫЙ РЫНОК (26, 0) 16×22 ────────────────────────────────────
-        self.add_fc(26.0, 0.0, 16.0, 22.0, H, tf.as_ref(), tc.as_ref());
-        self.add_wv(18.0,  0.0, 22.0, H, T, DW, tw4.as_ref()); // W дверь
-        self.add_wv(34.0,  0.0, 22.0, H, T, 0.0, tw4.as_ref());
-        self.add_wh(26.0, -11.0, 16.0, H, T, 0.0, tw4.as_ref());
-        self.add_wh(26.0,  11.0, 16.0, H, T, 0.0, tw4.as_ref());
-        // Торговые прилавки — нерегулярно, разные высоты
-        for (bx, bz, bw, bh, bd) in [
-            (21.5f32, 6.5f32,  2.2, 1.2, 1.3),
-            (21.5,   -6.5,     2.0, 0.9, 1.5),
-            (30.5,    6.0,     2.4, 1.1, 1.2),
-            (30.5,   -5.5,     1.8, 1.4, 1.0),
-            (25.8,    0.5,     2.0, 1.0, 1.4),
-            (27.5,    2.5,     1.4, 1.3, 0.9),
-        ] {
-            let s = make_box(Vector3::new(bx, bh*0.5, bz), Vector3::new(bw, bh, bd), C_WALL, None, 1.0);
-            self.base_mut().add_child(&s);
-        }
-        // Приподнятая витрина у восточной стены
-        self.add_step(33.0, 0.0, 1.5, 8.0, 0.45, tf.as_ref());
-        // Диагональный срез у входа
-        self.add_diag(18.8, -2.4, 3.0, FRAC_PI_4, tw4.as_ref());
-
-        // ── W КОРИДОР (-14, 0) 8×5 ───────────────────────────────────────────
-        self.add_fc(-14.0, 0.0, 8.0, DW, H, tf.as_ref(), tc.as_ref());
-        let c = make_box(Vector3::new(-14.0, H*0.5,  2.75), Vector3::new(8.0, H, T), C_WALL, tw2.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-        let c = make_box(Vector3::new(-14.0, H*0.5, -2.75), Vector3::new(8.0, H, T), C_WALL, tw2.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-
-        // ── ЗАПАДНАЯ ЛАБОРАТОРИЯ (-26, 0) 16×22 ──────────────────────────────
-        self.add_fc(-26.0, 0.0, 16.0, 22.0, H, tf.as_ref(), tc.as_ref());
-        self.add_wv(-18.0,  0.0, 22.0, H, T, DW, tw2.as_ref()); // E дверь
-        self.add_wv(-34.0,  0.0, 22.0, H, T, 0.0, tw2.as_ref());
-        self.add_wh(-26.0, -11.0, 16.0, H, T, 0.0, tw2.as_ref());
-        self.add_wh(-26.0,  11.0, 16.0, H, T, 0.0, tw2.as_ref());
-        // Оборудование лаборатории — под разными углами
-        for (bx, bz, bw, bh, bd, ry) in [
-            (-22.0f32, -7.0f32, 1.4, 1.2, 0.8, 0.0f32),
-            (-30.0,    -7.0,    1.6, 0.9, 0.9, 0.3),
-            (-22.0,     7.0,    1.3, 1.1, 0.8, -0.2),
-            (-30.0,     7.0,    1.5, 1.0, 1.0, 0.1),
-            (-26.0,     0.0,    2.0, 1.3, 0.7, 0.0),
-            (-24.5,    -3.5,    1.0, 0.8, 1.4, 0.4),
-            (-27.5,     3.5,    1.2, 1.4, 0.7, -0.3),
-        ] {
-            let mut body = StaticBody3D::new_alloc();
-            body.set_position(Vector3::new(bx, bh*0.5, bz));
-            body.set_rotation(Vector3::new(0.0, ry, 0.0));
-            let mut mi = MeshInstance3D::new_alloc();
-            let mut mesh = BoxMesh::new_gd(); mesh.set_size(Vector3::new(bw, bh, bd)); mi.set_mesh(&mesh);
-            let mut mat = StandardMaterial3D::new_gd(); mat.set_albedo(C_WALL); mi.set_surface_override_material(0, &mat);
-            let mut col = CollisionShape3D::new_alloc(); let mut sh = BoxShape3D::new_gd(); sh.set_size(Vector3::new(bw, bh, bd)); col.set_shape(&sh);
-            body.add_child(&mi); body.add_child(&col);
-            self.base_mut().add_child(&body);
-        }
-        // Наблюдательная площадка
-        self.add_step(-26.0, 9.5, 7.0, 4.0, 0.55, tf.as_ref());
-        // Диагональный вход
-        self.add_diag(-18.8, 2.4, 3.0, -FRAC_PI_4, tw2.as_ref());
-
-        // ── S КОРИДОР (0, 14) 5×8 ────────────────────────────────────────────
-        self.add_fc(0.0, 14.0, DW, 8.0, H, tf.as_ref(), tc.as_ref());
-        let c = make_box(Vector3::new( 2.75, H*0.5, 14.0), Vector3::new(T, H, 8.0), C_WALL, tw4.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-        let c = make_box(Vector3::new(-2.75, H*0.5, 14.0), Vector3::new(T, H, 8.0), C_WALL, tw4.as_ref(), 1.0);
-        self.base_mut().add_child(&c);
-
-        // ── ЮЖНАЯ АРЕНА (0, 27) 24×18 ────────────────────────────────────────
-        self.add_fc(0.0, 27.0, 24.0, 18.0, H, tf.as_ref(), tc.as_ref());
-        self.add_wh( 0.0, 18.0, 24.0, H, T, DW, tw4.as_ref()); // N дверь
-        self.add_wh( 0.0, 36.0, 24.0, H, T, 0.0, tw4.as_ref());
-        self.add_wv(-12.0, 27.0, 18.0, H, T, 0.0, tw4.as_ref());
-        self.add_wv( 12.0, 27.0, 18.0, H, T, 0.0, tw4.as_ref());
-        // Двухуровневая арена — центральный ринг приподнят
-        self.add_step(0.0, 27.0, 10.0, 8.0, 0.28, tf.as_ref());
-        // Укрытия — асимметрично и разные размеры
-        for (bx, bz, bw, bh, bd) in [
-            (-8.0f32, 22.5f32, 1.0, 0.95, 1.2),
-            ( 8.5,    22.8,    1.3, 0.85, 0.9),
-            (-8.2,    31.0,    0.9, 1.10, 1.0),
-            ( 7.8,    30.5,    1.1, 0.90, 1.3),
-            ( 0.0,    27.2,    1.5, 0.75, 0.9),
-            (-4.2,    24.3,    0.8, 1.00, 1.0),
-            ( 4.5,    24.0,    1.0, 0.85, 0.8),
-            (-2.5,    30.0,    0.9, 1.20, 0.8),
-            ( 3.0,    28.5,    0.7, 0.95, 1.0),
-        ] {
-            let cov = make_box(Vector3::new(bx, bh*0.5, bz), Vector3::new(bw, bh, bd), C_WALL, None, 1.0);
-            self.base_mut().add_child(&cov);
-        }
-        // Диагонали у входа арены
-        self.add_diag(-2.4, 18.8, 3.0, -FRAC_PI_4, tw4.as_ref());
-        self.add_diag( 2.4, 18.8, 3.0,  FRAC_PI_4, tw4.as_ref());
-        // Обломки
-        self.add_rubble(10.0, 33.5);
-        self.add_rubble(-10.5, 33.0);
-    }
-
-    // ── Помощники для стен/полов ───────────────────────────────────────────────
-
-    fn add_fc(&mut self, cx: f32, cz: f32, w: f32, d: f32, h: f32,
-              tf: Option<&Gd<Texture2D>>, tc: Option<&Gd<Texture2D>>) {
-        let fl = make_box(Vector3::new(cx, -0.1, cz), Vector3::new(w, 0.2, d), C_FLOOR, tf, 4.0);
-        self.base_mut().add_child(&fl);
-        let ce = make_box(Vector3::new(cx, h+0.1, cz), Vector3::new(w, 0.2, d), C_CEIL, tc, 4.0);
-        self.base_mut().add_child(&ce);
-    }
-
-    // Горизонтальная стена (вдоль X) на позиции z, центр cx, ширина width.
-    fn add_wh(&mut self, cx: f32, z: f32, width: f32, h: f32, t: f32,
-              door_w: f32, tex: Option<&Gd<Texture2D>>) {
-        if door_w <= 0.0 {
-            let w = make_box(Vector3::new(cx, h*0.5, z), Vector3::new(width, h, t), C_WALL, tex, 2.0);
-            self.base_mut().add_child(&w);
-        } else {
-            let side = (width - door_w) * 0.5;
-            if side > 0.05 {
-                let l = make_box(
-                    Vector3::new(cx - width*0.5 + side*0.5, h*0.5, z),
-                    Vector3::new(side, h, t), C_WALL, tex, 2.0,
-                );
-                self.base_mut().add_child(&l);
-                let r = make_box(
-                    Vector3::new(cx + width*0.5 - side*0.5, h*0.5, z),
-                    Vector3::new(side, h, t), C_WALL, tex, 2.0,
-                );
-                self.base_mut().add_child(&r);
-            }
-        }
-    }
-
-    // Диагональная стена (box повёрнут на rot_y радиан вокруг Y).
-    fn add_diag(&mut self, cx: f32, cz: f32, len: f32, rot_y: f32, tex: Option<&Gd<Texture2D>>) {
-        const H: f32 = WALL_H;
-        const T: f32 = 0.22;
-        let mut body = StaticBody3D::new_alloc();
-        body.set_position(Vector3::new(cx, H * 0.5, cz));
-        body.set_rotation(Vector3::new(0.0, rot_y, 0.0));
-
-        let mut mi = MeshInstance3D::new_alloc();
-        let mut mesh = BoxMesh::new_gd();
-        mesh.set_size(Vector3::new(len, H, T));
-        mi.set_mesh(&mesh);
-        let mut mat = StandardMaterial3D::new_gd();
-        if let Some(t) = tex { mat.set_albedo(Color::WHITE); mat.set_texture(TextureParam::ALBEDO, t); }
-        else { mat.set_albedo(C_WALL); }
-        mi.set_surface_override_material(0, &mat);
-
-        let mut col = CollisionShape3D::new_alloc();
-        let mut shape = BoxShape3D::new_gd();
-        shape.set_size(Vector3::new(len, H, T));
-        col.set_shape(&shape);
-
-        body.add_child(&mi);
-        body.add_child(&col);
-        self.base_mut().add_child(&body);
-    }
-
-    // Поднятая платформа-ступень (w×rh×d, верхняя поверхность на высоте rh).
-    fn add_step(&mut self, cx: f32, cz: f32, w: f32, d: f32, rh: f32, tex: Option<&Gd<Texture2D>>) {
-        let b = make_box(Vector3::new(cx, rh * 0.5, cz), Vector3::new(w, rh, d), C_WALL, tex, 1.0);
-        self.base_mut().add_child(&b);
-    }
-
-    // Куча обломков из нескольких маленьких ящиков (псевдо-случайный паттерн).
-    fn add_rubble(&mut self, cx: f32, cz: f32) {
-        let pieces: &[(f32, f32, f32, f32, f32)] = &[
-            ( 0.00,  0.00, 0.55, 0.32, 0.40),
-            ( 0.55,  0.28, 0.38, 0.22, 0.30),
-            (-0.48,  0.18, 0.30, 0.18, 0.35),
-            ( 0.22, -0.55, 0.42, 0.28, 0.25),
-            (-0.30, -0.25, 0.25, 0.38, 0.22),
-            ( 0.65, -0.15, 0.20, 0.15, 0.20),
-        ];
-        for (ox, oz, sw, sh, sd) in pieces {
-            let b = make_box(
-                Vector3::new(cx + ox, sh * 0.5, cz + oz),
-                Vector3::new(*sw, *sh, *sd),
-                C_WALL, None, 1.0,
-            );
-            self.base_mut().add_child(&b);
-        }
-    }
-
-    // Вертикальная стена (вдоль Z) на позиции x, центр cz, глубина depth.
-    fn add_wv(&mut self, x: f32, cz: f32, depth: f32, h: f32, t: f32,
-              door_w: f32, tex: Option<&Gd<Texture2D>>) {
-        if door_w <= 0.0 {
-            let w = make_box(Vector3::new(x, h*0.5, cz), Vector3::new(t, h, depth), C_WALL, tex, 2.0);
-            self.base_mut().add_child(&w);
-        } else {
-            let side = (depth - door_w) * 0.5;
-            if side > 0.05 {
-                let t1 = make_box(
-                    Vector3::new(x, h*0.5, cz - depth*0.5 + side*0.5),
-                    Vector3::new(t, h, side), C_WALL, tex, 2.0,
-                );
-                self.base_mut().add_child(&t1);
-                let t2 = make_box(
-                    Vector3::new(x, h*0.5, cz + depth*0.5 - side*0.5),
-                    Vector3::new(t, h, side), C_WALL, tex, 2.0,
-                );
-                self.base_mut().add_child(&t2);
-            }
-        }
-    }
-
-    fn build_lighting(&mut self) {
+    fn build_environment(&mut self) {
         use godot::classes::light_3d::Param;
 
+        let mut env = Environment::new_gd();
+        if let Some(sky_tex) = self.cache.get("res://assets/textures/sky/sky_purple.png") {
+            let mut sky_mat = PanoramaSkyMaterial::new_gd();
+            sky_mat.set_panorama(&sky_tex);
+            let mut sky = Sky::new_gd();
+            sky.set_material(&sky_mat);
+            env.set_background(BgMode::SKY);
+            env.set_sky(&sky);
+        }
+        env.set_ambient_source(AmbientSource::COLOR);
+        env.set_ambient_light_color(Color::from_rgba(0.30, 0.22, 0.34, 1.0));
+        env.set_ambient_light_energy(0.75);
+        env.set_fog_enabled(true);
+        env.set_fog_light_color(Color::from_rgba(0.10, 0.05, 0.12, 1.0));
+        env.set_fog_density(0.012);
+
+        let mut we = WorldEnvironment::new_alloc();
+        we.set_environment(&env);
+        self.base_mut().add_child(&we);
+
         let mut dir = DirectionalLight3D::new_alloc();
-        dir.set_rotation(Vector3::new(-1.0, 0.4, 0.0));
-        dir.set_param(Param::ENERGY, 0.25);
-        dir.set_color(Color::from_rgba(1.0, 0.88, 0.92, 1.0));
+        dir.set_rotation(Vector3::new(-0.9, 0.3, 0.0));
+        dir.set_param(Param::ENERGY, 0.35);
+        dir.set_color(Color::from_rgba(0.8, 0.6, 0.85, 1.0));
         dir.set_shadow(false);
         self.base_mut().add_child(&dir);
-
-        // Свет в каждой комнате
-        let lights: &[(Vector3, f32, Color, f32)] = &[
-            (Vector3::new(  0.0, 2.8,   0.0), 2.4, Color::from_rgba(0.85, 0.30, 0.48, 1.0), 26.0), // зал
-            (Vector3::new(  0.0, 2.8, -26.0), 1.8, Color::from_rgba(0.60, 0.60, 0.95, 1.0), 22.0), // архив
-            (Vector3::new(  0.0, 2.5, -48.0), 2.8, Color::from_rgba(0.95, 0.10, 0.12, 1.0), 18.0), // трон
-            (Vector3::new( 26.0, 2.8,   0.0), 2.0, Color::from_rgba(1.00, 0.80, 0.35, 1.0), 20.0), // рынок
-            (Vector3::new(-26.0, 2.8,   0.0), 1.8, Color::from_rgba(0.35, 0.95, 0.60, 1.0), 20.0), // лаб
-            (Vector3::new(  0.0, 2.8,  27.0), 2.2, Color::from_rgba(0.95, 0.55, 0.20, 1.0), 24.0), // арена
-            // Доп. точечные в центральном зале
-            (Vector3::new(-9.0, 2.6, -9.0),   1.0, Color::from_rgba(1.0, 0.60, 0.75, 1.0), 14.0),
-            (Vector3::new( 9.0, 2.6, -9.0),   1.0, Color::from_rgba(1.0, 0.60, 0.75, 1.0), 14.0),
-            (Vector3::new(-9.0, 2.6,  9.0),   1.0, Color::from_rgba(1.0, 0.60, 0.75, 1.0), 14.0),
-            (Vector3::new( 9.0, 2.6,  9.0),   1.0, Color::from_rgba(1.0, 0.60, 0.75, 1.0), 14.0),
-        ];
-
-        for (pos, energy, color, range) in lights {
-            let mut omni = OmniLight3D::new_alloc();
-            omni.set_position(*pos);
-            omni.set_param(Param::RANGE, *range);
-            omni.set_param(Param::ENERGY, *energy);
-            omni.set_color(*color);
-            self.base_mut().add_child(&omni);
-        }
     }
 
     fn build_npcs(&mut self) {
         let mut sprites: Vec<Gd<Sprite3D>> = Vec::new();
         for cfg in NPC_DATA.iter() {
-            let mut sprite = Sprite3D::new_alloc();
-            sprite.set_position(cfg.pos + Vector3::new(0.0, 0.81, 0.0));
-            sprite.set_pixel_size(PIXEL_SZ);
-            sprite.set_billboard_mode(BillboardMode::ENABLED);
-
-            let (new_path, fallback_path) = npc_sprite_tex(cfg.id);
-            let loaded = Image::load_from_file(new_path)
-                .or_else(|| Image::load_from_file(fallback_path));
-            if let Some(img) = loaded {
-                if let Some(itex) = ImageTexture::create_from_image(&img) {
-                    sprite.set_texture(&itex.upcast::<Texture2D>());
-                    sprite.set_region_enabled(true);
-                    let (x, y, w, h) = NPC_IDLE_FRAMES[0];
-                    sprite.set_region_rect(Rect2::new(Vector2::new(x,y), Vector2::new(w,h)));
-                }
+            let (new_path, fallback) = npc_sprite_tex(cfg.id);
+            let path = if self.cache.get(new_path).is_some() { new_path } else { fallback };
+            if let Some(mut sprite) = make_billboard(&mut self.cache, path,
+                                                     cfg.pos + Vector3::new(0.0, 1.28, 0.0), PIXEL_SZ) {
+                sprite.set_region_enabled(true);
+                let (x, y, w, h) = NPC_IDLE_FRAMES[0];
+                sprite.set_region_rect(Rect2::new(Vector2::new(x, y), Vector2::new(w, h)));
+                sprite.set_modulate(cfg.color);
+                self.base_mut().add_child(&sprite);
+                sprites.push(sprite);
             }
-            sprite.set_alpha_cut_mode(AlphaCutMode::DISCARD);
-            sprite.set_modulate(cfg.color);
-            self.base_mut().add_child(&sprite);
-            sprites.push(sprite);
         }
         self.npc_sprites = sprites;
     }
 
-    fn build_enemies(&mut self, cfg: &GameConfig) {
+    /// Спавны открытого мира из data/level.json.
+    fn build_world_spawns(&mut self) {
+        let Some(cfg) = self.cfg.take() else { return };
+
         for spawn in &cfg.level.spawn_enemies {
-            let Some(ecfg) = cfg.enemy(&spawn.kind) else { continue };
-            let mut e = Enemy::new_alloc();
-            let pos = Vector3::new(spawn.x, 0.0, spawn.z);
-            e.set_position(pos);
-            self.base_mut().add_child(&e);
-            let color = Color::from_rgba(ecfg.color_r, ecfg.color_g, ecfg.color_b, 1.0);
-            e.bind_mut().configure(
-                &ecfg.id, ecfg.hp, ecfg.speed, ecfg.attack_damage,
-                ecfg.attack_range, ecfg.attack_cooldown, ecfg.chase_range,
-                ecfg.patrol_radius, color, pos,
-            );
-            self.enemies.push(e);
+            self.spawn_enemy(&cfg, &spawn.kind,
+                             Vector3::new(spawn.x, 0.0, spawn.z), 1.0, false, false);
+        }
+        for spawn in &cfg.level.spawn_items {
+            self.spawn_item(&cfg, &spawn.kind, Vector3::new(spawn.x, 0.0, spawn.z), false);
+        }
+        for spawn in &cfg.level.spawn_ammo {
+            let t = match spawn.kind.as_str() {
+                "shells"  => AmmoType::Shells,
+                "rockets" => AmmoType::Rockets,
+                "cells"   => AmmoType::Cells,
+                _         => AmmoType::Bullets,
+            };
+            self.spawn_ammo_pickup(t, spawn.amount, Vector3::new(spawn.x, 0.0, spawn.z), false);
+        }
+        for spawn in &cfg.level.spawn_weapons {
+            if let Some(w) = weapon_by_name(&spawn.kind) {
+                self.spawn_weapon_pickup(w, Vector3::new(spawn.x, 0.0, spawn.z), false);
+            }
+        }
+        self.cfg = Some(cfg);
+    }
+
+    fn spawn_enemy(&mut self, cfg: &GameConfig, kind: &str, pos: Vector3, mult: f32,
+                   is_boss: bool, in_dungeon: bool) {
+        let Some(ecfg) = cfg.enemy(kind) else { return };
+        let mut e = Enemy::new_alloc();
+        e.set_position(pos);
+        self.base_mut().add_child(&e);
+        let color = Color::from_rgba(ecfg.color_r, ecfg.color_g, ecfg.color_b, 1.0);
+        e.bind_mut().configure(
+            &ecfg.id, ecfg.hp, ecfg.speed, ecfg.attack_damage,
+            ecfg.attack_range, ecfg.attack_cooldown, ecfg.chase_range,
+            ecfg.patrol_radius, color, pos, ecfg.xp, mult, is_boss,
+        );
+        if let Some(ref p) = self.player {
+            e.bind_mut().set_player(p.clone());
+        }
+        let _ = in_dungeon;
+        self.enemies.push(e);
+    }
+
+    fn make_pickup_node(&mut self, tex_path: &str, pos: Vector3, px: f32) -> Gd<Node3D> {
+        let mut node = Node3D::new_alloc();
+        node.set_position(pos + Vector3::new(0.0, 0.55, 0.0));
+        if let Some(sp) = make_billboard(&mut self.cache, tex_path, Vector3::ZERO, px) {
+            node.add_child(&sp);
+        }
+        self.base_mut().add_child(&node);
+        node
+    }
+
+    fn spawn_item(&mut self, cfg: &GameConfig, kind: &str, pos: Vector3, in_dungeon: bool) {
+        // специальные предметы вне items.json
+        if kind == "heart_1up" {
+            let node = self.make_pickup_node("res://assets/sprites/pickups/heart_1up.png", pos, 0.010);
+            self.world_items.push(WorldItemNode {
+                node, item_id: "heart_1up".into(), name: "Сердце жизни".into(),
+                payload: Payload::Heart, in_dungeon,
+            });
+            return;
+        }
+        let Some(icfg) = cfg.item(kind) else { return };
+        let tex = item_sprite_tex(&icfg.id);
+        let node = if tex.is_empty() {
+            self.make_pickup_node("res://assets/sprites/items/item_potion.png", pos, 0.008)
+        } else {
+            self.make_pickup_node(tex, pos, 0.008)
+        };
+        let name = if self.settings.lang == "en" { icfg.name_en.clone() } else { icfg.name_ru.clone() };
+        let payload = if icfg.category == "currency" {
+            Payload::Gold(icfg.value)
+        } else if icfg.category == "key" {
+            Payload::KeyItem
+        } else {
+            Payload::Consumable { heal: icfg.heal.unwrap_or(10.0) }
+        };
+        self.world_items.push(WorldItemNode {
+            node, item_id: icfg.id.clone(), name, payload, in_dungeon,
+        });
+    }
+
+    fn spawn_ammo_pickup(&mut self, t: AmmoType, amount: u32, pos: Vector3, in_dungeon: bool) {
+        let node = self.make_pickup_node(t.pickup_tex(), pos, 0.009);
+        self.world_items.push(WorldItemNode {
+            node,
+            item_id: format!("ammo_{}", t.idx()),
+            name: t.name_ru().to_string(),
+            payload: Payload::Ammo(t, amount),
+            in_dungeon,
+        });
+    }
+
+    fn spawn_weapon_pickup(&mut self, w: WeaponId, pos: Vector3, in_dungeon: bool) {
+        let def = weapon_def(w);
+        let mut node = Node3D::new_alloc();
+        node.set_position(pos + Vector3::new(0.0, 0.65, 0.0));
+        if let Some(mut sp) = make_billboard(&mut self.cache, def.sheet, Vector3::ZERO, 0.012) {
+            sp.set_region_enabled(true);
+            sp.set_region_rect(Rect2::new(Vector2::ZERO, Vector2::new(FRAME_W, def.frame_h)));
+            node.add_child(&sp);
+        }
+        let l = make_light(Vector3::new(0.0, 0.4, 0.0), C_PINK, 0.7, 4.0);
+        node.add_child(&l);
+        self.base_mut().add_child(&node);
+        self.world_items.push(WorldItemNode {
+            node,
+            item_id: format!("weapon_{}", def.name_ru),
+            name: def.name_ru.to_string(),
+            payload: Payload::Weapon(w),
+            in_dungeon,
+        });
+    }
+}
+
+fn weapon_by_name(s: &str) -> Option<WeaponId> {
+    Some(match s {
+        "sword"    => WeaponId::Sword,
+        "chainsaw" => WeaponId::Chainsaw,
+        "pistol"   => WeaponId::Pistol,
+        "shotgun"  => WeaponId::Shotgun,
+        "rifle"    => WeaponId::Rifle,
+        "nailgun"  => WeaponId::Nailgun,
+        "plasma"   => WeaponId::Plasma,
+        "rocket"   => WeaponId::Rocket,
+        _ => return None,
+    })
+}
+
+// ── Данж ──────────────────────────────────────────────────────────────────────
+
+impl Game3D {
+    fn enter_dungeon(&mut self, depth: u32) {
+        self.clear_dungeon();
+
+        let seed = {
+            let st = self.state.as_mut().unwrap();
+            st.dungeon_seed = st.dungeon_seed.wrapping_add(1);
+            st.dungeon_seed
+        };
+        let plan: DungeonPlan = dungeon::generate(depth, seed, &mut self.cache);
+
+        let mut root = plan.root.clone();
+        root.set_position(DUNGEON_OFFSET);
+        self.base_mut().add_child(&root);
+        self.dungeon_root = Some(root);
+        self.dungeon_depth = depth;
+        self.dungeon_name = plan.theme_name;
+        self.exit_portal = DUNGEON_OFFSET + plan.exit_portal;
+        self.next_portal = DUNGEON_OFFSET + plan.next_portal;
+        self.boss_alive = plan.enemies.iter().any(|e| e.is_boss);
+
+        let cfg = self.cfg.take();
+        if let Some(ref cfg) = cfg {
+            for es in &plan.enemies {
+                self.spawn_enemy(cfg, &es.kind, DUNGEON_OFFSET + es.pos, es.mult, es.is_boss, true);
+            }
+            for (kind, pos) in &plan.items {
+                self.spawn_item(cfg, kind, DUNGEON_OFFSET + *pos, true);
+            }
+        }
+        self.cfg = cfg;
+        for (t, n, pos) in &plan.ammo {
+            self.spawn_ammo_pickup(*t, *n, DUNGEON_OFFSET + *pos, true);
+        }
+        for (w, pos) in &plan.weapons {
+            self.spawn_weapon_pickup(*w, DUNGEON_OFFSET + *pos, true);
+        }
+
+        if let Some(ref p) = self.player {
+            if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                pl.bind_mut().teleport(DUNGEON_OFFSET + plan.player_spawn + Vector3::new(0.0, 1.0, 0.0));
+            }
+        }
+        self.loc = Loc::Dungeon;
+
+        // квест при первом входе
+        let add_quest = {
+            let st = self.state.as_mut().unwrap();
+            if !st.has("dungeon_quest") {
+                st.flags.insert("dungeon_quest".into());
+                st.quests.add("dungeon_heart", "Сердце данжа", "Убей стража на дне данжа.");
+                true
+            } else { false }
+        };
+        if add_quest {
+            self.show_flash("Новый квест: «Сердце данжа»");
+        }
+        self.show_flash(&format!("«{}» — глубина {}", plan.theme_name, depth));
+        self.update_loc_label();
+    }
+
+    fn exit_dungeon(&mut self) {
+        self.clear_dungeon();
+        self.loc = Loc::World;
+        if let Some(ref p) = self.player {
+            if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                pl.bind_mut().teleport(world::GATE_POS + Vector3::new(0.0, 1.0, 3.5));
+            }
+        }
+        self.show_flash("Пустоши Неонового Сердца");
+        self.update_loc_label();
+        self.auto_save();
+    }
+
+    fn clear_dungeon(&mut self) {
+        if let Some(root) = self.dungeon_root.take() {
+            root.free();
+        }
+        // убрать врагов и предметы данжа
+        let pl = self.player.clone();
+        let _ = pl;
+        let mut i = 0;
+        while i < self.enemies.len() {
+            let in_d = self.enemies[i].get_position().x > 250.0;
+            if in_d {
+                let e = self.enemies.remove(i);
+                e.free();
+            } else { i += 1; }
+        }
+        let mut i = 0;
+        while i < self.world_items.len() {
+            if self.world_items[i].in_dungeon {
+                let it = self.world_items.remove(i);
+                it.node.free();
+            } else { i += 1; }
+        }
+        for p in self.projectiles.drain(..) {
+            p.node.free();
+        }
+        self.boss_alive = false;
+    }
+}
+
+// ── Выбор класса ──────────────────────────────────────────────────────────────
+
+impl Game3D {
+    fn build_select_ui(&mut self) {
+        let mut layer = CanvasLayer::new_alloc();
+        layer.set_layer(5);
+        self.base_mut().add_child(&layer);
+
+        let mut panel = Panel::new_alloc();
+        panel.set_position(Vector2::ZERO);
+        panel.set_size(Vector2::new(HUD_W, HUD_H));
+        panel.add_theme_stylebox_override("panel",
+            &make_style(Color::from_rgba(0.02, 0.01, 0.04, 0.97), C_BORDER, 0));
+        panel.set_visible(false);
+
+        let mut title = Label::new_alloc();
+        title.set_text("ВЫБЕРИ КЛАСС");
+        title.set_position(Vector2::new(0.0, 90.0));
+        title.set_size(Vector2::new(HUD_W, 70.0));
+        title.set_horizontal_alignment(HorizontalAlignment::CENTER);
+        title.add_theme_font_size_override("font_size", 52);
+        title.add_theme_color_override("font_color", C_PINK);
+        panel.add_child(&title);
+        self.select_title = Some(title);
+
+        let card_w = 480.0;
+        let card_h = 560.0;
+        let gap = 60.0;
+        let total = card_w * 3.0 + gap * 2.0;
+        let x0 = (HUD_W - total) * 0.5;
+        let y0 = 240.0;
+
+        for i in 0..3 {
+            let mut card = Panel::new_alloc();
+            card.set_position(Vector2::new(x0 + i as f32 * (card_w + gap), y0));
+            card.set_size(Vector2::new(card_w, card_h));
+            card.add_theme_stylebox_override("panel", &make_style(C_UI_BG, C_BORDER, 2));
+
+            let mut key = Label::new_alloc();
+            key.set_text(&format!("[ {} ]", i + 1));
+            key.set_position(Vector2::new(0.0, 22.0));
+            key.set_size(Vector2::new(card_w, 40.0));
+            key.set_horizontal_alignment(HorizontalAlignment::CENTER);
+            key.add_theme_font_size_override("font_size", 30);
+            key.add_theme_color_override("font_color", C_GOLD);
+            card.add_child(&key);
+
+            let mut ct = Label::new_alloc();
+            ct.set_position(Vector2::new(0.0, 80.0));
+            ct.set_size(Vector2::new(card_w, 46.0));
+            ct.set_horizontal_alignment(HorizontalAlignment::CENTER);
+            ct.add_theme_font_size_override("font_size", 34);
+            ct.add_theme_color_override("font_color", C_PINK);
+            card.add_child(&ct);
+            self.card_titles.push(ct);
+
+            let mut cb = Label::new_alloc();
+            cb.set_position(Vector2::new(28.0, 150.0));
+            cb.set_size(Vector2::new(card_w - 56.0, card_h - 180.0));
+            cb.add_theme_font_size_override("font_size", 19);
+            cb.add_theme_color_override("font_color", C_MAIN);
+            cb.set_autowrap_mode(godot::classes::text_server::AutowrapMode::WORD);
+            card.add_child(&cb);
+            self.card_bodies.push(cb);
+
+            panel.add_child(&card);
+        }
+
+        let mut hint = Label::new_alloc();
+        hint.set_text("Нажми 1, 2 или 3");
+        hint.set_position(Vector2::new(0.0, HUD_H - 120.0));
+        hint.set_size(Vector2::new(HUD_W, 40.0));
+        hint.set_horizontal_alignment(HorizontalAlignment::CENTER);
+        hint.add_theme_font_size_override("font_size", 22);
+        hint.add_theme_color_override("font_color", C_DIM);
+        panel.add_child(&hint);
+
+        layer.add_child(&panel);
+        self.select_panel = Some(panel);
+    }
+
+    fn open_class_select(&mut self) {
+        self.mode = Mode::ClassSelect;
+        self.freeze_player(true);
+        Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::VISIBLE);
+        if let Some(ref mut t) = self.select_title { t.set_text("ВЫБЕРИ КЛАСС"); }
+        for (i, c) in CLASSES.iter().enumerate() {
+            self.fill_class_card(i, c);
+        }
+        if let Some(ref mut p) = self.select_panel { p.set_visible(true); }
+    }
+
+    fn fill_class_card(&mut self, i: usize, c: &ClassDef) {
+        if let Some(t) = self.card_titles.get_mut(i) {
+            t.set_text(c.name_ru);
+        }
+        if let Some(b) = self.card_bodies.get_mut(i) {
+            let weapons: Vec<&str> = c.start_weapons.iter()
+                .map(|w| weapon_def(*w).name_ru).collect();
+            b.set_text(&format!(
+                "Роль: {}\n\n{}\n\nHP: {:.0}\nСкорость: {:.1}\nОружие: {}\n\nСпеки:\n• {}\n• {}\n• {}",
+                c.role_ru, c.desc_ru, c.base_hp, c.speed, weapons.join(", "),
+                c.specs[0].name_ru, c.specs[1].name_ru, c.specs[2].name_ru,
+            ));
         }
     }
 
-    fn build_world_items(&mut self, cfg: &GameConfig) {
-        for spawn in &cfg.level.spawn_items {
-            let Some(icfg) = cfg.item(&spawn.kind) else { continue };
-            let pos   = Vector3::new(spawn.x, 0.35, spawn.z);
-            let color = Color::from_rgba(icfg.color_r, icfg.color_g, icfg.color_b, 1.0);
+    fn open_spec_select(&mut self, class_idx: usize) {
+        self.mode = Mode::SpecSelect;
+        self.class_pick = class_idx;
+        let c = &CLASSES[class_idx];
+        if let Some(ref mut t) = self.select_title {
+            t.set_text(&format!("{} — ВЫБЕРИ СПЕЦИАЛИЗАЦИЮ", c.name_ru));
+        }
+        for i in 0..3 {
+            let s = &c.specs[i];
+            if let Some(t) = self.card_titles.get_mut(i) {
+                t.set_text(s.name_ru);
+            }
+            if let Some(b) = self.card_bodies.get_mut(i) {
+                b.set_text(&format!("{}\n\n(Esc — назад к классам)", s.desc_ru));
+            }
+        }
+    }
 
-            // Пробуем billboard-спрайт; иначе — цветной куб
-            let sprite_path = item_sprite_tex(&icfg.id);
-            let has_sprite = !sprite_path.is_empty();
+    fn process_class_select(&mut self) {
+        let input = Input::singleton();
+        for i in 0..3usize {
+            let act = ["choice_1", "choice_2", "choice_3"][i];
+            if input.is_action_just_pressed(act) {
+                self.open_spec_select(i);
+                return;
+            }
+        }
+    }
 
-            let mut node = make_box(pos, Vector3::new(0.28, 0.28, 0.28), color, None, 1.0);
-            self.base_mut().add_child(&node);
+    fn process_spec_select(&mut self) {
+        let input = Input::singleton();
+        if input.is_action_just_pressed("escape") {
+            self.open_class_select();
+            return;
+        }
+        for i in 0..3usize {
+            let act = ["choice_1", "choice_2", "choice_3"][i];
+            if input.is_action_just_pressed(act) {
+                self.confirm_class(self.class_pick, i);
+                return;
+            }
+        }
+    }
 
-            if has_sprite {
-                if let Some(img) = Image::load_from_file(sprite_path) {
-                    if let Some(itex) = ImageTexture::create_from_image(&img) {
-                        let mut sp = Sprite3D::new_alloc();
-                        sp.set_position(Vector3::new(0.0, 0.0, 0.0));
-                        sp.set_pixel_size(0.008);
-                        sp.set_billboard_mode(BillboardMode::ENABLED);
-                        sp.set_alpha_cut_mode(AlphaCutMode::DISCARD);
-                        sp.set_texture(&itex.upcast::<Texture2D>());
-                        sp.set_region_enabled(true);
-                        // Один фрейм 64×64 из двухфреймового листа 128×64
-                        sp.set_region_rect(Rect2::new(Vector2::ZERO, Vector2::new(64.0, 64.0)));
-                        node.add_child(&sp);
-                    }
+    fn confirm_class(&mut self, class_idx: usize, spec_idx: usize) {
+        {
+            let st = self.state.as_mut().unwrap();
+            st.class_idx = Some(class_idx);
+            st.spec_idx = spec_idx;
+        }
+        self.apply_loadout(class_idx, spec_idx, true);
+        if let Some(ref mut p) = self.select_panel { p.set_visible(false); }
+        self.set_mode_explore();
+        self.refresh_weapon_sheet();
+        let c = &CLASSES[class_idx];
+        self.show_flash(&format!("{} / {}. Вперёд!", c.name_ru, c.specs[spec_idx].name_ru));
+        self.update_loc_label();
+        self.auto_save();
+    }
+
+    /// Пересчитать статы из класса/спека/уровня. give_kit — выдать стартовый набор.
+    fn apply_loadout(&mut self, class_idx: usize, spec_idx: usize, give_kit: bool) {
+        let level = self.state.as_ref().map(|s| s.level).unwrap_or(1);
+        self.loadout = compute_loadout(class_idx, spec_idx, level);
+        let hearts = self.state.as_ref().map(|s| s.stat_hearts()).unwrap_or(0);
+        self.loadout.max_hp += hearts as f32 * 15.0;
+
+        let c = &CLASSES[class_idx];
+        let s = &c.specs[spec_idx];
+
+        if give_kit {
+            self.arsenal = Arsenal::new();
+            for w in c.start_weapons {
+                self.arsenal.give_weapon(*w);
+            }
+            if let Some(w) = s.extra_weapon {
+                self.arsenal.give_weapon(w);
+                if let Some((t, _)) = weapon_def(w).ammo {
+                    self.arsenal.add_ammo(t, t.pack_size() * 2, self.loadout.ammo_mult);
                 }
             }
+            for (t, n) in c.start_ammo {
+                self.arsenal.add_ammo(*t, *n, self.loadout.ammo_mult);
+            }
+            self.arsenal.current = c.start_weapons[0];
+        }
 
-            let gold = if icfg.category == "currency" { icfg.value } else { 0 };
-            let name = self.item_name(icfg);
-            self.world_items.push(WorldItemNode { node, item_id: icfg.id.clone(), name, heal: icfg.heal, gold });
+        let (max_hp, speed) = (self.loadout.max_hp, self.loadout.speed);
+        if let Some(ref p) = self.player {
+            if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                let mut b = pl.bind_mut();
+                b.max_hp = max_hp;
+                if give_kit { b.hp = max_hp; }
+                else { b.hp = b.hp.min(max_hp); }
+                b.speed = speed;
+            }
         }
     }
 
-    fn item_name(&self, icfg: &crate::config::ItemCfg) -> String {
-        if self.settings.lang == "en" { icfg.name_en.clone() } else { icfg.name_ru.clone() }
+    fn freeze_player(&mut self, frozen: bool) {
+        if let Some(ref p) = self.player {
+            if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                pl.bind_mut().frozen = frozen;
+            }
+        }
+    }
+
+    fn set_mode_explore(&mut self) {
+        self.mode = Mode::Explore;
+        self.freeze_player(false);
+        Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::CAPTURED);
     }
 }
 
@@ -736,7 +898,7 @@ impl Game3D {
         let mut layer = CanvasLayer::new_alloc();
         self.base_mut().add_child(&layer);
 
-        // Урон-флэш (полный экран, красный)
+        // урон-флэш
         let mut df = Panel::new_alloc();
         df.set_position(Vector2::ZERO);
         df.set_size(Vector2::new(HUD_W, HUD_H));
@@ -746,10 +908,23 @@ impl Game3D {
         layer.add_child(&df);
         self.damage_flash = Some(df);
 
-        // Прицел
+        // FP-оружие (низ по центру)
+        {
+            let mut wr = TextureRect::new_alloc();
+            wr.set_position(Vector2::new(HUD_W * 0.5 - 260.0, HUD_H - 560.0));
+            wr.set_size(Vector2::new(520.0, 560.0));
+            wr.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
+            wr.set_stretch_mode(godot::classes::texture_rect::StretchMode::SCALE);
+            wr.set_texture_filter(godot::classes::canvas_item::TextureFilter::NEAREST);
+            wr.set_visible(false);
+            layer.add_child(&wr);
+            self.weapon_rect = Some(wr);
+        }
+
+        // прицел
         let mut cross = Label::new_alloc();
         cross.set_text("+");
-        cross.set_position(Vector2::new(HUD_W*0.5-8.0, HUD_H*0.5-12.0));
+        cross.set_position(Vector2::new(HUD_W * 0.5 - 8.0, HUD_H * 0.5 - 12.0));
         cross.set_size(Vector2::new(16.0, 24.0));
         cross.set_horizontal_alignment(HorizontalAlignment::CENTER);
         cross.add_theme_font_size_override("font_size", 20);
@@ -757,9 +932,9 @@ impl Game3D {
         layer.add_child(&cross);
         self.crosshair = Some(cross);
 
-        // Таргетинг — HP врага над прицелом
+        // таргетинг
         let mut tgt = Label::new_alloc();
-        tgt.set_position(Vector2::new(HUD_W*0.5-200.0, HUD_H*0.5-46.0));
+        tgt.set_position(Vector2::new(HUD_W * 0.5 - 200.0, HUD_H * 0.5 - 46.0));
         tgt.set_size(Vector2::new(400.0, 24.0));
         tgt.set_horizontal_alignment(HorizontalAlignment::CENTER);
         tgt.add_theme_font_size_override("font_size", 13);
@@ -768,10 +943,10 @@ impl Game3D {
         layer.add_child(&tgt);
         self.targeting_label = Some(tgt);
 
-        // Компас (сверху по центру)
+        // компас
         let mut cmp = Label::new_alloc();
         cmp.set_text("N");
-        cmp.set_position(Vector2::new(HUD_W*0.5-40.0, 10.0));
+        cmp.set_position(Vector2::new(HUD_W * 0.5 - 40.0, 10.0));
         cmp.set_size(Vector2::new(80.0, 30.0));
         cmp.set_horizontal_alignment(HorizontalAlignment::CENTER);
         cmp.add_theme_font_size_override("font_size", 18);
@@ -779,16 +954,24 @@ impl Game3D {
         layer.add_child(&cmp);
         self.compass_label = Some(cmp);
 
-        // HP бар — фон
+        // локация
+        let mut ll = Label::new_alloc();
+        ll.set_position(Vector2::new(HUD_W * 0.5 - 300.0, 40.0));
+        ll.set_size(Vector2::new(600.0, 26.0));
+        ll.set_horizontal_alignment(HorizontalAlignment::CENTER);
+        ll.add_theme_font_size_override("font_size", 14);
+        ll.add_theme_color_override("font_color", C_DIM);
+        layer.add_child(&ll);
+        self.loc_label = Some(ll);
+
+        // HP бар
         let mut hp_bg = Panel::new_alloc();
         hp_bg.set_position(Vector2::new(24.0, HUD_H - 58.0));
         hp_bg.set_size(Vector2::new(222.0, 26.0));
         hp_bg.add_theme_stylebox_override("panel", &make_style(
-            Color::from_rgba(0.08,0.01,0.01,0.92), Color::from_rgba(0.35,0.08,0.08,1.0), 1));
+            Color::from_rgba(0.08, 0.01, 0.01, 0.92), Color::from_rgba(0.35, 0.08, 0.08, 1.0), 1));
         layer.add_child(&hp_bg);
-        self.hp_bar_bg = Some(hp_bg);
 
-        // HP бар — заполнение
         let mut hp_fg = Panel::new_alloc();
         hp_fg.set_position(Vector2::new(26.0, HUD_H - 56.0));
         hp_fg.set_size(Vector2::new(218.0, 22.0));
@@ -796,7 +979,6 @@ impl Game3D {
         layer.add_child(&hp_fg);
         self.hp_bar_fg = Some(hp_fg);
 
-        // HP текст
         let mut hp_lbl = Label::new_alloc();
         hp_lbl.set_position(Vector2::new(24.0, HUD_H - 84.0));
         hp_lbl.set_size(Vector2::new(220.0, 24.0));
@@ -805,9 +987,51 @@ impl Game3D {
         layer.add_child(&hp_lbl);
         self.hp_label = Some(hp_lbl);
 
-        // Подсказка взаимодействия
+        // XP бар
+        let mut xp_bg = Panel::new_alloc();
+        xp_bg.set_position(Vector2::new(24.0, HUD_H - 28.0));
+        xp_bg.set_size(Vector2::new(222.0, 10.0));
+        xp_bg.add_theme_stylebox_override("panel", &make_style(
+            Color::from_rgba(0.05, 0.03, 0.10, 0.92), Color::from_rgba(0.25, 0.15, 0.4, 1.0), 1));
+        layer.add_child(&xp_bg);
+
+        let mut xp_fg = Panel::new_alloc();
+        xp_fg.set_position(Vector2::new(25.0, HUD_H - 27.0));
+        xp_fg.set_size(Vector2::new(0.0, 8.0));
+        xp_fg.add_theme_stylebox_override("panel", &make_style(C_XP, Color::TRANSPARENT_BLACK, 0));
+        layer.add_child(&xp_fg);
+        self.xp_bar_fg = Some(xp_fg);
+
+        let mut xp_lbl = Label::new_alloc();
+        xp_lbl.set_position(Vector2::new(252.0, HUD_H - 34.0));
+        xp_lbl.set_size(Vector2::new(260.0, 22.0));
+        xp_lbl.add_theme_font_size_override("font_size", 13);
+        xp_lbl.add_theme_color_override("font_color", C_XP);
+        layer.add_child(&xp_lbl);
+        self.xp_label = Some(xp_lbl);
+
+        // Патроны и оружие (низ справа)
+        let mut am = Label::new_alloc();
+        am.set_position(Vector2::new(HUD_W - 360.0, HUD_H - 64.0));
+        am.set_size(Vector2::new(336.0, 34.0));
+        am.set_horizontal_alignment(HorizontalAlignment::RIGHT);
+        am.add_theme_font_size_override("font_size", 26);
+        am.add_theme_color_override("font_color", C_GOLD);
+        layer.add_child(&am);
+        self.ammo_label = Some(am);
+
+        let mut wn = Label::new_alloc();
+        wn.set_position(Vector2::new(HUD_W - 360.0, HUD_H - 92.0));
+        wn.set_size(Vector2::new(336.0, 24.0));
+        wn.set_horizontal_alignment(HorizontalAlignment::RIGHT);
+        wn.add_theme_font_size_override("font_size", 14);
+        wn.add_theme_color_override("font_color", C_DIM);
+        layer.add_child(&wn);
+        self.weapon_label = Some(wn);
+
+        // подсказка
         let mut hint = Label::new_alloc();
-        hint.set_position(Vector2::new(HUD_W*0.5-280.0, HUD_H-96.0));
+        hint.set_position(Vector2::new(HUD_W * 0.5 - 280.0, HUD_H - 130.0));
         hint.set_size(Vector2::new(560.0, 28.0));
         hint.set_horizontal_alignment(HorizontalAlignment::CENTER);
         hint.add_theme_font_size_override("font_size", 16);
@@ -816,17 +1040,17 @@ impl Game3D {
         layer.add_child(&hint);
         self.hint_label = Some(hint);
 
-        // Инвентарь (строка вверху-справа)
+        // инвентарь (строка)
         let mut inv = Label::new_alloc();
-        inv.set_position(Vector2::new(HUD_W-420.0, 10.0));
-        inv.set_size(Vector2::new(408.0, 24.0));
+        inv.set_position(Vector2::new(HUD_W - 460.0, 10.0));
+        inv.set_size(Vector2::new(448.0, 24.0));
         inv.set_horizontal_alignment(HorizontalAlignment::RIGHT);
         inv.add_theme_font_size_override("font_size", 13);
         inv.add_theme_color_override("font_color", C_DIM);
         layer.add_child(&inv);
         self.inv_label = Some(inv);
 
-        // Журнал квестов (левый верх)
+        // квесты
         let mut ql = Label::new_alloc();
         ql.set_position(Vector2::new(24.0, 44.0));
         ql.set_size(Vector2::new(360.0, 150.0));
@@ -836,9 +1060,9 @@ impl Game3D {
         layer.add_child(&ql);
         self.quest_label = Some(ql);
 
-        // Флэш-сообщение
+        // флэш
         let mut flash = Label::new_alloc();
-        flash.set_position(Vector2::new(HUD_W*0.5-300.0, HUD_H*0.5-80.0));
+        flash.set_position(Vector2::new(HUD_W * 0.5 - 300.0, HUD_H * 0.5 - 110.0));
         flash.set_size(Vector2::new(600.0, 34.0));
         flash.set_horizontal_alignment(HorizontalAlignment::CENTER);
         flash.add_theme_font_size_override("font_size", 18);
@@ -847,11 +1071,12 @@ impl Game3D {
         layer.add_child(&flash);
         self.flash_label = Some(flash);
 
-        // Инвентарный экран
+        // экран инвентаря
         {
-            let pw = 720.0; let ph = 520.0;
+            let pw = 720.0;
+            let ph = 520.0;
             let mut ip = Panel::new_alloc();
-            ip.set_position(Vector2::new((HUD_W-pw)*0.5, (HUD_H-ph)*0.5));
+            ip.set_position(Vector2::new((HUD_W - pw) * 0.5, (HUD_H - ph) * 0.5));
             ip.set_size(Vector2::new(pw, ph));
             ip.add_theme_stylebox_override("panel", &make_style(C_UI_BG, C_BORDER, 2));
             ip.set_visible(false);
@@ -859,14 +1084,14 @@ impl Game3D {
             let mut title = Label::new_alloc();
             title.set_text(t("inv_title", lang));
             title.set_position(Vector2::new(24.0, 16.0));
-            title.set_size(Vector2::new(pw-48.0, 32.0));
+            title.set_size(Vector2::new(pw - 48.0, 32.0));
             title.add_theme_font_size_override("font_size", 22);
             title.add_theme_color_override("font_color", C_PINK);
             ip.add_child(&title);
 
             let mut il = Label::new_alloc();
             il.set_position(Vector2::new(24.0, 60.0));
-            il.set_size(Vector2::new(pw-48.0, ph-110.0));
+            il.set_size(Vector2::new(pw - 48.0, ph - 110.0));
             il.add_theme_font_size_override("font_size", 15);
             il.add_theme_color_override("font_color", C_MAIN);
             il.set_autowrap_mode(godot::classes::text_server::AutowrapMode::WORD);
@@ -874,18 +1099,18 @@ impl Game3D {
 
             let mut hint_i = Label::new_alloc();
             hint_i.set_text(t("inv_close", lang));
-            hint_i.set_position(Vector2::new(24.0, ph-42.0));
-            hint_i.set_size(Vector2::new(pw-48.0, 28.0));
+            hint_i.set_position(Vector2::new(24.0, ph - 42.0));
+            hint_i.set_size(Vector2::new(pw - 48.0, 28.0));
             hint_i.add_theme_font_size_override("font_size", 13);
             hint_i.add_theme_color_override("font_color", C_DIM);
             ip.add_child(&hint_i);
 
             layer.add_child(&ip);
-            self.inv_list  = Some(il);
+            self.inv_list = Some(il);
             self.inv_panel = Some(ip);
         }
 
-        // Диалоговая панель
+        // диалоговая панель
         {
             let panel_y = HUD_H * 0.60;
             let panel_h = HUD_H * 0.40;
@@ -904,7 +1129,7 @@ impl Game3D {
 
             let mut text = Label::new_alloc();
             text.set_position(Vector2::new(24.0, 54.0));
-            text.set_size(Vector2::new(HUD_W-48.0, 145.0));
+            text.set_size(Vector2::new(HUD_W - 48.0, 145.0));
             text.add_theme_font_size_override("font_size", 16);
             text.add_theme_color_override("font_color", C_MAIN);
             text.set_autowrap_mode(godot::classes::text_server::AutowrapMode::WORD);
@@ -912,55 +1137,41 @@ impl Game3D {
 
             let mut vbox = VBoxContainer::new_alloc();
             vbox.set_position(Vector2::new(24.0, 205.0));
-            vbox.set_size(Vector2::new(HUD_W-48.0, 170.0));
+            vbox.set_size(Vector2::new(HUD_W - 48.0, 170.0));
             panel.add_child(&vbox);
 
             let choice_lbls: [_; 4] = std::array::from_fn(|i| {
                 let mut lbl = Label::new_alloc();
-                lbl.set_text(&format!("{}.", i+1));
+                lbl.set_text(&format!("{}.", i + 1));
                 lbl.add_theme_font_size_override("font_size", 15);
                 lbl.add_theme_color_override("font_color", C_DIM);
                 lbl.set_visible(false);
                 vbox.add_child(&lbl);
                 lbl
             });
-            let [c0,c1,c2,c3] = choice_lbls;
+            let [c0, c1, c2, c3] = choice_lbls;
 
             layer.add_child(&panel);
-            self.dlg_panel   = Some(panel);
+            self.dlg_panel = Some(panel);
             self.dlg_speaker = Some(speaker);
-            self.dlg_text    = Some(text);
-            self.choice_box  = Some(vbox);
+            self.dlg_text = Some(text);
+            self.choice_box = Some(vbox);
             self.cl0 = Some(c0); self.cl1 = Some(c1);
             self.cl2 = Some(c2); self.cl3 = Some(c3);
         }
 
-        // Оружие — HUD-спрайт (нижний правый угол, как в DOOM)
-        // Sprite2D не импортирован, используем CanvasItem через Label-placeholder,
-        // настоящий спрайт будет через отдельный TextureRect при необходимости.
-        // Сейчас: текстовый символ пистолета.
-        {
-            let mut wlbl = Label::new_alloc();
-            wlbl.set_text("🔫");
-            wlbl.set_position(Vector2::new(HUD_W - 160.0, HUD_H - 120.0));
-            wlbl.set_size(Vector2::new(120.0, 80.0));
-            wlbl.add_theme_font_size_override("font_size", 52);
-            layer.add_child(&wlbl);
-            // TODO: заменить на TextureRect с weapon_pistol.png после генерации ассетов
-        }
-
-        // Экран смерти
+        // экран смерти
         {
             let mut dp = Panel::new_alloc();
             dp.set_position(Vector2::ZERO);
             dp.set_size(Vector2::new(HUD_W, HUD_H));
             dp.add_theme_stylebox_override("panel",
-                &make_style(Color::from_rgba(0.3,0.0,0.0,0.88), Color::TRANSPARENT_BLACK, 0));
+                &make_style(Color::from_rgba(0.3, 0.0, 0.0, 0.88), Color::TRANSPARENT_BLACK, 0));
             dp.set_visible(false);
 
             let mut lbl = Label::new_alloc();
             lbl.set_text(t("msg_died", lang));
-            lbl.set_position(Vector2::new(0.0, HUD_H*0.4));
+            lbl.set_position(Vector2::new(0.0, HUD_H * 0.4));
             lbl.set_size(Vector2::new(HUD_W, 60.0));
             lbl.set_horizontal_alignment(HorizontalAlignment::CENTER);
             lbl.add_theme_font_size_override("font_size", 56);
@@ -968,8 +1179,8 @@ impl Game3D {
             dp.add_child(&lbl);
 
             let mut sub = Label::new_alloc();
-            sub.set_text("Enter — перезапустить");
-            sub.set_position(Vector2::new(0.0, HUD_H*0.4+70.0));
+            sub.set_text("E / Enter — начать заново");
+            sub.set_position(Vector2::new(0.0, HUD_H * 0.4 + 70.0));
             sub.set_size(Vector2::new(HUD_W, 30.0));
             sub.set_horizontal_alignment(HorizontalAlignment::CENTER);
             sub.add_theme_font_size_override("font_size", 18);
@@ -980,58 +1191,106 @@ impl Game3D {
             self.dead_panel = Some(dp);
         }
     }
-}
 
-/// Динамический выбор сцены для NPC.
-fn npc_scene_id(npc_id: &str, state: &crate::game_state::GameState) -> &'static str {
-    match npc_id {
-        "vale" => {
-            if !state.has("met_vale")                  { "meet_vale" }
-            else if !state.has("vale_chat_1_done")     { "vale_class_chat" }
-            else if state.rel("vale") < 30             { "vale_office_1" }
-            else if state.rel("vale") < 55             { "vale_office_2" }
-            else                                       { "vale_office_deep" }
+    /// Обновить AtlasTexture под текущее оружие.
+    fn refresh_weapon_sheet(&mut self) {
+        let def = weapon_def(self.arsenal.current);
+        let Some(tex) = self.cache.get(def.sheet) else { return };
+        let mut at = AtlasTexture::new_gd();
+        at.set_atlas(&tex);
+        at.set_region(Rect2::new(Vector2::ZERO, Vector2::new(FRAME_W, def.frame_h)));
+        if let Some(ref mut wr) = self.weapon_rect {
+            wr.set_texture(&at);
+            // масштаб: высота на экране пропорциональна высоте кадра
+            let k = 6.0;
+            let w = FRAME_W * k;
+            let h = def.frame_h * k;
+            wr.set_size(Vector2::new(w, h));
+            wr.set_position(Vector2::new(HUD_W * 0.5 - w * 0.5, HUD_H - h));
+            wr.set_visible(true);
         }
-        "victor" => {
-            if !state.has("met_victor")                { "intro_victor" }
-            else if !state.has("victor_quest_given")   { "victor_chat_2" }
-            else if state.has("victor_quest_done")     { "victor_chat_end" }
-            else                                       { "victor_quest_check" }
+        self.weapon_atlas = Some(at);
+        self.weapon_anim = WeaponAnim::Switch(0.22);
+        self.set_weapon_frame(def.idle_frames[0]);
+        if let Some(ref mut wl) = self.weapon_label {
+            wl.set_text(&format!("[{}] {}", def.id.slot() + 1, def.name_ru));
         }
-        "elena" => {
-            if !state.has("met_elena")                 { "first_elena" }
-            else if !state.has("elena_lib_1")          { "elena_library_1" }
-            else if !state.has("elena_quest_given")    { "elena_chat_2" }
-            else if state.has("elena_quest_done")      { "elena_chat_end" }
-            else                                       { "elena_quest_check" }
+    }
+
+    fn set_weapon_frame(&mut self, frame: usize) {
+        let def = weapon_def(self.arsenal.current);
+        if let Some(ref mut at) = self.weapon_atlas {
+            at.set_region(Rect2::new(
+                Vector2::new(frame as f32 * FRAME_W, 0.0),
+                Vector2::new(FRAME_W, def.frame_h),
+            ));
         }
-        "sofia" => {
-            if !state.has("met_sofia")                 { "meet_sofia" }
-            else if !state.has("sofia_deep_done")      { "sofia_chat" }
-            else                                       { "sofia_chat_3" }
+    }
+
+    fn tick_weapon_anim(&mut self, dt: f32) {
+        if self.mode != Mode::Explore && self.mode != Mode::Dialogue { return; }
+        let def = weapon_def(self.arsenal.current);
+        self.anim_timer += dt;
+
+        match self.weapon_anim {
+            WeaponAnim::Fire(i) => {
+                let frame_time = 1.0 / def.fire_fps;
+                if self.anim_timer >= frame_time {
+                    self.anim_timer = 0.0;
+                    let next = i + 1;
+                    if next < def.fire_frames.len() {
+                        self.weapon_anim = WeaponAnim::Fire(next);
+                        self.set_weapon_frame(def.fire_frames[next]);
+                    } else {
+                        self.weapon_anim = WeaponAnim::Idle;
+                        self.set_weapon_frame(def.idle_frames[0]);
+                    }
+                }
+            }
+            WeaponAnim::Switch(t) => {
+                let t2 = t - dt;
+                if t2 <= 0.0 {
+                    self.weapon_anim = WeaponAnim::Idle;
+                } else {
+                    self.weapon_anim = WeaponAnim::Switch(t2);
+                }
+            }
+            WeaponAnim::Idle => {
+                if def.idle_frames.len() > 1 && self.anim_timer >= 0.16 {
+                    self.anim_timer = 0.0;
+                    self.idle_frame = (self.idle_frame + 1) % def.idle_frames.len();
+                    self.set_weapon_frame(def.idle_frames[self.idle_frame]);
+                }
+            }
         }
-        "guard" => {
-            if !state.has("met_guard")                 { "meet_guard" }
-            else if !state.has("guard_quest_given")    { "guard_quest_offer" }
-            else if state.has("guard_quest_done")      { "guard_quest_end" }
-            else                                       { "guard_quest_check" }
+
+        // позиция: бо́б при ходьбе + провал при смене
+        let moving = self.player.as_ref()
+            .and_then(|p| p.clone().try_cast::<Player>().ok())
+            .map(|p| p.bind().moving)
+            .unwrap_or(false);
+        let k = 6.0;
+        let h = def.frame_h * k;
+        let w = FRAME_W * k;
+        let bob = if moving { (self.game_time * 9.0).sin() * 10.0 } else { (self.game_time * 2.0).sin() * 3.0 };
+        let dip = match self.weapon_anim {
+            WeaponAnim::Switch(t) => (t / 0.22) * 240.0,
+            _ => 0.0,
+        };
+        if let Some(ref mut wr) = self.weapon_rect {
+            wr.set_position(Vector2::new(
+                HUD_W * 0.5 - w * 0.5 + if moving { (self.game_time * 4.5).sin() * 14.0 } else { 0.0 },
+                HUD_H - h + 10.0 + bob + dip,
+            ));
         }
-        "merchant" => {
-            if !state.has("met_merchant")              { "meet_merchant" }
-            else if !state.has("merchant_bought")      { "merchant_shop" }
-            else                                       { "merchant_again" }
-        }
-        "scientist" => {
-            if !state.has("met_scientist")                 { "meet_scientist" }
-            else if !state.has("scientist_quest_given")    { "scientist_quest_offer" }
-            else if state.has("scientist_quest_done")      { "scientist_quest_end" }
-            else                                           { "scientist_quest_check" }
-        }
-        "stranger" => {
-            if !state.has("met_stranger")              { "meet_stranger" }
-            else                                       { "stranger_again" }
-        }
-        _ => "",
+    }
+
+    fn update_loc_label(&mut self) {
+        let text = match self.loc {
+            Loc::World => "ПУСТОШИ НЕОНОВОГО СЕРДЦА".to_string(),
+            Loc::Dungeon => format!("{} — глубина {}", self.dungeon_name, self.dungeon_depth),
+        };
+        if let Some(ref mut l) = self.loc_label { l.set_text(&text); }
     }
 }
 
@@ -1043,6 +1302,59 @@ fn make_style(bg: Color, border: Color, width: i32) -> Gd<StyleBoxFlat> {
     s.set_corner_radius_all(4);
     s.set_content_margin_all(8.0);
     s
+}
+
+/// Динамический выбор сцены для NPC.
+fn npc_scene_id(npc_id: &str, state: &GameState) -> &'static str {
+    match npc_id {
+        "vale" => {
+            if !state.has("met_vale")              { "meet_vale" }
+            else if !state.has("vale_chat_1_done") { "vale_class_chat" }
+            else if state.rel("vale") < 30         { "vale_office_1" }
+            else if state.rel("vale") < 55         { "vale_office_2" }
+            else                                   { "vale_office_deep" }
+        }
+        "victor" => {
+            if !state.has("met_victor")              { "intro_victor" }
+            else if !state.has("victor_quest_given") { "victor_chat_2" }
+            else if state.has("victor_quest_done")   { "victor_chat_end" }
+            else                                     { "victor_quest_check" }
+        }
+        "elena" => {
+            if !state.has("met_elena")              { "first_elena" }
+            else if !state.has("elena_lib_1")       { "elena_library_1" }
+            else if !state.has("elena_quest_given") { "elena_chat_2" }
+            else if state.has("elena_quest_done")   { "elena_chat_end" }
+            else                                    { "elena_quest_check" }
+        }
+        "sofia" => {
+            if !state.has("met_sofia")           { "meet_sofia" }
+            else if !state.has("sofia_deep_done"){ "sofia_chat" }
+            else                                 { "sofia_chat_3" }
+        }
+        "guard" => {
+            if !state.has("met_guard")              { "meet_guard" }
+            else if !state.has("guard_quest_given") { "guard_quest_offer" }
+            else if state.has("guard_quest_done")   { "guard_quest_end" }
+            else                                    { "guard_quest_check" }
+        }
+        "merchant" => {
+            if !state.has("met_merchant")        { "meet_merchant" }
+            else if !state.has("merchant_bought"){ "merchant_shop" }
+            else                                 { "merchant_again" }
+        }
+        "scientist" => {
+            if !state.has("met_scientist")              { "meet_scientist" }
+            else if !state.has("scientist_quest_given") { "scientist_quest_offer" }
+            else if state.has("scientist_quest_done")   { "scientist_quest_end" }
+            else                                        { "scientist_quest_check" }
+        }
+        "stranger" => {
+            if !state.has("met_stranger") { "meet_stranger" }
+            else                          { "stranger_again" }
+        }
+        _ => "",
+    }
 }
 
 // ── Игровой процесс ───────────────────────────────────────────────────────────
@@ -1057,15 +1369,58 @@ impl Game3D {
         let input = Input::singleton();
 
         if input.is_action_just_pressed("interact") {
-            if let Some(idx) = self.near_item {
+            if let Some(kind) = self.near_portal {
+                self.use_portal(kind);
+            } else if let Some(idx) = self.near_item {
                 self.pick_up_item(idx);
             } else if let Some(idx) = self.near_npc {
                 self.start_dialogue(idx);
             }
         }
 
-        if input.is_action_just_pressed("shoot") && self.shoot_cd == 0.0 {
-            self.try_shoot();
+        // смена оружия: клавиши 1-8
+        for slot in 0..8usize {
+            let act = format!("weapon_{}", slot + 1);
+            if input.is_action_just_pressed(&act) {
+                let w = WeaponId::from_slot(slot);
+                if self.arsenal.has(w) && self.arsenal.current != w {
+                    self.arsenal.current = w;
+                    self.refresh_weapon_sheet();
+                }
+            }
+        }
+        if input.is_action_just_pressed("weapon_next") {
+            let w = self.arsenal.cycle(1);
+            if w != self.arsenal.current {
+                self.arsenal.current = w;
+                self.refresh_weapon_sheet();
+            }
+        }
+        if input.is_action_just_pressed("weapon_prev") {
+            let w = self.arsenal.cycle(-1);
+            if w != self.arsenal.current {
+                self.arsenal.current = w;
+                self.refresh_weapon_sheet();
+            }
+        }
+
+        // стрельба
+        let has_any_weapon = self.arsenal.owned.iter().any(|o| *o);
+        if has_any_weapon {
+            let def = weapon_def(self.arsenal.current);
+            let want_fire = if def.auto {
+                input.is_action_pressed("shoot")
+            } else {
+                input.is_action_just_pressed("shoot")
+            };
+            if want_fire && self.shoot_cd <= 0.0 {
+                self.try_fire();
+            }
+        }
+
+        // быстрое лечение
+        if input.is_action_just_pressed("use_med") {
+            self.use_first_consumable();
         }
 
         if input.is_action_just_pressed("inventory") {
@@ -1084,10 +1439,18 @@ impl Game3D {
         }
     }
 
+    fn process_dead(&mut self) {
+        let input = Input::singleton();
+        if input.is_action_just_pressed("interact") {
+            self.base().get_tree().reload_current_scene();
+        }
+    }
+
     fn process_dialogue(&mut self) {
         if let Some(ref mut p) = self.player {
             let mut vel = p.get_velocity();
-            vel.x = 0.0; vel.z = 0.0;
+            vel.x = 0.0;
+            vel.z = 0.0;
             p.set_velocity(vel);
         }
         let input = Input::singleton();
@@ -1107,6 +1470,7 @@ impl Game3D {
         }
         if Input::singleton().is_action_just_pressed("interact") {
             self.use_first_consumable();
+            self.refresh_inventory_ui();
         }
     }
 
@@ -1116,14 +1480,33 @@ impl Game3D {
         let lang = self.settings.lang.clone();
         let player_pos = match self.player.as_ref() {
             Some(p) => p.get_global_position(),
-            None    => { self.near_npc = None; return; }
+            None => { self.near_npc = None; return; }
         };
 
+        // порталы
+        self.near_portal = None;
+        match self.loc {
+            Loc::World => {
+                if (player_pos - world::GATE_POS).length() < PORTAL_R {
+                    self.near_portal = Some(PortalKind::EnterDungeon);
+                }
+            }
+            Loc::Dungeon => {
+                if (player_pos - self.exit_portal).length() < PORTAL_R {
+                    self.near_portal = Some(PortalKind::ExitDungeon);
+                } else if (player_pos - self.next_portal).length() < PORTAL_R {
+                    self.near_portal = Some(PortalKind::DeeperDungeon);
+                }
+            }
+        }
+
         let mut near_npc: Option<usize> = None;
-        let mut best_n = INTERACT_R;
-        for (i, sp) in self.npc_sprites.iter().enumerate() {
-            let d = (player_pos - sp.get_global_position()).length();
-            if d < best_n { best_n = d; near_npc = Some(i); }
+        if self.loc == Loc::World {
+            let mut best_n = INTERACT_R;
+            for (i, sp) in self.npc_sprites.iter().enumerate() {
+                let d = (player_pos - sp.get_global_position()).length();
+                if d < best_n { best_n = d; near_npc = Some(i); }
+            }
         }
         self.near_npc = near_npc;
 
@@ -1135,21 +1518,35 @@ impl Game3D {
         }
         self.near_item = near_item;
 
-        // Ближайший враг (для таргетинга)
+        // ближайший враг для таргет-инфо
         let mut near_enemy: Option<usize> = None;
-        let mut best_e = SHOOT_RANGE * 0.7;
+        let mut best_e = 24.0;
         for (i, e) in self.enemies.iter().enumerate() {
             if e.bind().alive {
-                let d = (player_pos - e.bind().base().get_global_position()).length();
+                let d = (player_pos - e.get_global_position()).length();
                 if d < best_e { best_e = d; near_enemy = Some(i); }
             }
         }
         self.near_enemy = near_enemy;
 
-        let hint_text = if let Some(idx) = near_item {
-            let name = self.world_items[idx].name.clone();
-            format!("{}: {}", t("hud_pickup", &lang), name)
-        } else if let Some(idx) = near_npc {
+        let hint_text = if let Some(kind) = self.near_portal {
+            match kind {
+                PortalKind::EnterDungeon => {
+                    let depth = self.state.as_ref().map(|s| s.dungeons_cleared + 1).unwrap_or(1);
+                    format!("[E] Войти в данж (глубина {})", depth)
+                }
+                PortalKind::ExitDungeon => "[E] Вернуться в мир".to_string(),
+                PortalKind::DeeperDungeon => {
+                    if self.boss_alive {
+                        "Портал запечатан — убей стража данжа".to_string()
+                    } else {
+                        format!("[E] Спуститься глубже (глубина {})", self.dungeon_depth + 1)
+                    }
+                }
+            }
+        } else if let Some(idx) = self.near_item {
+            format!("{}: {}", t("hud_pickup", &lang), self.world_items[idx].name)
+        } else if let Some(idx) = self.near_npc {
             format!("{} {}", t("hud_interact", &lang), NPC_DATA[idx].name)
         } else {
             String::new()
@@ -1161,60 +1558,412 @@ impl Game3D {
         }
     }
 
-    // ── Стрельба ─────────────────────────────────────────────────────────────
-
-    fn try_shoot(&mut self) {
-        self.shoot_cd = SHOOT_CD;
-        let lang = self.settings.lang.clone();
-
-        let (player_pos, facing) = match self.player.as_ref() {
-            Some(p) => {
-                let pos = p.get_global_position();
-                let fwd = if let Ok(pl) = p.clone().try_cast::<Player>() {
-                    pl.bind().facing_dir()
-                } else {
-                    Vector3::new(0.0, 0.0, -1.0)
-                };
-                (pos, fwd)
+    fn use_portal(&mut self, kind: PortalKind) {
+        match kind {
+            PortalKind::EnterDungeon => {
+                let depth = self.state.as_ref().map(|s| s.dungeons_cleared + 1).unwrap_or(1);
+                self.enter_dungeon(depth);
             }
-            None => return,
-        };
+            PortalKind::ExitDungeon => self.exit_dungeon(),
+            PortalKind::DeeperDungeon => {
+                if self.boss_alive {
+                    self.show_flash("Портал запечатан! Сначала убей стража.");
+                } else {
+                    let d = self.dungeon_depth + 1;
+                    self.enter_dungeon(d);
+                }
+            }
+        }
+    }
 
-        let mut hit_idx: Option<usize> = None;
-        let mut best_score = 0.0f32;
+    // ── Боёвка ───────────────────────────────────────────────────────────────
 
+    fn player_aim(&self) -> Option<(Vector3, Vector3)> {
+        let p = self.player.as_ref()?;
+        let pl = p.clone().try_cast::<Player>().ok()?;
+        let b = pl.bind();
+        Some((b.eye_pos(), b.aim_dir()))
+    }
+
+    fn try_fire(&mut self) {
+        let cur = self.arsenal.current;
+        let def = weapon_def(cur);
+
+        if !self.arsenal.can_fire(cur) {
+            self.shoot_cd = 0.35;
+            self.show_flash(&format!("Нет боеприпасов: {}",
+                def.ammo.map(|(t, _)| t.name_ru()).unwrap_or("—")));
+            return;
+        }
+
+        self.shoot_cd = def.cooldown * self.loadout.cd_mult;
+        self.arsenal.consume(cur);
+        self.weapon_anim = WeaponAnim::Fire(0);
+        self.anim_timer = 0.0;
+        self.set_weapon_frame(def.fire_frames[0]);
+        self.flash_muzzle();
+
+        let Some((eye, dir)) = self.player_aim() else { return };
+        let dmg = def.damage * self.loadout.dmg_mult;
+
+        match def.kind {
+            FireKind::Melee => self.fire_melee(dmg, def.range),
+            FireKind::Hitscan { pellets, spread } => {
+                for _ in 0..pellets {
+                    let sx = (self.rng.f32() - 0.5) * 2.0 * spread;
+                    let sy = (self.rng.f32() - 0.5) * 2.0 * spread;
+                    // разброс в плоскости, перпендикулярной взгляду
+                    let right = dir.cross(Vector3::UP).normalized();
+                    let up = right.cross(dir).normalized();
+                    let d = (dir + right * sx + up * sy).normalized();
+                    self.fire_ray(eye, d, def.range, dmg);
+                }
+            }
+            FireKind::Projectile { speed, splash } => {
+                self.spawn_projectile(eye + dir * 0.6, dir * speed, dmg, splash,
+                                      def.range / speed, cur);
+            }
+        }
+        self.process_kills();
+    }
+
+    fn fire_melee(&mut self, dmg: f32, range: f32) {
+        let Some((eye, dir)) = self.player_aim() else { return };
+        let flat_dir = Vector3::new(dir.x, 0.0, dir.z).normalized();
+        let mut best: Option<(usize, f32)> = None;
         for (i, e) in self.enemies.iter().enumerate() {
             let eb = e.bind();
             if !eb.alive { continue; }
-            let epos = eb.base().get_global_position();
-            let dist = Vector3::new(epos.x-player_pos.x, 0.0, epos.z-player_pos.z).length();
-            if dist > SHOOT_RANGE { continue; }
-            let to_e = Vector3::new(epos.x-player_pos.x, 0.0, epos.z-player_pos.z).normalized();
-            let dot  = facing.dot(to_e);
-            if dot > 0.62 {
-                let score = dot / (dist + 0.1);
-                if score > best_score { best_score = score; hit_idx = Some(i); }
+            let epos = e.get_global_position();
+            let to = Vector3::new(epos.x - eye.x, 0.0, epos.z - eye.z);
+            let d = to.length();
+            if d > range { continue; }
+            let dot = flat_dir.dot(to.normalized());
+            if dot > 0.45 {
+                let score = dot / (d + 0.1);
+                if best.map(|(_, s)| score > s).unwrap_or(true) {
+                    best = Some((i, score));
+                }
             }
         }
-
-        if let Some(idx) = hit_idx {
-            self.enemies[idx].bind_mut().take_damage(25.0);
-            let alive = self.enemies[idx].bind().alive;
-            if alive {
-                let hp  = self.enemies[idx].bind().hp;
-                let max = self.enemies[idx].bind().max_hp;
-                self.show_flash(&format!("{} ({:.0}/{:.0})", t("msg_hit", &lang), hp, max));
-            } else {
-                self.show_flash(t("msg_enemy_dead", &lang));
+        if let Some((idx, _)) = best {
+            let epos = self.enemies[idx].get_global_position();
+            self.enemies[idx].bind_mut().take_damage(dmg);
+            self.spawn_fx("res://assets/effects/effect_blood.png",
+                          epos + Vector3::new(0.0, 1.1, 0.0), 0.010, 0.28);
+            // вампиризм
+            if self.loadout.lifesteal > 0.0 {
+                let heal = dmg * self.loadout.lifesteal;
+                if let Some(ref p) = self.player {
+                    if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                        pl.bind_mut().heal(heal);
+                    }
+                }
             }
-        } else {
-            self.show_flash(t("msg_miss", &lang));
         }
-
-        self.enemies.retain(|e| e.bind().alive);
     }
 
-    // ── Урон от врагов ────────────────────────────────────────────────────────
+    fn fire_ray(&mut self, from: Vector3, dir: Vector3, range: f32, dmg: f32) {
+        let to = from + dir * range;
+        let hit = self.raycast(from, to);
+        match hit {
+            Some((pos, Some(mut enemy))) => {
+                enemy.bind_mut().take_damage(dmg);
+                self.spawn_fx("res://assets/effects/effect_blood.png",
+                              pos, 0.008, 0.25);
+            }
+            Some((pos, None)) => {
+                self.spawn_fx("res://assets/effects/effect_bullet.png",
+                              pos - dir * 0.1, 0.004, 0.15);
+            }
+            None => {}
+        }
+    }
+
+    /// Луч: возвращает точку и врага (если попали в него).
+    fn raycast(&mut self, from: Vector3, to: Vector3) -> Option<(Vector3, Option<Gd<Enemy>>)> {
+        let world = self.base().get_world_3d()?;
+        let mut space = world.clone().get_direct_space_state()?;
+        let mut query = PhysicsRayQueryParameters3D::create(from, to)?;
+        if let Some(ref p) = self.player {
+            let mut excl: godot::builtin::Array<Rid> = godot::builtin::Array::new();
+            excl.push(p.get_rid());
+            query.set_exclude(&excl);
+        }
+        let hit = space.intersect_ray(&query);
+        if hit.is_empty() { return None; }
+        let pos = hit.get("position")?.try_to::<Vector3>().ok()?;
+        let enemy = hit.get("collider")
+            .and_then(|cv| cv.try_to::<Gd<godot::classes::Node>>().ok())
+            .and_then(|n| n.try_cast::<Enemy>().ok());
+        Some((pos, enemy))
+    }
+
+    fn spawn_projectile(&mut self, pos: Vector3, vel: Vector3, dmg: f32, splash: f32,
+                        ttl: f32, weapon: WeaponId) {
+        let mut node = Node3D::new_alloc();
+        node.set_position(pos);
+        let (tex, px, color) = match weapon {
+            WeaponId::Rocket => ("res://assets/sprites/projectiles/rocket.png", 0.010, Color::WHITE),
+            _ => ("res://assets/effects/effect_energy.png", 0.006, C_PINK),
+        };
+        if let Some(mut sp) = make_billboard(&mut self.cache, tex, Vector3::ZERO, px) {
+            sp.set_modulate(color);
+            node.add_child(&sp);
+        }
+        let l = make_light(Vector3::ZERO, C_PINK, 0.8, 5.0);
+        node.add_child(&l);
+        self.base_mut().add_child(&node);
+        self.projectiles.push(Projectile { node, pos, vel, dmg, splash, ttl });
+    }
+
+    fn tick_projectiles(&mut self, dt: f32) {
+        let mut exploded: Vec<(Vector3, f32, f32)> = Vec::new(); // pos, dmg, splash
+        let mut direct_hits: Vec<(Gd<Enemy>, f32, Vector3)> = Vec::new();
+
+        let mut i = 0;
+        while i < self.projectiles.len() {
+            let new_pos = self.projectiles[i].pos + self.projectiles[i].vel * dt;
+            let from = self.projectiles[i].pos;
+            let hit = self.raycast(from, new_pos);
+            let mut remove = false;
+
+            match hit {
+                Some((pos, Some(enemy))) => {
+                    let (dmg, splash) = (self.projectiles[i].dmg, self.projectiles[i].splash);
+                    if splash > 0.0 {
+                        exploded.push((pos, dmg, splash));
+                    } else {
+                        direct_hits.push((enemy, dmg, pos));
+                    }
+                    remove = true;
+                }
+                Some((pos, None)) => {
+                    let (dmg, splash) = (self.projectiles[i].dmg, self.projectiles[i].splash);
+                    if splash > 0.0 {
+                        exploded.push((pos, dmg, splash));
+                    } else {
+                        self.spawn_fx("res://assets/effects/effect_bullet.png", pos, 0.004, 0.15);
+                    }
+                    remove = true;
+                }
+                None => {
+                    self.projectiles[i].pos = new_pos;
+                    self.projectiles[i].node.set_position(new_pos);
+                    self.projectiles[i].ttl -= dt;
+                    if self.projectiles[i].ttl <= 0.0 { remove = true; }
+                }
+            }
+
+            if remove {
+                let p = self.projectiles.remove(i);
+                p.node.free();
+            } else {
+                i += 1;
+            }
+        }
+
+        for (enemy, dmg, pos) in direct_hits {
+            let mut e = enemy;
+            e.bind_mut().take_damage(dmg);
+            self.spawn_fx("res://assets/effects/effect_blood.png", pos, 0.008, 0.25);
+        }
+        for (pos, dmg, splash) in exploded {
+            self.explode(pos, dmg, splash);
+        }
+        self.process_kills();
+    }
+
+    fn explode(&mut self, pos: Vector3, dmg: f32, radius: f32) {
+        self.spawn_fx("res://assets/effects/effect_explosion.png", pos, 0.022, 0.4);
+        self.spawn_light_fx(pos, Color::from_rgba(1.0, 0.5, 0.6, 1.0), 2.6, radius * 2.2, 0.35);
+
+        for e in self.enemies.iter_mut() {
+            let alive = e.bind().alive;
+            if !alive { continue; }
+            let d = (e.get_global_position() - pos).length();
+            if d < radius {
+                let fall = 1.0 - (d / radius) * 0.55;
+                e.bind_mut().take_damage(dmg * fall);
+            }
+        }
+        // самоурон
+        if let Some(ref p) = self.player {
+            let d = (p.get_global_position() - pos).length();
+            if d < radius * 0.8 {
+                if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                    let fall = 1.0 - d / (radius * 0.8);
+                    pl.bind_mut().take_damage(dmg * 0.35 * fall);
+                    self.damage_flash_timer = 0.3;
+                }
+            }
+        }
+    }
+
+    /// Обработка убитых врагов: XP, дроп, эффекты, квест босса.
+    fn process_kills(&mut self) {
+        let mut kills: Vec<(Vector3, f32, bool)> = Vec::new();
+        let mut i = 0;
+        while i < self.enemies.len() {
+            let alive = self.enemies[i].bind().alive;
+            if !alive {
+                let pos = self.enemies[i].get_global_position();
+                let xp = self.enemies[i].bind().xp_value;
+                let is_boss = self.enemies[i].bind().is_boss;
+                kills.push((pos, xp, is_boss));
+                let e = self.enemies.remove(i);
+                e.free();
+            } else {
+                i += 1;
+            }
+        }
+
+        for (pos, xp, is_boss) in kills {
+            self.spawn_fx("res://assets/effects/effect_blood.png",
+                          pos + Vector3::new(0.0, 0.9, 0.0), 0.014, 0.4);
+
+            // XP и уровни
+            let levels = {
+                let st = self.state.as_mut().unwrap();
+                st.add_xp(xp as u32)
+            };
+            if levels > 0 {
+                let (ci, si, lvl) = {
+                    let st = self.state.as_ref().unwrap();
+                    (st.class_idx.unwrap_or(0), st.spec_idx, st.level)
+                };
+                self.apply_loadout(ci, si, false);
+                // подлечить при апе
+                if let Some(ref p) = self.player {
+                    if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                        let heal = pl.bind().max_hp * 0.35;
+                        pl.bind_mut().heal(heal);
+                    }
+                }
+                self.show_flash(&format!("УРОВЕНЬ {}!", lvl));
+            }
+
+            // дроп
+            let in_dungeon = self.loc == Loc::Dungeon;
+            let roll = self.rng.f32();
+            if roll < 0.30 {
+                let t = AmmoType::from_idx(self.rng.below(4) as usize);
+                self.spawn_ammo_pickup(t, t.pack_size() / 2 + 1, pos, in_dungeon);
+            } else if roll < 0.44 {
+                let cfg = self.cfg.take();
+                if let Some(ref cfg) = cfg {
+                    self.spawn_item(cfg, "medkit", pos, in_dungeon);
+                }
+                self.cfg = cfg;
+            } else if roll < 0.47 {
+                self.spawn_item_heart(pos, in_dungeon);
+            }
+
+            if is_boss {
+                self.boss_alive = false;
+                let msgs = {
+                    let st = self.state.as_mut().unwrap();
+                    st.dungeons_cleared = st.dungeons_cleared.max(self.dungeon_depth);
+                    st.gold += 50;
+                    let done = st.quests.quests.iter()
+                        .any(|q| q.id == "dungeon_heart"
+                             && q.state == crate::quest::QuestState::Active);
+                    if done { st.quests.complete("dungeon_heart"); }
+                    st.add_xp(120)
+                };
+                let _ = msgs;
+                self.show_flash("СТРАЖ ПОВЕРЖЕН! Портал вглубь открыт (+50 зол.)");
+                self.auto_save();
+            }
+        }
+    }
+
+    fn spawn_item_heart(&mut self, pos: Vector3, in_dungeon: bool) {
+        let node = self.make_pickup_node("res://assets/sprites/pickups/heart_1up.png", pos, 0.010);
+        self.world_items.push(WorldItemNode {
+            node, item_id: "heart_1up".into(), name: "Сердце жизни".into(),
+            payload: Payload::Heart, in_dungeon,
+        });
+    }
+
+    // ── Эффекты ──────────────────────────────────────────────────────────────
+
+    fn spawn_fx(&mut self, tex: &str, pos: Vector3, px: f32, ttl: f32) {
+        if let Some(sp) = make_billboard(&mut self.cache, tex, pos, px) {
+            self.base_mut().add_child(&sp);
+            self.sprite_fx.push(SpriteFx { node: sp, ttl, total: ttl });
+        }
+    }
+
+    fn spawn_light_fx(&mut self, pos: Vector3, color: Color, energy: f32, range: f32, ttl: f32) {
+        let l = make_light(pos, color, energy, range);
+        self.base_mut().add_child(&l);
+        self.light_fx.push(LightFx { node: l, ttl, total: ttl, energy });
+    }
+
+    fn tick_fx(&mut self, dt: f32) {
+        let mut i = 0;
+        while i < self.sprite_fx.len() {
+            self.sprite_fx[i].ttl -= dt;
+            if self.sprite_fx[i].ttl <= 0.0 {
+                let fx = self.sprite_fx.remove(i);
+                fx.node.free();
+            } else {
+                let a = (self.sprite_fx[i].ttl / self.sprite_fx[i].total).clamp(0.0, 1.0);
+                let n = self.sprite_fx[i].node.clone();
+                let mut n = n;
+                n.set_modulate(Color::from_rgba(1.0, 1.0, 1.0, a));
+                i += 1;
+            }
+        }
+        let mut i = 0;
+        while i < self.light_fx.len() {
+            self.light_fx[i].ttl -= dt;
+            if self.light_fx[i].ttl <= 0.0 {
+                let fx = self.light_fx.remove(i);
+                fx.node.free();
+            } else {
+                use godot::classes::light_3d::Param;
+                let a = (self.light_fx[i].ttl / self.light_fx[i].total).clamp(0.0, 1.0);
+                let e = self.light_fx[i].energy * a;
+                let n = self.light_fx[i].node.clone();
+                let mut n = n;
+                n.set_param(Param::ENERGY, e);
+                i += 1;
+            }
+        }
+    }
+
+    fn flash_muzzle(&mut self) {
+        self.muzzle_timer = 0.09;
+        if self.muzzle_light.is_none() {
+            if let Some(ref p) = self.player {
+                let l = make_light(Vector3::new(0.0, 0.6, -0.8),
+                                   Color::from_rgba(1.0, 0.6, 0.8, 1.0), 0.0, 7.0);
+                let mut p2 = p.clone();
+                p2.add_child(&l);
+                self.muzzle_light = Some(l);
+            }
+        }
+        if let Some(ref mut l) = self.muzzle_light {
+            use godot::classes::light_3d::Param;
+            l.set_param(Param::ENERGY, 1.6);
+        }
+    }
+
+    fn tick_muzzle(&mut self, dt: f32) {
+        if self.muzzle_timer > 0.0 {
+            self.muzzle_timer -= dt;
+            if self.muzzle_timer <= 0.0 {
+                if let Some(ref mut l) = self.muzzle_light {
+                    use godot::classes::light_3d::Param;
+                    l.set_param(Param::ENERGY, 0.0);
+                }
+            }
+        }
+    }
+
+    // ── Урон от врагов ───────────────────────────────────────────────────────
 
     fn collect_enemy_damage(&mut self, _dt: f32) {
         let mut total_dmg = 0.0f32;
@@ -1233,26 +1982,64 @@ impl Game3D {
                 }
             }
             self.damage_flash_timer = 0.35;
-            self.show_flash(&format!("-{:.0} HP", total_dmg));
         }
     }
 
     // ── Подбор предметов ─────────────────────────────────────────────────────
 
     fn pick_up_item(&mut self, idx: usize) {
+        if idx >= self.world_items.len() { return; }
         let lang = self.settings.lang.clone();
-        let wi   = self.world_items.remove(idx);
-        wi.node.clone().free();
+        let wi = self.world_items.remove(idx);
+        wi.node.free();
         self.near_item = None;
         let name = wi.name.clone();
-        if let Some(ref mut state) = self.state {
-            if wi.gold > 0 { state.gold += wi.gold; }
-            if wi.heal.is_some() {
-                use crate::item::Item;
-                state.inventory.add(Item::new(&wi.item_id, &name, "", 1));
+
+        match wi.payload {
+            Payload::Gold(v) => {
+                if let Some(ref mut st) = self.state { st.gold += v; }
+                self.show_flash(&format!("+{} зол.", v));
+            }
+            Payload::Ammo(t, n) => {
+                let added = self.arsenal.add_ammo(t, n, self.loadout.ammo_mult);
+                self.show_flash(&format!("+{} {}", added, t.name_ru()));
+            }
+            Payload::Weapon(w) => {
+                let is_new = self.arsenal.give_weapon(w);
+                if let Some((t, _)) = weapon_def(w).ammo {
+                    self.arsenal.add_ammo(t, t.pack_size(), self.loadout.ammo_mult);
+                }
+                if is_new {
+                    self.arsenal.current = w;
+                    self.refresh_weapon_sheet();
+                    self.show_flash(&format!("НОВОЕ ОРУЖИЕ: {}!", weapon_def(w).name_ru));
+                } else {
+                    self.show_flash(&format!("+боеприпасы ({})", weapon_def(w).name_ru));
+                }
+            }
+            Payload::Heart => {
+                if let Some(ref mut st) = self.state { st.add_heart(); }
+                let (ci, si) = {
+                    let st = self.state.as_ref().unwrap();
+                    (st.class_idx.unwrap_or(0), st.spec_idx)
+                };
+                self.apply_loadout(ci, si, false);
+                if let Some(ref p) = self.player {
+                    if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                        let mh = pl.bind().max_hp;
+                        pl.bind_mut().hp = mh;
+                    }
+                }
+                self.show_flash("СЕРДЦЕ ЖИЗНИ: +15 макс. HP, полное лечение!");
+            }
+            Payload::KeyItem | Payload::Consumable { .. } => {
+                if let Some(ref mut st) = self.state {
+                    use crate::item::Item;
+                    st.inventory.add(Item::new(&wi.item_id, &name, "", 1));
+                }
+                self.show_flash(&format!("{}: {}", t("msg_picked_up", &lang), name));
             }
         }
-        self.show_flash(&format!("{}: {}", t("msg_picked_up", &lang), name));
         self.auto_save();
     }
 
@@ -1260,27 +2047,43 @@ impl Game3D {
         let lang = self.settings.lang.clone();
         let heal_data = self.state.as_ref().and_then(|s| {
             s.inventory.items.iter()
-                .find(|i| i.id == "medkit" || i.id == "armor_shard" || i.id == "potion"
-                          || i.id == "bread" || i.id == "energy_drink")
+                .find(|i| matches!(i.id.as_str(),
+                    "medkit" | "armor_shard" | "potion" | "bread" | "energy_drink"))
                 .map(|i| {
                     let amt = match i.id.as_str() {
-                        "medkit"        => 30.0,
-                        "armor_shard"   => 20.0,
-                        "potion"        => 50.0,
-                        "energy_drink"  => 15.0,
-                        _               => 10.0,
+                        "medkit"       => 30.0,
+                        "armor_shard"  => 20.0,
+                        "potion"       => 50.0,
+                        "energy_drink" => 15.0,
+                        _              => 10.0,
                     };
                     (i.id.clone(), amt)
                 })
         });
         if let Some((id, amount)) = heal_data {
+            let full = self.player.as_ref()
+                .and_then(|p| p.clone().try_cast::<Player>().ok())
+                .map(|pl| pl.bind().hp >= pl.bind().max_hp)
+                .unwrap_or(true);
+            if full {
+                self.show_flash("Здоровье уже полное");
+                return;
+            }
             if let Some(ref mut state) = self.state { state.inventory.remove_one(&id); }
             if let Some(ref p) = self.player {
                 if let Ok(mut player) = p.clone().try_cast::<Player>() {
                     player.bind_mut().heal(amount);
                 }
             }
+            self.spawn_fx_on_player("res://assets/effects/effect_heal.png");
             self.show_flash(t("msg_healed", &lang));
+        }
+    }
+
+    fn spawn_fx_on_player(&mut self, tex: &str) {
+        if let Some(ref p) = self.player {
+            let pos = p.get_global_position() + Vector3::new(0.0, 1.2, 0.0);
+            self.spawn_fx(tex, pos, 0.010, 0.5);
         }
     }
 
@@ -1303,17 +2106,31 @@ impl Game3D {
     fn refresh_inventory_ui(&mut self) {
         let lang = self.settings.lang.clone();
         let text = if let Some(ref state) = self.state {
-            if state.inventory.is_empty() && state.gold == 0 {
-                t("hud_inv_empty", &lang).to_string()
+            let mut lines = Vec::new();
+            if let Some(ci) = state.class_idx {
+                let c = &CLASSES[ci];
+                lines.push(format!("{} / {}   ур. {}   XP {}/{}",
+                    c.name_ru, c.specs[state.spec_idx.min(2)].name_ru,
+                    state.level, state.xp, xp_to_next(state.level)));
+                lines.push(String::new());
+            }
+            lines.push(format!("{}: {} зол.", t("hud_gold", &lang), state.gold));
+            lines.push(String::new());
+            lines.push("Боезапас:".to_string());
+            for t in AmmoType::ALL {
+                lines.push(format!("  {}: {}", t.name_ru(), self.arsenal.ammo_of(t)));
+            }
+            lines.push(String::new());
+            if state.inventory.is_empty() {
+                lines.push(t("hud_inv_empty", &lang).to_string());
             } else {
-                let mut lines = vec![format!("{}: {}  зол.", t("hud_gold", &lang), state.gold)];
                 for item in &state.inventory.items {
                     lines.push(format!("• {} ×{}", item.name, item.qty));
                 }
                 lines.push(String::new());
                 lines.push(format!("[ E ] — {}", t("inv_use", &lang)));
-                lines.join("\n")
             }
+            lines.join("\n")
         } else { String::new() };
         if let Some(ref mut lbl) = self.inv_list { lbl.set_text(&text); }
     }
@@ -1327,11 +2144,12 @@ impl Game3D {
             .unwrap_or("");
         let scene_id = if dynamic.is_empty() { NPC_DATA[npc_idx].scene_id } else { dynamic };
         let scene = match self.state.as_ref().and_then(|s| get_scene(scene_id, s)) {
-            Some(s) => s, None => return,
+            Some(s) => s,
+            None => return,
         };
-        self.scene    = Some(scene);
+        self.scene = Some(scene);
         self.line_idx = 0;
-        self.mode     = Mode::Dialogue;
+        self.mode = Mode::Dialogue;
         self.at_choices = false;
         if let Some(ref mut p) = self.dlg_panel { p.set_visible(true); }
         if let Some(ref mut lbl) = self.hint_label { lbl.set_visible(false); }
@@ -1342,7 +2160,7 @@ impl Game3D {
     fn advance_dialogue(&mut self) {
         let (total, has_choices) = match self.scene.as_ref() {
             Some(s) => (s.lines.len(), !s.choices.is_empty()),
-            None    => { self.end_dialogue(); return; }
+            None => { self.end_dialogue(); return; }
         };
         if self.line_idx + 1 < total {
             self.line_idx += 1;
@@ -1360,7 +2178,7 @@ impl Game3D {
             let scene = match self.scene.as_ref() { Some(s) => s, None => return };
             let state = match self.state.as_ref() { Some(s) => s, None => return };
             let avail: Vec<_> = scene.choices.iter()
-                .filter(|c| c.requires.as_ref().map_or(true, |(st,mn)| state.stat(st) >= *mn))
+                .filter(|c| c.requires.as_ref().map_or(true, |(st, mn)| state.stat(st) >= *mn))
                 .collect();
             if idx >= avail.len() { return; }
             (avail[idx].effects.clone(), avail[idx].next.clone())
@@ -1370,7 +2188,7 @@ impl Game3D {
         if let Some(next_id) = next {
             let new_scene = self.state.as_ref().and_then(|s| get_scene(&next_id, s));
             if let Some(sc) = new_scene {
-                self.scene    = Some(sc);
+                self.scene = Some(sc);
                 self.line_idx = 0;
                 self.at_choices = false;
                 self.refresh_dlg_ui();
@@ -1381,9 +2199,9 @@ impl Game3D {
     }
 
     fn end_dialogue(&mut self) {
-        self.scene    = None;
+        self.scene = None;
         self.line_idx = 0;
-        self.mode     = Mode::Explore;
+        self.mode = Mode::Explore;
         self.at_choices = false;
         if let Some(ref mut p) = self.dlg_panel { p.set_visible(false); }
         Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::CAPTURED);
@@ -1397,9 +2215,9 @@ impl Game3D {
             let line = &scene.lines[self.line_idx.min(scene.lines.len().saturating_sub(1))];
             let ct: Vec<String> = if self.at_choices {
                 scene.choices.iter()
-                    .filter(|c| c.requires.as_ref().map_or(true, |(st,mn)| state.stat(st) >= *mn))
+                    .filter(|c| c.requires.as_ref().map_or(true, |(st, mn)| state.stat(st) >= *mn))
                     .enumerate()
-                    .map(|(i,c)| format!("{}. {}", i+1, c.text))
+                    .map(|(i, c)| format!("{}. {}", i + 1, c.text))
                     .collect()
             } else { vec![] };
             (line.speaker.clone(), line.text.clone(), ct)
@@ -1416,7 +2234,9 @@ impl Game3D {
                     lbl.set_text(&choices_text[i]);
                     lbl.set_visible(true);
                     lbl.add_theme_color_override("font_color", C_PINK);
-                } else { lbl.set_visible(false); }
+                } else {
+                    lbl.set_visible(false);
+                }
             }
         }
         if let Some(ref mut vbox) = self.choice_box {
@@ -1436,7 +2256,7 @@ impl Game3D {
         let ratio = (hp / max_hp).clamp(0.0, 1.0);
         if let Some(ref mut fg) = self.hp_bar_fg {
             fg.set_size(Vector2::new(218.0 * ratio, 22.0));
-            let c = Color::from_rgba(0.9 - ratio*0.5, 0.1 + ratio*0.3, 0.1, 1.0);
+            let c = Color::from_rgba(0.9 - ratio * 0.5, 0.1 + ratio * 0.3, 0.1, 1.0);
             fg.add_theme_stylebox_override("panel", &make_style(c, Color::TRANSPARENT_BLACK, 0));
         }
         if let Some(ref mut lbl) = self.hp_label {
@@ -1444,11 +2264,38 @@ impl Game3D {
         }
     }
 
+    fn update_xp_bar(&mut self) {
+        let (level, xp, next) = self.state.as_ref()
+            .map(|s| (s.level, s.xp, xp_to_next(s.level)))
+            .unwrap_or((1, 0, 100));
+        let ratio = (xp as f32 / next as f32).clamp(0.0, 1.0);
+        if let Some(ref mut fg) = self.xp_bar_fg {
+            fg.set_size(Vector2::new(220.0 * ratio, 8.0));
+        }
+        if let Some(ref mut lbl) = self.xp_label {
+            lbl.set_text(&format!("ур. {}  ({}/{})", level, xp, next));
+        }
+    }
+
+    fn update_ammo_hud(&mut self) {
+        let has_any = self.arsenal.owned.iter().any(|o| *o);
+        if !has_any {
+            if let Some(ref mut l) = self.ammo_label { l.set_text(""); }
+            return;
+        }
+        let def = weapon_def(self.arsenal.current);
+        let text = match def.ammo {
+            None => "∞".to_string(),
+            Some((t, _)) => format!("{}  {}", t.name_ru(), self.arsenal.ammo_of(t)),
+        };
+        if let Some(ref mut l) = self.ammo_label { l.set_text(&text); }
+    }
+
     fn update_inv_label(&mut self) {
         let lang = self.settings.lang.clone();
         if let Some(ref state) = self.state {
             let text = if state.inventory.is_empty() {
-                format!("{}  |  {}: {}", t("hud_inv_empty", &lang), t("hud_gold", &lang), state.gold)
+                format!("{}: {}", t("hud_gold", &lang), state.gold)
             } else {
                 let items: Vec<_> = state.inventory.items.iter()
                     .map(|i| format!("{} ×{}", i.name, i.qty))
@@ -1483,7 +2330,8 @@ impl Game3D {
                     let ratio = (eb.hp / eb.max_hp).clamp(0.0, 1.0);
                     let filled = (ratio * 10.0).round() as usize;
                     let bar: String = "█".repeat(filled) + &"░".repeat(10 - filled.min(10));
-                    format!("[{}]  {}  {:.0}/{:.0}", eb.cfg_id, bar, eb.hp, eb.max_hp)
+                    let boss = if eb.is_boss { "СТРАЖ " } else { "" };
+                    format!("{}[{}]  {}  {:.0}/{:.0}", boss, eb.cfg_id, bar, eb.hp, eb.max_hp)
                 } else { String::new() }
             } else { String::new() }
         } else { String::new() };
@@ -1513,15 +2361,11 @@ impl Game3D {
         if self.npc_anim_timer < 1.0 / IDLE_FPS { return; }
         self.npc_anim_timer = 0.0;
         self.npc_anim_frame = (self.npc_anim_frame + 1) % NPC_IDLE_FRAMES.len();
-        let (x,y,w,h) = NPC_IDLE_FRAMES[self.npc_anim_frame];
-        let rect = Rect2::new(Vector2::new(x,y), Vector2::new(w,h));
-        for sprite in self.npc_sprites.iter_mut() { sprite.set_region_rect(rect); }
-    }
-
-    fn tick_items(&mut self, _dt: f32) {
-        // Боб-эффект: предметы-спрайты вращаются (game_time использован не здесь т.к. бorrow)
-        // Реализовано через transform напрямую в build_world_items с AnimationPlayer при необходимости.
-        // Пока оставляем статичными — CSS-стиль у объектов в мире достаточно.
+        let (x, y, w, h) = NPC_IDLE_FRAMES[self.npc_anim_frame];
+        let rect = Rect2::new(Vector2::new(x, y), Vector2::new(w, h));
+        for sprite in self.npc_sprites.iter_mut() {
+            sprite.set_region_rect(rect);
+        }
     }
 
     // ── Флэш-сообщения ────────────────────────────────────────────────────────
@@ -1541,7 +2385,6 @@ impl Game3D {
             if self.flash_timer <= 0.0 {
                 if let Some(ref mut lbl) = self.flash_label { lbl.set_visible(false); }
             } else {
-                // Fade alpha in last 0.8 seconds
                 let alpha = if self.flash_timer < 0.8 { self.flash_timer / 0.8 } else { 1.0 };
                 let c = Color::from_rgba(C_GOLD.r, C_GOLD.g, C_GOLD.b, alpha);
                 if let Some(ref mut lbl) = self.flash_label {
@@ -1569,53 +2412,11 @@ impl Game3D {
     // ── Сохранение ───────────────────────────────────────────────────────────
 
     fn auto_save(&mut self) {
-        let lang = self.settings.lang.clone();
         if let Some(ref state) = self.state {
             let hp = if let Some(ref p) = self.player {
                 if let Ok(player) = p.clone().try_cast::<Player>() { player.bind().hp } else { 100.0 }
             } else { 100.0 };
-            if save::save(state, hp) { self.show_flash(t("msg_saved", &lang)); }
+            save::save(state, hp, &self.arsenal);
         }
     }
-}
-
-// ── Вспомогательные функции ───────────────────────────────────────────────────
-
-fn make_box(
-    pos: Vector3, size: Vector3, color: Color,
-    tex: Option<&Gd<Texture2D>>, uv: f32,
-) -> Gd<StaticBody3D> {
-    let mut body = StaticBody3D::new_alloc();
-    body.set_position(pos);
-
-    let mut mi = MeshInstance3D::new_alloc();
-    let mut mesh = BoxMesh::new_gd();
-    mesh.set_size(size);
-    mi.set_mesh(&mesh);
-
-    let mut mat = StandardMaterial3D::new_gd();
-    if let Some(t) = tex {
-        mat.set_albedo(Color::WHITE);
-        mat.set_texture(TextureParam::ALBEDO, t);
-        mat.set_uv1_scale(Vector3::new(uv, uv, 1.0));
-    } else {
-        mat.set_albedo(color);
-    }
-    mi.set_surface_override_material(0, &mat);
-
-    let mut col = CollisionShape3D::new_alloc();
-    let mut shape = BoxShape3D::new_gd();
-    shape.set_size(size);
-    col.set_shape(&shape);
-
-    body.add_child(&mi);
-    body.add_child(&col);
-    body
-}
-
-fn crop_tex(img: Option<&Gd<Image>>, x: i32, y: i32, w: i32, h: i32) -> Option<Gd<Texture2D>> {
-    let img = img?;
-    let region = img.get_region(Rect2i::new(Vector2i::new(x,y), Vector2i::new(w,h)))?;
-    let itex = ImageTexture::create_from_image(&region)?;
-    Some(itex.upcast::<Texture2D>())
 }

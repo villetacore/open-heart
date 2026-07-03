@@ -91,6 +91,15 @@ pub struct GameState {
     pub flags: HashSet<String>,
     pub quests: QuestLog,
     pub inventory: Inventory,
+
+    // ── RPG-прогрессия ──
+    pub class_idx: Option<usize>,   // индекс в classes::CLASSES
+    pub spec_idx:  usize,           // специализация внутри класса
+    pub level:     u32,
+    pub xp:        u32,
+    pub dungeon_seed:     u64,      // счётчик сидов для процедурных данжей
+    pub dungeons_cleared: u32,
+    pub hearts:           u32,      // собранные «сердца жизни» (+15 макс. HP каждое)
 }
 
 impl GameState {
@@ -111,7 +120,29 @@ impl GameState {
             flags: HashSet::new(),
             quests: QuestLog::default(),
             inventory: Inventory::default(),
+            class_idx: None,
+            spec_idx: 0,
+            level: 1,
+            xp: 0,
+            dungeon_seed: 0x5EED_0001,
+            dungeons_cleared: 0,
+            hearts: 0,
         }
+    }
+
+    pub fn add_heart(&mut self) { self.hearts += 1; }
+    pub fn stat_hearts(&self) -> u32 { self.hearts }
+
+    /// Начислить опыт; вернуть количество полученных уровней.
+    pub fn add_xp(&mut self, amount: u32) -> u32 {
+        self.xp += amount;
+        let mut gained = 0;
+        while self.xp >= crate::classes::xp_to_next(self.level) {
+            self.xp -= crate::classes::xp_to_next(self.level);
+            self.level += 1;
+            gained += 1;
+        }
+        gained
     }
 
     pub fn rel(&self, npc: &str) -> i32 { *self.relations.get(npc).unwrap_or(&0) }

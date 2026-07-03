@@ -6,3 +6,6 @@
 .godot/
 *.import
 export_presets.cfg
+
+# Python
+__pycache__/

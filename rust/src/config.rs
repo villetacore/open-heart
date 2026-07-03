@@ -5,6 +5,8 @@ use godot::classes::{FileAccess, file_access::ModeFlags};
 
 // ── Структуры конфигов ────────────────────────────────────────────────────────
 
+fn default_xp() -> f32 { 15.0 }
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct EnemyCfg {
     pub id:              String,
@@ -19,6 +21,8 @@ pub struct EnemyCfg {
     pub color_r:         f32,
     pub color_g:         f32,
     pub color_b:         f32,
+    #[serde(default = "default_xp")]
+    pub xp:              f32,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -42,10 +46,20 @@ pub struct EnemySpawn { pub kind: String, pub x: f32, pub z: f32 }
 #[derive(Debug, Deserialize, Clone)]
 pub struct ItemSpawn  { pub kind: String, pub x: f32, pub z: f32 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct AmmoSpawn { pub kind: String, pub amount: u32, pub x: f32, pub z: f32 }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct WeaponSpawn { pub kind: String, pub x: f32, pub z: f32 }
+
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct LevelCfg {
     pub spawn_enemies: Vec<EnemySpawn>,
     pub spawn_items:   Vec<ItemSpawn>,
+    #[serde(default)]
+    pub spawn_ammo:    Vec<AmmoSpawn>,
+    #[serde(default)]
+    pub spawn_weapons: Vec<WeaponSpawn>,
 }
 
 #[derive(Deserialize, Default)] struct EnemiesFile { enemies: Vec<EnemyCfg> }

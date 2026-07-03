@@ -9,3 +9,6 @@ export_presets.cfg
 
 # Python
 __pycache__/
+
+# QA-артефакты нарезки (регенерируются tools/slice_*.py)
+tools/preview/

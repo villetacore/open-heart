@@ -13,7 +13,10 @@
       "color_r": 0.85,
       "color_g": 0.1,
       "color_b": 0.1,
-      "xp": 15.0
+      "xp": 15.0,
+      "resist": {
+        "physical": 0.15
+      }
     },
     {
       "id": "heavy",
@@ -28,7 +31,11 @@
       "color_r": 0.5,
       "color_g": 0.1,
       "color_b": 0.75,
-      "xp": 40.0
+      "xp": 40.0,
+      "resist": {
+        "physical": 0.35,
+        "energy": -0.2
+      }
     },
     {
       "id": "fast",
@@ -43,7 +50,10 @@
       "color_r": 0.1,
       "color_g": 0.8,
       "color_b": 0.3,
-      "xp": 12.0
+      "xp": 12.0,
+      "resist": {
+        "physical": -0.15
+      }
     },
     {
       "id": "brute",
@@ -58,7 +68,11 @@
       "color_r": 0.9,
       "color_g": 0.4,
       "color_b": 0.0,
-      "xp": 80.0
+      "xp": 80.0,
+      "resist": {
+        "physical": 0.3,
+        "fire": -0.25
+      }
     },
     {
       "id": "sniper",
@@ -73,7 +87,10 @@
       "color_r": 1.0,
       "color_g": 0.9,
       "color_b": 0.1,
-      "xp": 25.0
+      "xp": 25.0,
+      "resist": {
+        "energy": 0.25
+      }
     },
     {
       "id": "cultist",
@@ -88,7 +105,11 @@
       "color_r": 0.3,
       "color_g": 0.2,
       "color_b": 0.9,
-      "xp": 20.0
+      "xp": 20.0,
+      "resist": {
+        "fire": 0.3,
+        "void": -0.3
+      }
     }
   ]
 }

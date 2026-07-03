@@ -7,6 +7,22 @@ use godot::classes::{FileAccess, file_access::ModeFlags};
 
 fn default_xp() -> f32 { 15.0 }
 
+/// Резисты урона: 0.0 = нет резиста, 1.0 = полный иммунитет, <0 = уязвимость.
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct Resist {
+    #[serde(default)] pub physical: f32,
+    #[serde(default)] pub fire:     f32,
+    #[serde(default)] pub energy:   f32,
+    #[serde(default)] pub void:     f32,
+}
+
+impl Resist {
+    /// [physical, fire, energy, void] — в порядке DmgType::idx.
+    pub fn arr(&self) -> [f32; 4] {
+        [self.physical, self.fire, self.energy, self.void]
+    }
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct EnemyCfg {
     pub id:              String,
@@ -23,6 +39,8 @@ pub struct EnemyCfg {
     pub color_b:         f32,
     #[serde(default = "default_xp")]
     pub xp:              f32,
+    #[serde(default)]
+    pub resist:          Resist,
 }
 
 #[derive(Debug, Deserialize, Clone)]

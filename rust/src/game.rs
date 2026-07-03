@@ -25,7 +25,7 @@ use crate::player::Player;
 use crate::save;
 use crate::settings::Settings;
 use crate::story::get_scene;
-use crate::weapon::{weapon_def, AmmoType, Arsenal, FireKind, WeaponId, FRAME_W};
+use crate::weapon::{weapon_def, AmmoType, Arsenal, DmgType, FireKind, WeaponId, FRAME_W};
 use crate::world;
 
 // ── NPC ───────────────────────────────────────────────────────────────────────
@@ -107,12 +107,13 @@ struct SpriteFx { node: Gd<Sprite3D>, ttl: f32, total: f32 }
 struct LightFx  { node: Gd<OmniLight3D>, ttl: f32, total: f32, energy: f32 }
 
 struct Projectile {
-    node:   Gd<Node3D>,
-    pos:    Vector3,
-    vel:    Vector3,
-    dmg:    f32,
-    splash: f32,
-    ttl:    f32,
+    node:     Gd<Node3D>,
+    pos:      Vector3,
+    vel:      Vector3,
+    dmg:      f32,
+    dmg_type: DmgType,
+    splash:   f32,
+    ttl:      f32,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -473,6 +474,7 @@ impl Game3D {
             &ecfg.id, ecfg.hp, ecfg.speed, ecfg.attack_damage,
             ecfg.attack_range, ecfg.attack_cooldown, ecfg.chase_range,
             ecfg.patrol_radius, color, pos, ecfg.xp, mult, is_boss,
+            ecfg.resist.arr(),
         );
         if let Some(ref p) = self.player {
             e.bind_mut().set_player(p.clone());
@@ -1216,7 +1218,7 @@ impl Game3D {
         self.weapon_anim = WeaponAnim::Switch(0.22);
         self.set_weapon_frame(def.idle_frames[0]);
         if let Some(ref mut wl) = self.weapon_label {
-            wl.set_text(&format!("[{}] {}", def.id.slot() + 1, def.name_ru));
+            wl.set_text(&format!("[{}] {}  ({})", def.id.slot() + 1, def.name_ru, def.dmg_type.name_ru()));
         }
     }
 
@@ -1639,9 +1641,10 @@ impl Game3D {
 
         let Some((eye, dir)) = self.player_aim() else { return };
         let dmg = def.damage * self.loadout.dmg_mult;
+        let dtype = def.dmg_type;
 
         match def.kind {
-            FireKind::Melee => self.fire_melee(dmg, def.range),
+            FireKind::Melee => self.fire_melee(dmg, def.range, dtype),
             FireKind::Hitscan { pellets, spread } => {
                 for _ in 0..pellets {
                     let sx = (self.rng.f32() - 0.5) * 2.0 * spread;
@@ -1650,18 +1653,18 @@ impl Game3D {
                     let right = dir.cross(Vector3::UP).normalized();
                     let up = right.cross(dir).normalized();
                     let d = (dir + right * sx + up * sy).normalized();
-                    self.fire_ray(eye, d, def.range, dmg);
+                    self.fire_ray(eye, d, def.range, dmg, dtype);
                 }
             }
             FireKind::Projectile { speed, splash } => {
-                self.spawn_projectile(eye + dir * 0.6, dir * speed, dmg, splash,
+                self.spawn_projectile(eye + dir * 0.6, dir * speed, dmg, dtype, splash,
                                       def.range / speed, cur);
             }
         }
         self.process_kills();
     }
 
-    fn fire_melee(&mut self, dmg: f32, range: f32) {
+    fn fire_melee(&mut self, dmg: f32, range: f32, dtype: DmgType) {
         let Some((eye, dir)) = self.player_aim() else { return };
         let flat_dir = Vector3::new(dir.x, 0.0, dir.z).normalized();
         let mut best: Option<(usize, f32)> = None;
@@ -1682,12 +1685,12 @@ impl Game3D {
         }
         if let Some((idx, _)) = best {
             let epos = self.enemies[idx].get_global_position();
-            self.enemies[idx].bind_mut().take_damage(dmg);
+            let dealt = self.enemies[idx].bind_mut().take_damage(dmg, dtype);
             self.spawn_fx("res://assets/effects/effect_blood.png",
                           epos + Vector3::new(0.0, 1.1, 0.0), 0.010, 0.28);
-            // вампиризм
+            // вампиризм — от фактически нанесённого урона
             if self.loadout.lifesteal > 0.0 {
-                let heal = dmg * self.loadout.lifesteal;
+                let heal = dealt * self.loadout.lifesteal;
                 if let Some(ref p) = self.player {
                     if let Ok(mut pl) = p.clone().try_cast::<Player>() {
                         pl.bind_mut().heal(heal);
@@ -1697,12 +1700,12 @@ impl Game3D {
         }
     }
 
-    fn fire_ray(&mut self, from: Vector3, dir: Vector3, range: f32, dmg: f32) {
+    fn fire_ray(&mut self, from: Vector3, dir: Vector3, range: f32, dmg: f32, dtype: DmgType) {
         let to = from + dir * range;
         let hit = self.raycast(from, to);
         match hit {
             Some((pos, Some(mut enemy))) => {
-                enemy.bind_mut().take_damage(dmg);
+                enemy.bind_mut().take_damage(dmg, dtype);
                 self.spawn_fx("res://assets/effects/effect_blood.png",
                               pos, 0.008, 0.25);
             }
@@ -1733,8 +1736,8 @@ impl Game3D {
         Some((pos, enemy))
     }
 
-    fn spawn_projectile(&mut self, pos: Vector3, vel: Vector3, dmg: f32, splash: f32,
-                        ttl: f32, weapon: WeaponId) {
+    fn spawn_projectile(&mut self, pos: Vector3, vel: Vector3, dmg: f32, dmg_type: DmgType,
+                        splash: f32, ttl: f32, weapon: WeaponId) {
         let mut node = Node3D::new_alloc();
         node.set_position(pos);
         let (tex, px, color) = match weapon {
@@ -1748,12 +1751,12 @@ impl Game3D {
         let l = make_light(Vector3::ZERO, C_PINK, 0.8, 5.0);
         node.add_child(&l);
         self.base_mut().add_child(&node);
-        self.projectiles.push(Projectile { node, pos, vel, dmg, splash, ttl });
+        self.projectiles.push(Projectile { node, pos, vel, dmg, dmg_type, splash, ttl });
     }
 
     fn tick_projectiles(&mut self, dt: f32) {
-        let mut exploded: Vec<(Vector3, f32, f32)> = Vec::new(); // pos, dmg, splash
-        let mut direct_hits: Vec<(Gd<Enemy>, f32, Vector3)> = Vec::new();
+        let mut exploded: Vec<(Vector3, f32, DmgType, f32)> = Vec::new(); // pos, dmg, type, splash
+        let mut direct_hits: Vec<(Gd<Enemy>, f32, DmgType, Vector3)> = Vec::new();
 
         let mut i = 0;
         while i < self.projectiles.len() {
@@ -1764,18 +1767,18 @@ impl Game3D {
 
             match hit {
                 Some((pos, Some(enemy))) => {
-                    let (dmg, splash) = (self.projectiles[i].dmg, self.projectiles[i].splash);
-                    if splash > 0.0 {
-                        exploded.push((pos, dmg, splash));
+                    let pr = &self.projectiles[i];
+                    if pr.splash > 0.0 {
+                        exploded.push((pos, pr.dmg, pr.dmg_type, pr.splash));
                     } else {
-                        direct_hits.push((enemy, dmg, pos));
+                        direct_hits.push((enemy, pr.dmg, pr.dmg_type, pos));
                     }
                     remove = true;
                 }
                 Some((pos, None)) => {
-                    let (dmg, splash) = (self.projectiles[i].dmg, self.projectiles[i].splash);
-                    if splash > 0.0 {
-                        exploded.push((pos, dmg, splash));
+                    let pr = &self.projectiles[i];
+                    if pr.splash > 0.0 {
+                        exploded.push((pos, pr.dmg, pr.dmg_type, pr.splash));
                     } else {
                         self.spawn_fx("res://assets/effects/effect_bullet.png", pos, 0.004, 0.15);
                     }
@@ -1797,18 +1800,18 @@ impl Game3D {
             }
         }
 
-        for (enemy, dmg, pos) in direct_hits {
+        for (enemy, dmg, dtype, pos) in direct_hits {
             let mut e = enemy;
-            e.bind_mut().take_damage(dmg);
+            e.bind_mut().take_damage(dmg, dtype);
             self.spawn_fx("res://assets/effects/effect_blood.png", pos, 0.008, 0.25);
         }
-        for (pos, dmg, splash) in exploded {
-            self.explode(pos, dmg, splash);
+        for (pos, dmg, dtype, splash) in exploded {
+            self.explode(pos, dmg, dtype, splash);
         }
         self.process_kills();
     }
 
-    fn explode(&mut self, pos: Vector3, dmg: f32, radius: f32) {
+    fn explode(&mut self, pos: Vector3, dmg: f32, dtype: DmgType, radius: f32) {
         self.spawn_fx("res://assets/effects/effect_explosion.png", pos, 0.022, 0.4);
         self.spawn_light_fx(pos, Color::from_rgba(1.0, 0.5, 0.6, 1.0), 2.6, radius * 2.2, 0.35);
 
@@ -1818,7 +1821,7 @@ impl Game3D {
             let d = (e.get_global_position() - pos).length();
             if d < radius {
                 let fall = 1.0 - (d / radius) * 0.55;
-                e.bind_mut().take_damage(dmg * fall);
+                e.bind_mut().take_damage(dmg * fall, dtype);
             }
         }
         // самоурон

@@ -10,6 +10,7 @@ use godot::classes::{
 };
 use godot::classes::base_material_3d::{BillboardMode, TextureFilter};
 use godot::classes::sprite_base_3d::AlphaCutMode;
+use crate::weapon::DmgType;
 
 // ── Спрайтшит 512×256: 4 кадра по 128×256 (idle×2, walk×2) ───────────────────
 
@@ -54,6 +55,7 @@ pub struct Enemy {
     patrol_radius:    f32,
     pub xp_value:     f32,
     pub is_boss:      bool,
+    resist:           [f32; 4],   // резисты по DmgType::idx
 
     // runtime
     state:            EState,
@@ -83,6 +85,7 @@ impl Enemy {
         id: &str, hp: f32, speed: f32, damage: f32,
         atk_range: f32, cooldown: f32, chase: f32, patrol: f32,
         color: Color, spawn: Vector3, xp: f32, mult: f32, is_boss: bool,
+        resist: [f32; 4],
     ) {
         self.cfg_id        = GString::from(id);
         self.hp            = hp * mult;
@@ -100,11 +103,14 @@ impl Enemy {
         self.tex_path      = enemy_tex(id);
         self.xp_value      = xp * mult;
         self.is_boss       = is_boss;
+        self.resist        = resist;
     }
 
-    pub fn take_damage(&mut self, amount: f32) {
-        if !self.alive { return; }
-        self.hp -= amount;
+    /// Урон с учётом типа и резиста. Возвращает фактически нанесённый урон.
+    pub fn take_damage(&mut self, amount: f32, dmg_type: DmgType) -> f32 {
+        if !self.alive { return 0.0; }
+        let dealt = (amount * (1.0 - self.resist[dmg_type.idx()])).max(0.0);
+        self.hp -= dealt;
         self.hurt_flash = 0.15;
         // проснуться при уроне
         if self.state == EState::Patrol { self.state = EState::Chase; }
@@ -113,6 +119,7 @@ impl Enemy {
             self.state = EState::Dead;
             self.alive = false;
         }
+        dealt
     }
 
     pub fn set_player(&mut self, player: Gd<CharacterBody3D>) {
@@ -153,6 +160,7 @@ impl ICharacterBody3D for Enemy {
             atk_range: 1.8, atk_cooldown: 1.5,
             chase_range: 8.0, patrol_radius: 3.0,
             xp_value: 10.0, is_boss: false,
+            resist: [0.0; 4],
             state: EState::Patrol,
             atk_timer: 0.0,
             patrol_target: Vector3::ZERO,

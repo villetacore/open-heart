@@ -57,6 +57,36 @@ impl AmmoType {
     }
 }
 
+// ── Типы урона ────────────────────────────────────────────────────────────────
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
+pub enum DmgType { Physical, Fire, Energy, Void }
+
+impl DmgType {
+    pub const ALL: [DmgType; 4] = [DmgType::Physical, DmgType::Fire, DmgType::Energy, DmgType::Void];
+
+    pub fn idx(&self) -> usize {
+        match self { Self::Physical => 0, Self::Fire => 1, Self::Energy => 2, Self::Void => 3 }
+    }
+    pub fn from_id(s: &str) -> Option<Self> {
+        Some(match s {
+            "physical" => Self::Physical,
+            "fire"     => Self::Fire,
+            "energy"   => Self::Energy,
+            "void"     => Self::Void,
+            _          => return None,
+        })
+    }
+    pub fn name_ru(&self) -> &'static str {
+        match self {
+            Self::Physical => "Физический",
+            Self::Fire     => "Огонь",
+            Self::Energy   => "Энергия",
+            Self::Void     => "Пустота",
+        }
+    }
+}
+
 // ── Оружие ────────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
@@ -104,6 +134,7 @@ pub struct WeaponDef {
     pub id:          WeaponId,
     pub name_ru:     String,
     pub damage:      f32,
+    pub dmg_type:    DmgType,
     pub cooldown:    f32,
     pub range:       f32,
     pub kind:        FireKind,
@@ -141,6 +172,7 @@ struct WeaponRaw {
     id:          String,
     name_ru:     String,
     damage:      f32,
+    #[serde(default)] dmg_type: Option<String>,
     cooldown:    f32,
     range:       f32,
     fire:        FireRaw,
@@ -169,8 +201,13 @@ impl WeaponRaw {
                 Some((t, a.per_shot))
             }
         };
+        let dmg_type = match self.dmg_type.as_deref() {
+            None | Some("") => DmgType::Physical,
+            Some(s) => DmgType::from_id(s)
+                .ok_or_else(|| format!("weapon '{}': unknown dmg_type '{}'", self.id, s))?,
+        };
         Ok(WeaponDef {
-            id, name_ru: self.name_ru, damage: self.damage, cooldown: self.cooldown,
+            id, name_ru: self.name_ru, damage: self.damage, dmg_type, cooldown: self.cooldown,
             range: self.range, kind, ammo, auto: self.auto, sheet: self.sheet,
             frame_h: self.frame_h, idle_frames: self.idle_frames,
             fire_frames: self.fire_frames, fire_fps: self.fire_fps,

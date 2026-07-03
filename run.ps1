@@ -29,6 +29,8 @@ $godot4Cmd = Get-Command "godot4" -ErrorAction SilentlyContinue
 
 $candidates = @(
     $Engine,
+    "$env:LOCALAPPDATA\Microsoft\WinGet\Links\godot.exe",
+    "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7-stable_win64.exe",
     "$env:LOCALAPPDATA\Redot\redot.exe",
     "$env:LOCALAPPDATA\Redot Engine\redot.exe",
     "C:\Program Files\Redot\redot.exe",

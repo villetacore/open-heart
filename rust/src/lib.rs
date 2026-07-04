@@ -16,6 +16,7 @@ pub mod item;
 pub mod locale;
 pub mod main_menu;
 pub mod npc;
+pub mod perk;
 pub mod player;
 pub mod quest;
 pub mod save;

@@ -81,7 +81,7 @@ fn item_sprite_tex(id: &str) -> &'static str {
 // ── Режимы и полезная нагрузка предметов ─────────────────────────────────────
 
 #[derive(PartialEq, Clone, Copy)]
-enum Mode { ClassSelect, SpecSelect, Explore, Dialogue, Dead, Inventory }
+enum Mode { ClassSelect, SpecSelect, Explore, Dialogue, Dead, Inventory, Perks }
 
 #[derive(PartialEq, Clone, Copy)]
 enum Loc { World, Dungeon }
@@ -199,6 +199,8 @@ pub struct Game3D {
     quest_label:     Option<Gd<Label>>,
     inv_panel:       Option<Gd<Panel>>,
     inv_list:        Option<Gd<Label>>,
+    perk_panel:      Option<Gd<Panel>>,
+    perk_list:       Option<Gd<Label>>,
     crosshair:       Option<Gd<Label>>,
     dead_panel:      Option<Gd<Panel>>,
     compass_label:   Option<Gd<Label>>,
@@ -283,6 +285,7 @@ impl INode3D for Game3D {
             flash_label: None, flash_timer: 0.0,
             inv_label: None, quest_label: None,
             inv_panel: None, inv_list: None,
+            perk_panel: None, perk_list: None,
             crosshair: None, dead_panel: None,
             compass_label: None, targeting_label: None,
             damage_flash: None, damage_flash_timer: 0.0,
@@ -373,6 +376,7 @@ impl INode3D for Game3D {
             Mode::Explore     => self.process_explore(),
             Mode::Dialogue    => self.process_dialogue(),
             Mode::Inventory   => self.process_inventory(),
+            Mode::Perks       => self.process_perks(),
             Mode::Dead        => self.process_dead(),
         }
 
@@ -831,6 +835,7 @@ impl Game3D {
             let st = self.state.as_mut().unwrap();
             st.class_idx = Some(class_idx);
             st.spec_idx = spec_idx;
+            st.perk_points += 1;   // стартовое очко перка
         }
         self.apply_loadout(class_idx, spec_idx, true);
         if let Some(ref mut p) = self.select_panel { p.set_visible(false); }
@@ -848,6 +853,17 @@ impl Game3D {
         self.loadout = compute_loadout(class_idx, spec_idx, level);
         let hearts = self.state.as_ref().map(|s| s.stat_hearts()).unwrap_or(0);
         self.loadout.max_hp += hearts as f32 * 15.0;
+
+        // модификаторы перков и активных синергий
+        let owned_perks = self.state.as_ref().map(|s| s.perks.clone()).unwrap_or_default();
+        let mods = crate::perk::mods_for(&owned_perks);
+        self.loadout.max_hp    += mods.max_hp_add;
+        self.loadout.speed     *= mods.speed_mult;
+        self.loadout.dmg_mult  += mods.dmg_add;
+        self.loadout.cd_mult   *= mods.cd_mult;
+        self.loadout.lifesteal += mods.lifesteal_add;
+        self.loadout.ammo_mult += mods.ammo_add;
+        self.loadout.max_hp = self.loadout.max_hp.max(40.0);
 
         let c = &classes()[class_idx];
         let s = &c.specs[spec_idx];
@@ -1113,6 +1129,45 @@ impl Game3D {
             layer.add_child(&ip);
             self.inv_list = Some(il);
             self.inv_panel = Some(ip);
+        }
+
+        // экран перков
+        {
+            let pw = 900.0;
+            let ph = 640.0;
+            let mut pp = Panel::new_alloc();
+            pp.set_position(Vector2::new((HUD_W - pw) * 0.5, (HUD_H - ph) * 0.5));
+            pp.set_size(Vector2::new(pw, ph));
+            pp.add_theme_stylebox_override("panel", &make_style(C_UI_BG, C_BORDER, 2));
+            pp.set_visible(false);
+
+            let mut title = Label::new_alloc();
+            title.set_text("ДЕРЕВО ПЕРКОВ");
+            title.set_position(Vector2::new(24.0, 14.0));
+            title.set_size(Vector2::new(pw - 48.0, 32.0));
+            title.add_theme_font_size_override("font_size", 22);
+            title.add_theme_color_override("font_color", C_XP);
+            pp.add_child(&title);
+
+            let mut pl = Label::new_alloc();
+            pl.set_position(Vector2::new(24.0, 54.0));
+            pl.set_size(Vector2::new(pw - 48.0, ph - 100.0));
+            pl.add_theme_font_size_override("font_size", 14);
+            pl.add_theme_color_override("font_color", C_MAIN);
+            pl.set_autowrap_mode(godot::classes::text_server::AutowrapMode::WORD);
+            pp.add_child(&pl);
+
+            let mut hint_p = Label::new_alloc();
+            hint_p.set_text("[ 1–8 ] купить перк   ·   [ P / Esc ] закрыть");
+            hint_p.set_position(Vector2::new(24.0, ph - 40.0));
+            hint_p.set_size(Vector2::new(pw - 48.0, 28.0));
+            hint_p.add_theme_font_size_override("font_size", 13);
+            hint_p.add_theme_color_override("font_color", C_DIM);
+            pp.add_child(&hint_p);
+
+            layer.add_child(&pp);
+            self.perk_list = Some(pl);
+            self.perk_panel = Some(pp);
         }
 
         // диалоговая панель
@@ -1430,6 +1485,10 @@ impl Game3D {
 
         if input.is_action_just_pressed("inventory") {
             self.open_inventory();
+        }
+
+        if input.is_action_just_pressed("perks") {
+            self.open_perks();
         }
 
         let player_dead = self.player.as_ref()
@@ -2172,6 +2231,122 @@ impl Game3D {
         if let Some(ref mut lbl) = self.inv_list { lbl.set_text(&text); }
     }
 
+    // ── Перки ────────────────────────────────────────────────────────────────
+
+    fn open_perks(&mut self) {
+        self.mode = Mode::Perks;
+        self.refresh_perk_ui();
+        if let Some(ref mut p) = self.perk_panel { p.set_visible(true); }
+        if let Some(ref mut lbl) = self.hint_label { lbl.set_visible(false); }
+        Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::VISIBLE);
+    }
+
+    fn close_perks(&mut self) {
+        self.mode = Mode::Explore;
+        if let Some(ref mut p) = self.perk_panel { p.set_visible(false); }
+        Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::CAPTURED);
+    }
+
+    fn process_perks(&mut self) {
+        let input = Input::singleton();
+        if input.is_action_just_pressed("perks") || input.is_action_just_pressed("escape") {
+            self.close_perks();
+            return;
+        }
+        for n in 0..8usize {
+            let act = format!("weapon_{}", n + 1);
+            if input.is_action_just_pressed(&act) {
+                self.buy_perk_at(n);
+                return;
+            }
+        }
+    }
+
+    fn buy_perk_at(&mut self, n: usize) {
+        // детерминированный список доступных перков (тот же, что в refresh_perk_ui)
+        let picked = {
+            let Some(st) = self.state.as_ref() else { return };
+            let avail = crate::perk::available(&st.perks, st.perk_points);
+            avail.get(n).map(|p| (p.id.clone(), p.cost, p.name_ru.clone(),
+                                  p.max_ranks))
+        };
+        let Some((id, cost, name, max_ranks)) = picked else { return };
+
+        let new_rank = {
+            let st = self.state.as_mut().unwrap();
+            if st.perk_points < cost { return; }
+            st.perk_points -= cost;
+            let r = st.perks.entry(id.clone()).or_insert(0);
+            *r += 1;
+            *r
+        };
+
+        let (ci, si) = {
+            let st = self.state.as_ref().unwrap();
+            (st.class_idx.unwrap_or(0), st.spec_idx)
+        };
+        self.apply_loadout(ci, si, false);
+        // если максимум HP вырос — не даём текущему HP «отстать» слишком сильно
+        if let Some(ref p) = self.player {
+            if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                let max = pl.bind().max_hp;
+                let hp = pl.bind().hp;
+                if hp > max { pl.bind_mut().hp = max; }
+            }
+        }
+        self.refresh_perk_ui();
+        self.show_flash(&format!("Перк улучшен: {} ({}/{})", name, new_rank, max_ranks));
+        self.auto_save();
+    }
+
+    fn refresh_perk_ui(&mut self) {
+        use crate::perk::{available, perks, reqs_met, synergies, synergy_active};
+        let text = if let Some(ref st) = self.state {
+            let owned = &st.perks;
+            let points = st.perk_points;
+            // номера покупки — по порядку available()
+            let avail_ids: Vec<String> = available(owned, points).iter().map(|p| p.id.clone()).collect();
+
+            let mut lines = vec![format!("Очки перков: {}", points), String::new()];
+
+            for (branch, title) in [
+                ("survival", "◆ ЖИВУЧЕСТЬ"),
+                ("offense",  "◆ УРОН"),
+                ("utility",  "◆ УТИЛИТИ"),
+            ] {
+                lines.push(title.to_string());
+                for p in perks().iter().filter(|p| p.branch == branch) {
+                    let rank = owned.get(&p.id).copied().unwrap_or(0);
+                    let tag = if rank >= p.max_ranks {
+                        "  [МАКС]".to_string()
+                    } else if !reqs_met(&p.requires, owned) {
+                        let need: Vec<String> = p.requires.iter().map(|r| {
+                            let id = r.split_once(':').map(|(a, _)| a).unwrap_or(r);
+                            crate::perk::perk_by_id(id).map(|d| d.name_ru.clone()).unwrap_or_else(|| id.to_string())
+                        }).collect();
+                        format!("  🔒 нужно: {}", need.join(", "))
+                    } else if let Some(pos) = avail_ids.iter().position(|x| *x == p.id) {
+                        format!("  ◀ [{}] купить ({} оч.)", pos + 1, p.cost)
+                    } else {
+                        String::new()
+                    };
+                    lines.push(format!("  {} {}/{}{}", p.name_ru, rank, p.max_ranks, tag));
+                    lines.push(format!("      {}", p.desc_ru));
+                }
+                lines.push(String::new());
+            }
+
+            lines.push("◆ СИНЕРГИИ".to_string());
+            for s in synergies() {
+                let on = synergy_active(s, owned);
+                let mark = if on { "✔" } else { "…" };
+                lines.push(format!("  {} {} — {}", mark, s.name_ru, s.desc_ru));
+            }
+            lines.join("\n")
+        } else { String::new() };
+        if let Some(ref mut lbl) = self.perk_list { lbl.set_text(&text); }
+    }
+
     // ── Диалог ───────────────────────────────────────────────────────────────
 
     fn start_dialogue(&mut self, npc_idx: usize) {
@@ -2345,16 +2520,20 @@ impl Game3D {
 
     fn update_quest_label(&mut self, lang: &str) {
         if let Some(ref state) = self.state {
+            let mut lines: Vec<String> = Vec::new();
+            if state.perk_points > 0 {
+                lines.push(format!("[P] Перки: {} очк.!", state.perk_points));
+            }
             let active: Vec<_> = state.quests.quests.iter()
                 .filter(|q| q.state == crate::quest::QuestState::Active)
                 .collect();
-            let text = if active.is_empty() { String::new() } else {
-                let mut lines = vec![t("hud_quests", lang).to_string()];
+            if !active.is_empty() {
+                lines.push(t("hud_quests", lang).to_string());
                 for q in active.iter().take(5) {
                     lines.push(format!("• {}", q.title));
                 }
-                lines.join("\n")
-            };
+            }
+            let text = lines.join("\n");
             if let Some(ref mut lbl) = self.quest_label { lbl.set_text(&text); }
         }
     }

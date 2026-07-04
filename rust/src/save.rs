@@ -40,6 +40,8 @@ pub struct SaveData {
     #[serde(default = "default_seed")] pub dungeon_seed: u64,
     #[serde(default)] pub dungeons_cleared: u32,
     #[serde(default)] pub hearts: u32,
+    #[serde(default)] pub perks: Vec<(String, u32)>,
+    #[serde(default)] pub perk_points: u32,
 }
 
 impl SaveData {
@@ -72,6 +74,8 @@ impl SaveData {
             dungeon_seed:     state.dungeon_seed,
             dungeons_cleared: state.dungeons_cleared,
             hearts:           state.hearts,
+            perks:            state.perks.iter().map(|(k, v)| (k.clone(), *v)).collect(),
+            perk_points:      state.perk_points,
         }
     }
 
@@ -100,6 +104,8 @@ impl SaveData {
         s.dungeon_seed     = self.dungeon_seed;
         s.dungeons_cleared = self.dungeons_cleared;
         s.hearts           = self.hearts;
+        s.perks            = self.perks.into_iter().collect();
+        s.perk_points      = self.perk_points;
 
         let mut ars = Arsenal::new();
         for (i, v) in self.ammo.iter().take(4).enumerate() {

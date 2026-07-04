@@ -14,4 +14,8 @@ fn read(path: &str) -> Option<String> {
 pub fn load_all() {
     crate::weapon::init(read("res://data/weapons.json").as_deref());
     crate::classes::init(read("res://data/classes.json").as_deref());
+    crate::perk::init(
+        read("res://data/perks.json").as_deref(),
+        read("res://data/synergies.json").as_deref(),
+    );
 }

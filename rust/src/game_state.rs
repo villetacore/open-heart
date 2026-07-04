@@ -100,6 +100,8 @@ pub struct GameState {
     pub dungeon_seed:     u64,      // счётчик сидов для процедурных данжей
     pub dungeons_cleared: u32,
     pub hearts:           u32,      // собранные «сердца жизни» (+15 макс. HP каждое)
+    pub perks:            HashMap<String, u32>, // id перка → купленный ранг
+    pub perk_points:      u32,      // очки на покупку перков
 }
 
 impl GameState {
@@ -127,13 +129,15 @@ impl GameState {
             dungeon_seed: 0x5EED_0001,
             dungeons_cleared: 0,
             hearts: 0,
+            perks: HashMap::new(),
+            perk_points: 0,
         }
     }
 
     pub fn add_heart(&mut self) { self.hearts += 1; }
     pub fn stat_hearts(&self) -> u32 { self.hearts }
 
-    /// Начислить опыт; вернуть количество полученных уровней.
+    /// Начислить опыт; вернуть количество полученных уровней. Каждый уровень даёт очко перка.
     pub fn add_xp(&mut self, amount: u32) -> u32 {
         self.xp += amount;
         let mut gained = 0;
@@ -142,6 +146,7 @@ impl GameState {
             self.level += 1;
             gained += 1;
         }
+        self.perk_points += gained;
         gained
     }
 

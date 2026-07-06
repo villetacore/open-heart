@@ -1,0 +1,227 @@
+[
+  {
+    "id": "sword",
+    "name_ru": "Энергоклинок",
+    "damage": 34.0,
+    "dmg_type": "energy",
+    "cooldown": 0.5,
+    "range": 2.8,
+    "fire": {
+      "kind": "melee"
+    },
+    "ammo": null,
+    "auto": false,
+    "sheet": "res://assets/sprites/weapons_fp/wf_sword.png",
+    "frame_h": 59.0,
+    "idle_frames": [
+      0
+    ],
+    "fire_frames": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "fire_fps": 16.0
+  },
+  {
+    "id": "chainsaw",
+    "name_ru": "Цепная пила",
+    "damage": 9.0,
+    "dmg_type": "physical",
+    "cooldown": 0.12,
+    "range": 2.5,
+    "fire": {
+      "kind": "melee"
+    },
+    "ammo": null,
+    "auto": true,
+    "sheet": "res://assets/sprites/weapons_fp/wf_chainsaw.png",
+    "frame_h": 70.0,
+    "idle_frames": [
+      0,
+      1
+    ],
+    "fire_frames": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "fire_fps": 14.0
+  },
+  {
+    "id": "pistol",
+    "name_ru": "Пистолет",
+    "damage": 16.0,
+    "dmg_type": "physical",
+    "cooldown": 0.38,
+    "range": 32.0,
+    "fire": {
+      "kind": "hitscan",
+      "pellets": 1,
+      "spread": 0.012
+    },
+    "ammo": {
+      "type": "bullets",
+      "per_shot": 1
+    },
+    "auto": false,
+    "sheet": "res://assets/sprites/weapons_fp/wf_pistol.png",
+    "frame_h": 86.0,
+    "idle_frames": [
+      0
+    ],
+    "fire_frames": [
+      6,
+      7,
+      2
+    ],
+    "fire_fps": 14.0
+  },
+  {
+    "id": "shotgun",
+    "name_ru": "Дробовик",
+    "damage": 9.0,
+    "dmg_type": "physical",
+    "cooldown": 0.95,
+    "range": 16.0,
+    "fire": {
+      "kind": "hitscan",
+      "pellets": 7,
+      "spread": 0.09
+    },
+    "ammo": {
+      "type": "shells",
+      "per_shot": 1
+    },
+    "auto": false,
+    "sheet": "res://assets/sprites/weapons_fp/wf_shotgun.png",
+    "frame_h": 95.0,
+    "idle_frames": [
+      0
+    ],
+    "fire_frames": [
+      6,
+      7,
+      3,
+      4
+    ],
+    "fire_fps": 10.0
+  },
+  {
+    "id": "rifle",
+    "name_ru": "Автомат",
+    "damage": 12.0,
+    "dmg_type": "physical",
+    "cooldown": 0.12,
+    "range": 38.0,
+    "fire": {
+      "kind": "hitscan",
+      "pellets": 1,
+      "spread": 0.03
+    },
+    "ammo": {
+      "type": "bullets",
+      "per_shot": 1
+    },
+    "auto": true,
+    "sheet": "res://assets/sprites/weapons_fp/wf_rifle.png",
+    "frame_h": 91.0,
+    "idle_frames": [
+      0
+    ],
+    "fire_frames": [
+      6,
+      7
+    ],
+    "fire_fps": 18.0
+  },
+  {
+    "id": "nailgun",
+    "name_ru": "Гвоздемёт",
+    "damage": 30.0,
+    "dmg_type": "physical",
+    "cooldown": 0.3,
+    "range": 30.0,
+    "fire": {
+      "kind": "hitscan",
+      "pellets": 1,
+      "spread": 0.006
+    },
+    "ammo": {
+      "type": "bullets",
+      "per_shot": 2
+    },
+    "auto": true,
+    "sheet": "res://assets/sprites/weapons_fp/wf_nailgun.png",
+    "frame_h": 80.0,
+    "idle_frames": [
+      0
+    ],
+    "fire_frames": [
+      6,
+      7
+    ],
+    "fire_fps": 12.0
+  },
+  {
+    "id": "plasma",
+    "name_ru": "Плазмаган",
+    "damage": 26.0,
+    "dmg_type": "energy",
+    "cooldown": 0.22,
+    "range": 45.0,
+    "fire": {
+      "kind": "projectile",
+      "speed": 26.0,
+      "splash": 0.0
+    },
+    "ammo": {
+      "type": "cells",
+      "per_shot": 1
+    },
+    "auto": true,
+    "sheet": "res://assets/sprites/weapons_fp/wf_plasma.png",
+    "frame_h": 65.0,
+    "idle_frames": [
+      0
+    ],
+    "fire_frames": [
+      5,
+      6,
+      7
+    ],
+    "fire_fps": 16.0
+  },
+  {
+    "id": "rocket",
+    "name_ru": "Ракетница",
+    "damage": 95.0,
+    "dmg_type": "fire",
+    "cooldown": 1.15,
+    "range": 60.0,
+    "fire": {
+      "kind": "projectile",
+      "speed": 19.0,
+      "splash": 4.2
+    },
+    "ammo": {
+      "type": "rockets",
+      "per_shot": 1
+    },
+    "auto": false,
+    "sheet": "res://assets/sprites/weapons_fp/wf_rocket.png",
+    "frame_h": 82.0,
+    "idle_frames": [
+      0
+    ],
+    "fire_frames": [
+      6,
+      7
+    ],
+    "fire_fps": 10.0
+  }
+]

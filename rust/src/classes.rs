@@ -5,7 +5,7 @@
 //! Мид-рэнж («Оператор»)    — автомат/плазма, держит дистанцию.
 
 use serde::Deserialize;
-use std::sync::OnceLock;
+use std::sync::RwLock;
 use crate::weapon::{AmmoType, WeaponId};
 
 pub struct SpecDef {
@@ -112,17 +112,16 @@ fn parse(json: &str) -> Result<Vec<ClassDef>, String> {
     Ok(out)
 }
 
-const EMBEDDED: &str = include_str!("../../godot/data/classes.json");
+const EMBEDDED: &str = include_str!("../../godot/presets/core/classes.json");
 
-static CLASSES: OnceLock<Vec<ClassDef>> = OnceLock::new();
+static CLASSES: RwLock<Option<&'static [ClassDef]>> = RwLock::new(None);
 
 fn embedded() -> Vec<ClassDef> {
     parse(EMBEDDED).expect("встроенный classes.json должен быть валиден")
 }
 
-/// Инициализировать таблицу классов из `data/classes.json` (или встроенной копии).
-pub fn init(runtime_json: Option<&str>) {
-    if CLASSES.get().is_some() { return; }
+/// Загрузить (или перезагрузить при смене пресета) таблицу классов.
+pub fn load(runtime_json: Option<&str>) {
     let defs = match runtime_json {
         Some(j) => match parse(j) {
             Ok(d) => d,
@@ -130,11 +129,13 @@ pub fn init(runtime_json: Option<&str>) {
         },
         None => embedded(),
     };
-    let _ = CLASSES.set(defs);
+    *CLASSES.write().unwrap() = Some(Box::leak(defs.into_boxed_slice()));
 }
 
 pub fn classes() -> &'static [ClassDef] {
-    CLASSES.get_or_init(embedded).as_slice()
+    if let Some(c) = *CLASSES.read().unwrap() { return c; }
+    load(None);
+    CLASSES.read().unwrap().expect("classes after load(None)")
 }
 
 pub fn class_by_id(id: &str) -> Option<&'static ClassDef> {

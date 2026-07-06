@@ -1,11 +1,15 @@
 //! Арсенал: типы боеприпасов, описания оружия, состояние оружия игрока.
 //!
-//! Оружие — data-driven: параметры грузятся из `data/weapons.json` через [`init`].
+//! Оружие — data-driven: параметры грузятся из `presets/<id>/weapons.json` через [`load`].
 //! Если файл сломан/отсутствует — используется встроенная копия (`include_str!`),
 //! так что игра никогда не падает из-за опечатки в конфиге.
+//!
+//! Хранилище перезагружаемое (смена пресета в меню): таблица кладётся в `RwLock`
+//! через `Box::leak`, чтобы сохранить `&'static`-API. Утечка пары КБ на смену
+//! пресета — осознанный трейд-офф (переключений за сессию единицы).
 
 use serde::Deserialize;
-use std::sync::OnceLock;
+use std::sync::RwLock;
 
 // ── Боеприпасы ────────────────────────────────────────────────────────────────
 
@@ -231,18 +235,17 @@ fn parse(json: &str) -> Result<Vec<WeaponDef>, String> {
 }
 
 /// Встроенная копия конфига — гарантированный фолбэк.
-const EMBEDDED: &str = include_str!("../../godot/data/weapons.json");
+const EMBEDDED: &str = include_str!("../../godot/presets/core/weapons.json");
 
-static WEAPONS: OnceLock<Vec<WeaponDef>> = OnceLock::new();
+static WEAPONS: RwLock<Option<&'static [WeaponDef]>> = RwLock::new(None);
 
 fn embedded() -> Vec<WeaponDef> {
     parse(EMBEDDED).expect("встроенный weapons.json должен быть валиден")
 }
 
-/// Инициализировать таблицу оружия. `runtime_json` — содержимое `data/weapons.json`
-/// (или None). При ошибке разбора — фолбэк на встроенную копию с предупреждением.
-pub fn init(runtime_json: Option<&str>) {
-    if WEAPONS.get().is_some() { return; }
+/// Загрузить (или перезагрузить при смене пресета) таблицу оружия.
+/// `runtime_json` — содержимое `weapons.json` пресета (или None → встроенная копия).
+pub fn load(runtime_json: Option<&str>) {
     let defs = match runtime_json {
         Some(j) => match parse(j) {
             Ok(d) => d,
@@ -250,11 +253,13 @@ pub fn init(runtime_json: Option<&str>) {
         },
         None => embedded(),
     };
-    let _ = WEAPONS.set(defs);
+    *WEAPONS.write().unwrap() = Some(Box::leak(defs.into_boxed_slice()));
 }
 
 fn store() -> &'static [WeaponDef] {
-    WEAPONS.get_or_init(embedded).as_slice()
+    if let Some(w) = *WEAPONS.read().unwrap() { return w; }
+    load(None);
+    WEAPONS.read().unwrap().expect("weapons after load(None)")
 }
 
 pub fn weapons() -> &'static [WeaponDef] { store() }

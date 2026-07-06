@@ -15,7 +15,7 @@ use godot::global::HorizontalAlignment;
 
 use crate::classes::{classes, compute_loadout, xp_to_next, ClassDef, Loadout};
 use crate::config::GameConfig;
-use crate::dialogue::Scene;
+use crate::dialogue::{Choice, Effect, Line, Scene};
 use crate::dungeon::{self, DungeonPlan};
 use crate::enemy::Enemy;
 use crate::game_state::GameState;
@@ -103,6 +103,14 @@ struct WorldItemNode {
     in_dungeon: bool,
 }
 
+/// Рантайм-описание NPC (из npcs.json пресета или legacy NPC_DATA).
+struct NpcRt {
+    id:    String,
+    name:  String,
+    scene: Option<String>,   // "story" → динамика story.rs; иначе конкретный id сцены
+    quest: Option<String>,   // id квеста из quests.json (гивер)
+}
+
 struct SpriteFx { node: Gd<Sprite3D>, ttl: f32, total: f32 }
 struct LightFx  { node: Gd<OmniLight3D>, ttl: f32, total: f32, energy: f32 }
 
@@ -135,8 +143,12 @@ pub struct Game3D {
     rng:         Rng,
     cfg:         Option<GameConfig>,
 
+    preset:      String,
+    gate_pos:    Vector3,
+
     player:      Option<Gd<CharacterBody3D>>,
     npc_sprites: Vec<Gd<Sprite3D>>,
+    npcs:        Vec<NpcRt>,
     enemies:     Vec<Gd<Enemy>>,
     world_items: Vec<WorldItemNode>,
     projectiles: Vec<Projectile>,
@@ -259,7 +271,9 @@ impl INode3D for Game3D {
             cache: TexCache::new(),
             rng: Rng::new(0xBADA55),
             cfg: None,
-            player: None, npc_sprites: Vec::new(),
+            preset: "core".into(),
+            gate_pos: world::GATE_POS,
+            player: None, npc_sprites: Vec::new(), npcs: Vec::new(),
             enemies: Vec::new(), world_items: Vec::new(),
             projectiles: Vec::new(), sprite_fx: Vec::new(), light_fx: Vec::new(),
             state: None, settings: Settings::default(),
@@ -298,29 +312,57 @@ impl INode3D for Game3D {
     }
 
     fn ready(&mut self) {
-        // ContentDb: оружие, классы и прочий data-driven контент — до всего остального.
-        crate::content::load_all();
-
         self.settings = Settings::load();
         let lang = self.settings.lang.clone();
 
         let loaded = save::load();
         let has_class = loaded.as_ref().map(|(s, _, _)| s.class_idx.is_some()).unwrap_or(false);
+        // Пресет: у сейва приоритет (продолжаем ту игру, которую начали).
+        let preset = loaded.as_ref()
+            .map(|(s, _, _)| s.preset.clone())
+            .filter(|p| !p.is_empty())
+            .unwrap_or_else(|| self.settings.preset.clone());
         let (state, player_hp, arsenal) = match loaded {
             Some(v) => v,
-            None => (GameState::new("Игрок"), 100.0, Arsenal::new()),
+            None => {
+                let mut st = GameState::new("Игрок");
+                st.preset = preset.clone();
+                (st, 100.0, Arsenal::new())
+            }
         };
+        self.preset = preset.clone();
         self.state = Some(state);
         self.arsenal = arsenal;
 
-        self.cfg = Some(GameConfig::load());
+        // ContentDb пресета: оружие/классы/перки + конфиги врагов/предметов/NPC/квестов.
+        crate::content::load_preset(&preset);
+        let base = crate::content::preset_base(&preset);
+        self.cfg = Some(GameConfig::load_from(&base));
 
-        self.build_environment();
-        let plan = world::build_world(&mut self.cache);
-        let spawn = plan.player_spawn;
-        self.base_mut().add_child(&plan.root);
+        // Мир: карта пресета (maps/hub.json) или legacy-мир кодом.
+        let map_def = crate::map::load_map(&base, "hub");
+        let spawn;
+        match map_def {
+            Some(def) => {
+                let built = crate::map::build_map(&def, &mut self.cache);
+                self.build_environment(Some(&built.env));
+                spawn = built.player_spawn;
+                self.gate_pos = built.gate.unwrap_or(world::GATE_POS);
+                self.base_mut().add_child(&built.root);
+                // спавны из карты
+                let map_spawns = def.spawns.clone();
+                self.spawn_from_level(&map_spawns);
+            }
+            None => {
+                self.build_environment(None);
+                let plan = world::build_world(&mut self.cache);
+                spawn = plan.player_spawn;
+                self.gate_pos = plan.gate_portal;
+                self.base_mut().add_child(&plan.root);
+                self.build_world_spawns();
+            }
+        }
         self.build_npcs();
-        self.build_world_spawns();
         self.build_hud(&lang);
         self.build_select_ui();
 
@@ -390,11 +432,19 @@ impl INode3D for Game3D {
 // ── Окружение и мир ───────────────────────────────────────────────────────────
 
 impl Game3D {
-    fn build_environment(&mut self) {
+    fn build_environment(&mut self, map_env: Option<&crate::map::MapEnv>) {
         use godot::classes::light_3d::Param;
 
+        let sky_name = map_env
+            .and_then(|e| e.sky.clone())
+            .unwrap_or_else(|| "sky_purple".to_string());
+        let ambient = map_env.and_then(|e| e.ambient).unwrap_or([0.30, 0.22, 0.34]);
+        let ambient_energy = map_env.and_then(|e| e.ambient_energy).unwrap_or(0.75);
+        let fog_density = map_env.and_then(|e| e.fog_density).unwrap_or(0.012);
+
         let mut env = Environment::new_gd();
-        if let Some(sky_tex) = self.cache.get("res://assets/textures/sky/sky_purple.png") {
+        let sky_path = format!("res://assets/textures/sky/{}.png", sky_name);
+        if let Some(sky_tex) = self.cache.get(&sky_path) {
             let mut sky_mat = PanoramaSkyMaterial::new_gd();
             sky_mat.set_panorama(&sky_tex);
             let mut sky = Sky::new_gd();
@@ -403,11 +453,16 @@ impl Game3D {
             env.set_sky(&sky);
         }
         env.set_ambient_source(AmbientSource::COLOR);
-        env.set_ambient_light_color(Color::from_rgba(0.30, 0.22, 0.34, 1.0));
-        env.set_ambient_light_energy(0.75);
+        env.set_ambient_light_color(Color::from_rgba(ambient[0], ambient[1], ambient[2], 1.0));
+        env.set_ambient_light_energy(ambient_energy);
         env.set_fog_enabled(true);
         env.set_fog_light_color(Color::from_rgba(0.10, 0.05, 0.12, 1.0));
-        env.set_fog_density(0.012);
+        env.set_fog_density(fog_density);
+        // Свечение неона: в Compatibility поддержано с Godot 4.3+; если рендерер
+        // не умеет — настройка просто игнорируется.
+        env.set_glow_enabled(true);
+        env.set_glow_intensity(0.55);
+        env.set_glow_bloom(0.08);
 
         let mut we = WorldEnvironment::new_alloc();
         we.set_environment(&env);
@@ -422,35 +477,86 @@ impl Game3D {
     }
 
     fn build_npcs(&mut self) {
+        // NPC из npcs.json пресета; если файла нет — legacy-таблица NPC_DATA.
+        let cfg_npcs: Vec<crate::config::NpcCfg> = self.cfg.as_ref()
+            .map(|c| c.npcs.clone())
+            .unwrap_or_default();
+
         let mut sprites: Vec<Gd<Sprite3D>> = Vec::new();
-        for cfg in NPC_DATA.iter() {
-            let (new_path, fallback) = npc_sprite_tex(cfg.id);
-            let path = if self.cache.get(new_path).is_some() { new_path } else { fallback };
-            if let Some(mut sprite) = make_billboard(&mut self.cache, path,
-                                                     cfg.pos + Vector3::new(0.0, 1.28, 0.0), PIXEL_SZ) {
-                sprite.set_region_enabled(true);
-                let (x, y, w, h) = NPC_IDLE_FRAMES[0];
-                sprite.set_region_rect(Rect2::new(Vector2::new(x, y), Vector2::new(w, h)));
-                sprite.set_modulate(cfg.color);
-                self.base_mut().add_child(&sprite);
-                sprites.push(sprite);
+        let mut npcs: Vec<NpcRt> = Vec::new();
+
+        if cfg_npcs.is_empty() {
+            for cfg in NPC_DATA.iter() {
+                let (new_path, fallback) = npc_sprite_tex(cfg.id);
+                let path = if self.cache.get(new_path).is_some() { new_path } else { fallback };
+                if let Some(mut sprite) = make_billboard(&mut self.cache, path,
+                                                         cfg.pos + Vector3::new(0.0, 1.28, 0.0), PIXEL_SZ) {
+                    sprite.set_region_enabled(true);
+                    let (x, y, w, h) = NPC_IDLE_FRAMES[0];
+                    sprite.set_region_rect(Rect2::new(Vector2::new(x, y), Vector2::new(w, h)));
+                    sprite.set_modulate(cfg.color);
+                    self.base_mut().add_child(&sprite);
+                    sprites.push(sprite);
+                    npcs.push(NpcRt {
+                        id: cfg.id.to_string(),
+                        name: cfg.name.to_string(),
+                        scene: Some("story".to_string()),
+                        quest: None,
+                    });
+                }
+            }
+        } else {
+            for nc in &cfg_npcs {
+                let sprite_name = if nc.sprite.is_empty() { format!("npc_{}", nc.id) } else { nc.sprite.clone() };
+                let path = format!("res://assets/sprites/characters/{}.png", sprite_name);
+                let path = if self.cache.get(&path).is_some() {
+                    path
+                } else {
+                    "res://assets/sprites/femboy_dark1.png".to_string()
+                };
+                if let Some(mut sprite) = make_billboard(&mut self.cache, &path,
+                        Vector3::new(nc.pos[0], 1.28, nc.pos[1]), PIXEL_SZ) {
+                    sprite.set_region_enabled(true);
+                    let (x, y, w, h) = NPC_IDLE_FRAMES[0];
+                    sprite.set_region_rect(Rect2::new(Vector2::new(x, y), Vector2::new(w, h)));
+                    if let Some(c) = nc.color {
+                        sprite.set_modulate(Color::from_rgba(c[0], c[1], c[2], 1.0));
+                    }
+                    self.base_mut().add_child(&sprite);
+                    sprites.push(sprite);
+                    npcs.push(NpcRt {
+                        id: nc.id.clone(),
+                        name: nc.name_ru.clone(),
+                        scene: nc.scene.clone(),
+                        quest: nc.quest.clone(),
+                    });
+                }
             }
         }
         self.npc_sprites = sprites;
+        self.npcs = npcs;
     }
 
-    /// Спавны открытого мира из data/level.json.
+    /// Спавны открытого мира из legacy data/level.json (когда у пресета нет карты).
     fn build_world_spawns(&mut self) {
         let Some(cfg) = self.cfg.take() else { return };
+        let level = cfg.level.clone();
+        self.cfg = Some(cfg);
+        self.spawn_from_level(&level);
+    }
 
-        for spawn in &cfg.level.spawn_enemies {
+    /// Заспавнить врагов/предметы/патроны/оружие из структуры LevelCfg (карта или level.json).
+    fn spawn_from_level(&mut self, level: &crate::config::LevelCfg) {
+        let Some(cfg) = self.cfg.take() else { return };
+
+        for spawn in &level.spawn_enemies {
             self.spawn_enemy(&cfg, &spawn.kind,
                              Vector3::new(spawn.x, 0.0, spawn.z), 1.0, false, false);
         }
-        for spawn in &cfg.level.spawn_items {
+        for spawn in &level.spawn_items {
             self.spawn_item(&cfg, &spawn.kind, Vector3::new(spawn.x, 0.0, spawn.z), false);
         }
-        for spawn in &cfg.level.spawn_ammo {
+        for spawn in &level.spawn_ammo {
             let t = match spawn.kind.as_str() {
                 "shells"  => AmmoType::Shells,
                 "rockets" => AmmoType::Rockets,
@@ -459,7 +565,7 @@ impl Game3D {
             };
             self.spawn_ammo_pickup(t, spawn.amount, Vector3::new(spawn.x, 0.0, spawn.z), false);
         }
-        for spawn in &cfg.level.spawn_weapons {
+        for spawn in &level.spawn_weapons {
             if let Some(w) = weapon_by_name(&spawn.kind) {
                 self.spawn_weapon_pickup(w, Vector3::new(spawn.x, 0.0, spawn.z), false);
             }
@@ -479,6 +585,7 @@ impl Game3D {
             ecfg.attack_range, ecfg.attack_cooldown, ecfg.chase_range,
             ecfg.patrol_radius, color, pos, ecfg.xp, mult, is_boss,
             ecfg.resist.arr(),
+            ecfg.sprite.as_deref().unwrap_or(&ecfg.id), ecfg.scale,
         );
         if let Some(ref p) = self.player {
             e.bind_mut().set_player(p.clone());
@@ -642,7 +749,8 @@ impl Game3D {
         self.loc = Loc::World;
         if let Some(ref p) = self.player {
             if let Ok(mut pl) = p.clone().try_cast::<Player>() {
-                pl.bind_mut().teleport(world::GATE_POS + Vector3::new(0.0, 1.0, 3.5));
+                let gate = self.gate_pos;
+                pl.bind_mut().teleport(gate + Vector3::new(0.0, 1.0, 3.5));
             }
         }
         self.show_flash("Пустоши Неонового Сердца");
@@ -1582,7 +1690,7 @@ impl Game3D {
         self.near_portal = None;
         match self.loc {
             Loc::World => {
-                if (player_pos - world::GATE_POS).length() < PORTAL_R {
+                if (player_pos - self.gate_pos).length() < PORTAL_R {
                     self.near_portal = Some(PortalKind::EnterDungeon);
                 }
             }
@@ -1642,7 +1750,8 @@ impl Game3D {
         } else if let Some(idx) = self.near_item {
             format!("{}: {}", t("hud_pickup", &lang), self.world_items[idx].name)
         } else if let Some(idx) = self.near_npc {
-            format!("{} {}", t("hud_interact", &lang), NPC_DATA[idx].name)
+            format!("{} {}", t("hud_interact", &lang),
+                    self.npcs.get(idx).map(|n| n.name.as_str()).unwrap_or("?"))
         } else {
             String::new()
         };
@@ -1898,7 +2007,7 @@ impl Game3D {
 
     /// Обработка убитых врагов: XP, дроп, эффекты, квест босса.
     fn process_kills(&mut self) {
-        let mut kills: Vec<(Vector3, f32, bool)> = Vec::new();
+        let mut kills: Vec<(Vector3, f32, bool, String)> = Vec::new();
         let mut i = 0;
         while i < self.enemies.len() {
             let alive = self.enemies[i].bind().alive;
@@ -1906,7 +2015,8 @@ impl Game3D {
                 let pos = self.enemies[i].get_global_position();
                 let xp = self.enemies[i].bind().xp_value;
                 let is_boss = self.enemies[i].bind().is_boss;
-                kills.push((pos, xp, is_boss));
+                let kind = self.enemies[i].bind().cfg_id.to_string();
+                kills.push((pos, xp, is_boss, kind));
                 let e = self.enemies.remove(i);
                 e.free();
             } else {
@@ -1914,9 +2024,11 @@ impl Game3D {
             }
         }
 
-        for (pos, xp, is_boss) in kills {
+        for (pos, xp, is_boss, kind) in kills {
             self.spawn_fx("res://assets/effects/effect_blood.png",
                           pos + Vector3::new(0.0, 0.9, 0.0), 0.014, 0.4);
+            // прогресс kill-квестов
+            self.bump_quests("kill", &kind);
 
             // XP и уровни
             let levels = {
@@ -2090,6 +2202,10 @@ impl Game3D {
         wi.node.free();
         self.near_item = None;
         let name = wi.name.clone();
+
+        // прогресс collect-квестов
+        let picked_id = wi.item_id.clone();
+        self.bump_quests("collect", &picked_id);
 
         match wi.payload {
             Payload::Gold(v) => {
@@ -2350,15 +2466,30 @@ impl Game3D {
     // ── Диалог ───────────────────────────────────────────────────────────────
 
     fn start_dialogue(&mut self, npc_idx: usize) {
-        if npc_idx >= NPC_DATA.len() { return; }
-        let dynamic = self.state.as_ref()
-            .map(|s| npc_scene_id(NPC_DATA[npc_idx].id, s))
-            .unwrap_or("");
-        let scene_id = if dynamic.is_empty() { NPC_DATA[npc_idx].scene_id } else { dynamic };
-        let scene = match self.state.as_ref().and_then(|s| get_scene(scene_id, s)) {
-            Some(s) => s,
-            None => return,
+        let Some(npc) = self.npcs.get(npc_idx) else { return };
+        let (npc_id, npc_name) = (npc.id.clone(), npc.name.clone());
+        let scene_kind = npc.scene.clone();
+        let quest_id = npc.quest.clone();
+
+        // 1) story-персонажи: динамический выбор сцены из story.rs
+        // 2) конкретный scene_id
+        // 3) квест-гивер: сгенерированная сцена выдачи/прогресса/сдачи
+        let scene = match scene_kind.as_deref() {
+            Some("story") => {
+                let dynamic = self.state.as_ref()
+                    .map(|s| npc_scene_id(&npc_id, s))
+                    .unwrap_or("");
+                self.state.as_ref().and_then(|s| get_scene(dynamic, s))
+            }
+            Some(id) if !id.is_empty() => {
+                self.state.as_ref().and_then(|s| get_scene(id, s))
+            }
+            _ => None,
         };
+        let _ = quest_id;
+        let scene = scene.or_else(|| self.make_giver_scene(&npc_name, &npc_id));
+        let Some(scene) = scene else { return };
+
         self.scene = Some(scene);
         self.line_idx = 0;
         self.mode = Mode::Dialogue;
@@ -2367,6 +2498,118 @@ impl Game3D {
         if let Some(ref mut lbl) = self.hint_label { lbl.set_visible(false); }
         Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::VISIBLE);
         self.refresh_dlg_ui();
+    }
+
+    /// Сцена для квест-гивера: NPC выдаёт свои квесты (giver == npc_id) по цепочке —
+    /// первый незавершённый; когда всё сдано — благодарность.
+    fn make_giver_scene(&self, npc_name: &str, npc_id: &str) -> Option<Scene> {
+        let cfg = self.cfg.as_ref()?;
+        let st = self.state.as_ref()?;
+        let next = cfg.quests.iter().find(|q| {
+            q.giver == npc_id && !st.quests.quests.iter()
+                .any(|x| x.id == q.id && x.state == crate::quest::QuestState::Completed)
+        });
+        match next {
+            Some(q) => self.make_quest_scene(npc_name, &q.id.clone()),
+            None => {
+                let has_any = cfg.quests.iter().any(|q| q.giver == npc_id);
+                if !has_any { return None; }
+                Some(Scene {
+                    id: format!("auto_thanks_{npc_id}"),
+                    lines: vec![Line::new(npc_name, "",
+                        "Ты сделал всё, о чём я просил. Квартал этого не забудет.")],
+                    choices: vec![],
+                })
+            }
+        }
+    }
+
+    /// Сгенерировать сцену диалога для конкретного квеста по его состоянию.
+    fn make_quest_scene(&self, npc_name: &str, quest_id: &str) -> Option<Scene> {
+        let cfg = self.cfg.as_ref()?;
+        let q = cfg.quest(quest_id)?.clone();
+        let st = self.state.as_ref()?;
+
+        let taken = st.quests.quests.iter().any(|x| x.id == q.id);
+        let done  = st.quests.quests.iter()
+            .any(|x| x.id == q.id && x.state == crate::quest::QuestState::Completed);
+        let progress = self.quest_progress(&q);
+        let ready = progress >= q.count;
+
+        let mut lines = Vec::new();
+        let mut choices = Vec::new();
+
+        if done {
+            lines.push(Line::new(npc_name, "", "Спасибо ещё раз. Ты уже помог мне — заходи просто так."));
+        } else if !taken {
+            lines.push(Line::new(npc_name, "", &q.desc_ru));
+            lines.push(Line::new(npc_name, "",
+                &format!("Награда: {} XP, {} зол. Возьмёшься?", q.reward_xp, q.reward_gold)));
+            choices.push(Choice {
+                text: format!("Взять задание «{}»", q.title_ru),
+                requires: None,
+                effects: vec![Effect::Quest {
+                    id: q.id.clone(), title: q.title_ru.clone(), desc: q.desc_ru.clone(),
+                }],
+                next: None,
+            });
+            choices.push(Choice::simple("Не сейчас.", vec![]));
+        } else if ready {
+            lines.push(Line::new(npc_name, "", "Сделано? Отлично. Вот твоя награда."));
+            choices.push(Choice {
+                text: "Сдать задание".into(),
+                requires: None,
+                effects: vec![
+                    Effect::QuestDone(q.id.clone()),
+                    Effect::Xp(q.reward_xp),
+                    Effect::Gold(q.reward_gold),
+                ],
+                next: None,
+            });
+            choices.push(Choice::simple("Ещё вернусь.", vec![]));
+        } else {
+            lines.push(Line::new(npc_name, "",
+                &format!("Как продвигается? {} — {}/{}.", q.title_ru, progress, q.count)));
+        }
+
+        Some(Scene { id: format!("auto_quest_{}", q.id), lines, choices })
+    }
+
+    /// Текущий прогресс квеста (kill/collect — счётчик, clear_dungeon — глубина).
+    fn quest_progress(&self, q: &crate::config::QuestCfg) -> u32 {
+        let Some(st) = self.state.as_ref() else { return 0 };
+        match q.kind.as_str() {
+            "clear_dungeon" => st.dungeons_cleared,
+            _ => st.quest_kills.get(&q.id).copied().unwrap_or(0),
+        }
+    }
+
+    /// Инкремент прогресса kill/collect-квестов по событию.
+    fn bump_quests(&mut self, kind: &str, target: &str) {
+        let Some(cfg) = self.cfg.as_ref() else { return };
+        let matching: Vec<(String, u32, String)> = cfg.quests.iter()
+            .filter(|q| q.kind == kind && q.target == target)
+            .map(|q| (q.id.clone(), q.count, q.title_ru.clone()))
+            .collect();
+        if matching.is_empty() { return; }
+
+        let Some(st) = self.state.as_mut() else { return };
+        let mut notices = Vec::new();
+        for (qid, count, title) in matching {
+            let active = st.quests.quests.iter()
+                .any(|x| x.id == qid && x.state == crate::quest::QuestState::Active);
+            if !active { continue; }
+            let c = st.quest_kills.entry(qid.clone()).or_insert(0);
+            if *c < count {
+                *c += 1;
+                if *c >= count {
+                    notices.push(format!("Задание готово к сдаче: «{}»", title));
+                } else {
+                    notices.push(format!("{}: {}/{}", title, *c, count));
+                }
+            }
+        }
+        for n in notices { self.show_flash(&n); }
     }
 
     fn advance_dialogue(&mut self) {
@@ -2395,8 +2638,18 @@ impl Game3D {
             if idx >= avail.len() { return; }
             (avail[idx].effects.clone(), avail[idx].next.clone())
         };
+        let lvl_before = self.state.as_ref().map(|s| s.level).unwrap_or(1);
         let msgs = self.state.as_mut().unwrap().apply(&effects);
         for m in msgs { self.show_flash(&m); }
+        // Effect::Xp мог поднять уровень — пересчитать статы
+        let lvl_after = self.state.as_ref().map(|s| s.level).unwrap_or(1);
+        if lvl_after != lvl_before {
+            let (ci, si) = {
+                let st = self.state.as_ref().unwrap();
+                (st.class_idx.unwrap_or(0), st.spec_idx)
+            };
+            self.apply_loadout(ci, si, false);
+        }
         if let Some(next_id) = next {
             let new_scene = self.state.as_ref().and_then(|s| get_scene(&next_id, s));
             if let Some(sc) = new_scene {

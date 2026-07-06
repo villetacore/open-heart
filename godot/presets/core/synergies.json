@@ -1,0 +1,126 @@
+[
+  {
+    "id": "glass_cannon",
+    "needs": [
+      "sharpshooter:2",
+      "fleet_footed:2"
+    ],
+    "name_ru": "Стеклянная пушка",
+    "desc_ru": "+15% урона, но −30 HP.",
+    "effects": [
+      {
+        "stat": "dmg",
+        "add": 0.15
+      },
+      {
+        "stat": "max_hp",
+        "add": -30.0
+      }
+    ]
+  },
+  {
+    "id": "lifedrinker",
+    "needs": [
+      "vampirism:2",
+      "rapid_fire:1"
+    ],
+    "name_ru": "Кровопийца",
+    "desc_ru": "+10% вампиризма.",
+    "effects": [
+      {
+        "stat": "lifesteal",
+        "add": 0.1
+      }
+    ]
+  },
+  {
+    "id": "fortress",
+    "needs": [
+      "thick_skin:3",
+      "juggernaut:2"
+    ],
+    "name_ru": "Крепость",
+    "desc_ru": "+50 к максимуму HP.",
+    "effects": [
+      {
+        "stat": "max_hp",
+        "add": 50.0
+      }
+    ]
+  },
+  {
+    "id": "warlord",
+    "needs": [
+      "executioner:1",
+      "juggernaut:1"
+    ],
+    "name_ru": "Полководец",
+    "desc_ru": "+10% урона.",
+    "effects": [
+      {
+        "stat": "dmg",
+        "add": 0.1
+      }
+    ]
+  },
+  {
+    "id": "ammo_lord",
+    "needs": [
+      "scavenger:3",
+      "deep_pockets:1"
+    ],
+    "name_ru": "Повелитель боезапаса",
+    "desc_ru": "+30% к лимиту боезапаса.",
+    "effects": [
+      {
+        "stat": "ammo",
+        "add": 0.3
+      }
+    ]
+  },
+  {
+    "id": "blood_engine",
+    "needs": [
+      "leech_rounds:1",
+      "vampirism:1"
+    ],
+    "name_ru": "Кровавый мотор",
+    "desc_ru": "+8% вампиризма.",
+    "effects": [
+      {
+        "stat": "lifesteal",
+        "add": 0.08
+      }
+    ]
+  },
+  {
+    "id": "storm_of_steel",
+    "needs": [
+      "heavy_rounds:1",
+      "rapid_fire:3"
+    ],
+    "name_ru": "Стальной шторм",
+    "desc_ru": "−10% кулдаун оружия.",
+    "effects": [
+      {
+        "stat": "cd",
+        "mult": 0.9
+      }
+    ]
+  },
+  {
+    "id": "marathon",
+    "needs": [
+      "second_wind:1",
+      "fleet_footed:3"
+    ],
+    "name_ru": "Марафонец",
+    "desc_ru": "+12% скорость бега.",
+    "effects": [
+      {
+        "stat": "speed",
+        "mult": 1.12
+      }
+    ]
+  }
+]

@@ -9,6 +9,7 @@ pub enum Effect {
     Flag(String),
     UnFlag(String),
     Gold(i32),
+    Xp(u32),                   // опыт (может дать уровень — обрабатывается после apply)
     Quest { id: String, title: String, desc: String },
     QuestDone(String),
     Flash(String),              // просто текст на экране

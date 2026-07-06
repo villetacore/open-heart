@@ -7,7 +7,7 @@
 
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use std::sync::RwLock;
 
 fn f_one() -> f32 { 1.0 }
 fn u_one() -> u32 { 1 }
@@ -84,36 +84,42 @@ fn parse_syn(json: &str) -> Result<Vec<SynergyDef>, String> {
     serde_json::from_str(json).map_err(|e| e.to_string())
 }
 
-const EMBEDDED_PERKS: &str = include_str!("../../godot/data/perks.json");
-const EMBEDDED_SYN:   &str = include_str!("../../godot/data/synergies.json");
+const EMBEDDED_PERKS: &str = include_str!("../../godot/presets/core/perks.json");
+const EMBEDDED_SYN:   &str = include_str!("../../godot/presets/core/synergies.json");
 
-static PERKS: OnceLock<Vec<PerkDef>> = OnceLock::new();
-static SYNERGIES: OnceLock<Vec<SynergyDef>> = OnceLock::new();
+static PERKS: RwLock<Option<&'static [PerkDef]>> = RwLock::new(None);
+static SYNERGIES: RwLock<Option<&'static [SynergyDef]>> = RwLock::new(None);
 
 fn embedded_perks() -> Vec<PerkDef> { parse_perks(EMBEDDED_PERKS).expect("встроенный perks.json") }
 fn embedded_syn() -> Vec<SynergyDef> { parse_syn(EMBEDDED_SYN).expect("встроенный synergies.json") }
 
-pub fn init(perks_json: Option<&str>, syn_json: Option<&str>) {
-    if PERKS.get().is_none() {
-        let d = match perks_json {
-            Some(j) => parse_perks(j).unwrap_or_else(|e| {
-                godot::global::godot_warn!("perks.json: {e}; using embedded"); embedded_perks() }),
-            None => embedded_perks(),
-        };
-        let _ = PERKS.set(d);
-    }
-    if SYNERGIES.get().is_none() {
-        let d = match syn_json {
-            Some(j) => parse_syn(j).unwrap_or_else(|e| {
-                godot::global::godot_warn!("synergies.json: {e}; using embedded"); embedded_syn() }),
-            None => embedded_syn(),
-        };
-        let _ = SYNERGIES.set(d);
-    }
+/// Загрузить (или перезагрузить при смене пресета) перки и синергии.
+pub fn load(perks_json: Option<&str>, syn_json: Option<&str>) {
+    let d = match perks_json {
+        Some(j) => parse_perks(j).unwrap_or_else(|e| {
+            godot::global::godot_warn!("perks.json: {e}; using embedded"); embedded_perks() }),
+        None => embedded_perks(),
+    };
+    *PERKS.write().unwrap() = Some(Box::leak(d.into_boxed_slice()));
+
+    let d = match syn_json {
+        Some(j) => parse_syn(j).unwrap_or_else(|e| {
+            godot::global::godot_warn!("synergies.json: {e}; using embedded"); embedded_syn() }),
+        None => embedded_syn(),
+    };
+    *SYNERGIES.write().unwrap() = Some(Box::leak(d.into_boxed_slice()));
 }
 
-pub fn perks() -> &'static [PerkDef] { PERKS.get_or_init(embedded_perks).as_slice() }
-pub fn synergies() -> &'static [SynergyDef] { SYNERGIES.get_or_init(embedded_syn).as_slice() }
+pub fn perks() -> &'static [PerkDef] {
+    if let Some(p) = *PERKS.read().unwrap() { return p; }
+    load(None, None);
+    PERKS.read().unwrap().expect("perks after load")
+}
+pub fn synergies() -> &'static [SynergyDef] {
+    if let Some(s) = *SYNERGIES.read().unwrap() { return s; }
+    load(None, None);
+    SYNERGIES.read().unwrap().expect("synergies after load")
+}
 
 pub fn perk_by_id(id: &str) -> Option<&'static PerkDef> {
     perks().iter().find(|p| p.id == id)

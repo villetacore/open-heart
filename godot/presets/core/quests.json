@@ -1,0 +1,29 @@
+[
+  { "id": "cull_grunts", "title_ru": "Прореживание", "giver": "hunter",
+    "desc_ru": "Боевики распоясались на восточных пустошах. Сократи поголовье: восемь боевиков.",
+    "kind": "kill", "target": "grunt", "count": 8, "reward_xp": 260, "reward_gold": 90 },
+
+  { "id": "neon_shards", "title_ru": "Светящаяся коллекция", "giver": "collector",
+    "desc_ru": "Собери для меня три неоновых осколка. Плачу щедро — они мерцают как сердце города.",
+    "kind": "collect", "target": "neon_shard", "count": 3, "reward_xp": 200, "reward_gold": 140 },
+
+  { "id": "depth_two", "title_ru": "Глубже во тьму", "giver": "warden",
+    "desc_ru": "Врата шепчут о втором ярусе. Зачисти данж до глубины 2 — убей двух стражей.",
+    "kind": "clear_dungeon", "target": "", "count": 2, "reward_xp": 420, "reward_gold": 150 },
+
+  { "id": "medkit_run", "title_ru": "Полевые запасы", "giver": "medic",
+    "desc_ru": "Раненым нужны аптечки. Принеси четыре штуки — в пустошах их разбросало взрывом.",
+    "kind": "collect", "target": "medkit", "count": 4, "reward_xp": 180, "reward_gold": 70 },
+
+  { "id": "shade_hunt", "title_ru": "Охота на тень", "giver": "hunter",
+    "desc_ru": "На юго-востоке видели Тень — тварь из пустоты. Убей её, пока она не убила кого-то из наших.",
+    "kind": "kill", "target": "shade", "count": 1, "reward_xp": 300, "reward_gold": 120 },
+
+  { "id": "vermin_sweep", "title_ru": "Дезинсекция", "giver": "medic",
+    "desc_ru": "Падальщики разносят заразу. Пять голов — и квартал вздохнёт спокойнее.",
+    "kind": "kill", "target": "vermin", "count": 5, "reward_xp": 150, "reward_gold": 60 },
+
+  { "id": "royal_trophy", "title_ru": "Королевский трофей", "giver": "collector",
+    "desc_ru": "Королевские стражи носят золочёные печати. Добудь одну — убей стража.",
+    "kind": "kill", "target": "royal_guard", "count": 1, "reward_xp": 350, "reward_gold": 200 }
+]

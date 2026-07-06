@@ -23,17 +23,11 @@ const WALK_FRAMES: [(f32, f32, f32, f32); 2] = [
     (384.0, 0.0, 128.0, 256.0),
 ];
 
-fn enemy_tex(id: &str) -> &'static str {
-    match id {
-        "grunt"   => "res://assets/sprites/characters/enemy_grunt.png",
-        "fast"    => "res://assets/sprites/characters/enemy_fast.png",
-        "heavy"   => "res://assets/sprites/characters/enemy_heavy.png",
-        "brute"   => "res://assets/sprites/characters/enemy_brute.png",
-        "sniper"  => "res://assets/sprites/characters/enemy_sniper.png",
-        "cultist" => "res://assets/sprites/characters/enemy_cultist.png",
-        _         => "res://assets/sprites/characters/enemy_grunt.png",
-    }
+/// Путь спрайт-листа по имени (без префикса пути): "grunt" → enemy_grunt.png.
+fn enemy_tex(sprite: &str) -> String {
+    format!("res://assets/sprites/characters/enemy_{}.png", sprite)
 }
+const ENEMY_TEX_FALLBACK: &str = "res://assets/sprites/characters/enemy_grunt.png";
 
 #[derive(PartialEq, Clone, Copy)]
 enum EState { Patrol, Chase, Attack, Dead }
@@ -56,6 +50,7 @@ pub struct Enemy {
     pub xp_value:     f32,
     pub is_boss:      bool,
     resist:           [f32; 4],   // резисты по DmgType::idx
+    vis_scale:        f32,        // масштаб спрайта/коллайдера
 
     // runtime
     state:            EState,
@@ -71,7 +66,7 @@ pub struct Enemy {
 
     // визуал
     pending_color:    Color,
-    tex_path:         &'static str,
+    tex_path:         String,
     sprite:           Option<Gd<Sprite3D>>,
     anim_timer:       f32,
     anim_frame:       usize,
@@ -85,7 +80,7 @@ impl Enemy {
         id: &str, hp: f32, speed: f32, damage: f32,
         atk_range: f32, cooldown: f32, chase: f32, patrol: f32,
         color: Color, spawn: Vector3, xp: f32, mult: f32, is_boss: bool,
-        resist: [f32; 4],
+        resist: [f32; 4], sprite: &str, scale: f32,
     ) {
         self.cfg_id        = GString::from(id);
         self.hp            = hp * mult;
@@ -100,10 +95,11 @@ impl Enemy {
         self.patrol_target = spawn;
         self.alive         = true;
         self.pending_color = color;
-        self.tex_path      = enemy_tex(id);
+        self.tex_path      = enemy_tex(if sprite.is_empty() { id } else { sprite });
         self.xp_value      = xp * mult;
         self.is_boss       = is_boss;
         self.resist        = resist;
+        self.vis_scale     = if is_boss { scale.max(1.35) } else { scale.max(0.5) };
     }
 
     /// Урон с учётом типа и резиста. Возвращает фактически нанесённый урон.
@@ -171,27 +167,31 @@ impl ICharacterBody3D for Enemy {
             alive: true,
             pending_dmg: 0.0,
             pending_color: Color::from_rgba(1.0, 1.0, 1.0, 1.0),
-            tex_path: "res://assets/sprites/characters/enemy_grunt.png",
+            tex_path: ENEMY_TEX_FALLBACK.to_string(),
             sprite: None,
             anim_timer: 0.0,
             anim_frame: 0,
             hurt_flash: 0.0,
+            vis_scale: 1.0,
         }
     }
 
     fn ready(&mut self) {
         let color = self.pending_color;
-        let tex_path = self.tex_path;
-        let scale = if self.is_boss { 0.014 } else { 0.010 };
+        let tex_path = self.tex_path.clone();
+        let s = self.vis_scale;
+        let px = 0.010 * s;
 
         let mut sp = Sprite3D::new_alloc();
-        sp.set_pixel_size(scale);
+        sp.set_pixel_size(px);
         sp.set_billboard_mode(BillboardMode::ENABLED);
         sp.set_alpha_cut_mode(AlphaCutMode::DISCARD);
         sp.set_texture_filter(TextureFilter::NEAREST);
-        sp.set_position(Vector3::new(0.0, if self.is_boss { 1.7 } else { 1.2 }, 0.0));
+        sp.set_position(Vector3::new(0.0, 1.2 * s, 0.0));
 
-        if let Some(img) = Image::load_from_file(tex_path) {
+        let img = Image::load_from_file(&tex_path)
+            .or_else(|| Image::load_from_file(ENEMY_TEX_FALLBACK));
+        if let Some(img) = img {
             if let Some(itex) = ImageTexture::create_from_image(&img) {
                 sp.set_texture(&itex.upcast::<Texture2D>());
                 sp.set_region_enabled(true);
@@ -206,10 +206,10 @@ impl ICharacterBody3D for Enemy {
 
         let mut col = CollisionShape3D::new_alloc();
         let mut cap = CapsuleShape3D::new_gd();
-        cap.set_radius(if self.is_boss { 0.45 } else { 0.3 });
-        cap.set_height(if self.is_boss { 2.2 } else { 1.6 });
+        cap.set_radius(0.3 * s);
+        cap.set_height(1.6 * s);
         col.set_shape(&cap);
-        col.set_position(Vector3::new(0.0, if self.is_boss { 1.1 } else { 0.8 }, 0.0));
+        col.set_position(Vector3::new(0.0, 0.8 * s, 0.0));
         self.base_mut().add_child(&col);
 
         self.base_mut().add_to_group("enemies");

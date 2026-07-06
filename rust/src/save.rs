@@ -42,7 +42,11 @@ pub struct SaveData {
     #[serde(default)] pub hearts: u32,
     #[serde(default)] pub perks: Vec<(String, u32)>,
     #[serde(default)] pub perk_points: u32,
+    #[serde(default = "default_preset")] pub preset: String,
+    #[serde(default)] pub quest_kills: Vec<(String, u32)>,
 }
+
+fn default_preset() -> String { "core".into() }
 
 impl SaveData {
     pub fn from_game(state: &GameState, player_hp: f32, ars: &Arsenal) -> Self {
@@ -76,6 +80,8 @@ impl SaveData {
             hearts:           state.hearts,
             perks:            state.perks.iter().map(|(k, v)| (k.clone(), *v)).collect(),
             perk_points:      state.perk_points,
+            preset:           state.preset.clone(),
+            quest_kills:      state.quest_kills.iter().map(|(k, v)| (k.clone(), *v)).collect(),
         }
     }
 
@@ -106,6 +112,8 @@ impl SaveData {
         s.hearts           = self.hearts;
         s.perks            = self.perks.into_iter().collect();
         s.perk_points      = self.perk_points;
+        s.preset           = self.preset;
+        s.quest_kills      = self.quest_kills.into_iter().collect();
 
         let mut ars = Arsenal::new();
         for (i, v) in self.ammo.iter().take(4).enumerate() {

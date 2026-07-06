@@ -4,16 +4,21 @@
 use serde::{Deserialize, Serialize};
 use godot::classes::{FileAccess, file_access::ModeFlags};
 
+fn default_preset() -> String { "core".into() }
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub lang:        String,
     pub master_vol:  f32,
     pub mouse_sens:  f32,
+    /// Активный пресет игры (папка в res://presets или user://presets).
+    #[serde(default = "default_preset")]
+    pub preset:      String,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { lang: "ru".into(), master_vol: 0.8, mouse_sens: 0.002 }
+        Self { lang: "ru".into(), master_vol: 0.8, mouse_sens: 0.002, preset: "core".into() }
     }
 }
 

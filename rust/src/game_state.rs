@@ -102,6 +102,10 @@ pub struct GameState {
     pub hearts:           u32,      // собранные «сердца жизни» (+15 макс. HP каждое)
     pub perks:            HashMap<String, u32>, // id перка → купленный ранг
     pub perk_points:      u32,      // очки на покупку перков
+    /// Прогресс data-driven квестов (quest_id → счётчик убийств/подборов).
+    pub quest_kills:      HashMap<String, u32>,
+    /// Пресет, с которым начата эта игра.
+    pub preset:           String,
 }
 
 impl GameState {
@@ -131,6 +135,8 @@ impl GameState {
             hearts: 0,
             perks: HashMap::new(),
             perk_points: 0,
+            quest_kills: HashMap::new(),
+            preset: "core".into(),
         }
     }
 
@@ -171,6 +177,11 @@ impl GameState {
                 Effect::Flag(f) => { self.flags.insert(f.clone()); }
                 Effect::UnFlag(f) => { self.flags.remove(f); }
                 Effect::Gold(v) => { self.gold += v; msgs.push(format!("{:+} зол.", v)); }
+                Effect::Xp(v) => {
+                    let gained = self.add_xp(*v);
+                    msgs.push(format!("+{} XP", v));
+                    if gained > 0 { msgs.push(format!("УРОВЕНЬ {}!", self.level)); }
+                }
                 Effect::Flash(m) => msgs.push(m.clone()),
                 Effect::Quest { id, title, desc } => {
                     self.quests.add(id, title, desc);

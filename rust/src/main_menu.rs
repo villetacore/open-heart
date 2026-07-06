@@ -27,6 +27,7 @@ pub struct MainMenu {
     // Ректы кнопок для hit-теста
     r_new:      Rect2,
     r_cont:     Rect2,
+    r_preset:   Rect2,
     r_settings: Rect2,
     r_quit:     Rect2,
     r_lang:     Rect2,
@@ -34,8 +35,13 @@ pub struct MainMenu {
 
     // Дочерние узлы которые нам нужно обновлять
     lbl_continue: Option<Gd<Label>>,
+    lbl_preset:   Option<Gd<Label>>,
+    lbl_preset_desc: Option<Gd<Label>>,
     panel_settings: Option<Gd<Panel>>,
     lbl_lang_val:   Option<Gd<Label>>,
+
+    presets:     Vec<String>,
+    preset_idx:  usize,
 }
 
 // ── Утилиты ───────────────────────────────────────────────────────────────────
@@ -81,18 +87,27 @@ impl IControl for MainMenu {
             show_settings: false,
             r_new:      btn_rect(0.0),
             r_cont:     btn_rect(0.0),
+            r_preset:   btn_rect(0.0),
             r_settings: btn_rect(0.0),
             r_quit:     btn_rect(0.0),
             r_lang:     btn_rect(0.0),
             r_back:     btn_rect(0.0),
             lbl_continue:   None,
+            lbl_preset:     None,
+            lbl_preset_desc: None,
             panel_settings: None,
             lbl_lang_val:   None,
+            presets:    Vec::new(),
+            preset_idx: 0,
         }
     }
 
     fn ready(&mut self) {
         self.settings = Settings::load();
+        self.presets = crate::content::discover_presets();
+        self.preset_idx = self.presets.iter()
+            .position(|p| *p == self.settings.preset)
+            .unwrap_or(0);
         self.base_mut().set_anchors_preset(
             godot::classes::control::LayoutPreset::FULL_RECT
         );
@@ -101,6 +116,7 @@ impl IControl for MainMenu {
         self.build_background();
         self.build_main_panel(&lang);
         self.build_settings_panel(&lang);
+        self.refresh_preset_label();
     }
 
     fn input(&mut self, event: Gd<InputEvent>) {
@@ -171,12 +187,26 @@ impl MainMenu {
         let lbl = self.make_btn_colored(t("menu_continue", lang), self.r_cont, cont_color);
         self.lbl_continue = Some(lbl);
 
+        // Кнопка «Пресет» (циклическое переключение установленных игр-пресетов)
+        self.r_preset = btn_rect(btn_start_y + gap * 2.0);
+        let lblp = self.make_btn_colored("Пресет: …", self.r_preset,
+                                         Color::from_rgba(1.0, 0.72, 0.9, 1.0));
+        self.lbl_preset = Some(lblp);
+        let mut desc = Label::new_alloc();
+        desc.set_position(Vector2::new(0.0, btn_start_y + gap * 2.0 + BTN_H - 4.0));
+        desc.set_size(Vector2::new(W, 24.0));
+        desc.set_horizontal_alignment(HorizontalAlignment::CENTER);
+        desc.add_theme_font_size_override("font_size", 13);
+        desc.add_theme_color_override("font_color", Color::from_rgba(0.5, 0.42, 0.6, 1.0));
+        self.base_mut().add_child(&desc);
+        self.lbl_preset_desc = Some(desc);
+
         // Кнопка «Настройки»
-        self.r_settings = btn_rect(btn_start_y + gap * 2.0);
+        self.r_settings = btn_rect(btn_start_y + gap * 3.0);
         self.make_btn(t("menu_settings", lang), self.r_settings);
 
         // Кнопка «Выход»
-        self.r_quit = btn_rect(btn_start_y + gap * 3.0);
+        self.r_quit = btn_rect(btn_start_y + gap * 4.0);
         self.make_btn(t("menu_quit", lang), self.r_quit);
 
         // Подсказка внизу
@@ -274,11 +304,32 @@ impl MainMenu {
             if save::exists() {
                 self.load_scene("res://main.tscn");
             }
+        } else if self.r_preset.contains_point(pos) {
+            // цикл по установленным пресетам («разные игры»)
+            if !self.presets.is_empty() {
+                self.preset_idx = (self.preset_idx + 1) % self.presets.len();
+                self.settings.preset = self.presets[self.preset_idx].clone();
+                self.settings.save();
+                self.refresh_preset_label();
+            }
         } else if self.r_settings.contains_point(pos) {
             self.show_settings = true;
             if let Some(ref mut p) = self.panel_settings { p.set_visible(true); }
         } else if self.r_quit.contains_point(pos) {
             self.base().get_tree().quit();
+        }
+    }
+
+    fn refresh_preset_label(&mut self) {
+        let id = self.presets.get(self.preset_idx).cloned().unwrap_or_else(|| "core".into());
+        let info = crate::content::preset_info(&id);
+        let multi = self.presets.len() > 1;
+        if let Some(ref mut l) = self.lbl_preset {
+            let arrow = if multi { "  ▸" } else { "" };
+            l.set_text(&format!("Пресет: {}{}", info.name_ru, arrow));
+        }
+        if let Some(ref mut d) = self.lbl_preset_desc {
+            d.set_text(&info.desc_ru);
         }
     }
 

@@ -15,6 +15,7 @@ pub mod gfx;
 pub mod item;
 pub mod locale;
 pub mod main_menu;
+pub mod map;
 pub mod npc;
 pub mod perk;
 pub mod player;

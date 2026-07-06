@@ -149,6 +149,10 @@ weapon_8={
 ]
 }
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/oh_editor/plugin.cfg")
+
 [display]
 
 window/size/viewport_width=1920

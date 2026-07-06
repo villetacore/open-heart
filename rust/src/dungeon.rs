@@ -241,6 +241,12 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache) -> DungeonPlan {
         }
     }
 
+    // Спавн-списки (декор-цикл тоже кладёт сюда награды платформ)
+    let mut enemies: Vec<EnemySpawn> = Vec::new();
+    let mut items:   Vec<(String, Vector3)> = Vec::new();
+    let mut ammo:    Vec<(AmmoType, u32, Vector3)> = Vec::new();
+    let mut weapons: Vec<(WeaponId, Vector3)> = Vec::new();
+
     // 4. Комнатные детали: свет, души-факелы, лава, колонны
     let entry_idx = 0usize;
     // босс — самая дальняя комната от входа
@@ -296,6 +302,41 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache) -> DungeonPlan {
             root.add_child(&ll);
         }
 
+        // вертикальность: платформа с рампой и наградой в больших комнатах
+        if !is_boss_room && k != entry_idx && r.w >= 6 && r.h >= 6 && rng.chance(0.45) {
+            let ph = 1.4; // высота платформы
+            let pw = CELL * 1.8;
+            let ppos = cell_world(cx + 1, cz - 1);
+            let plat = make_box(ppos + Vector3::new(0.0, ph - 0.15, 0.0),
+                                Vector3::new(pw, 0.3, pw),
+                                c_dark, t_accent.as_ref(), 2.0);
+            root.add_child(&plat);
+            // опоры
+            for (sx, sz) in [(-1.0f32, -1.0f32), (1.0, 1.0), (-1.0, 1.0), (1.0, -1.0)] {
+                let leg = make_box(
+                    ppos + Vector3::new(sx * pw * 0.38, (ph - 0.3) * 0.5, sz * pw * 0.38),
+                    Vector3::new(0.3, ph - 0.3, 0.3),
+                    c_dark, t_wall.as_ref(), 1.0);
+                root.add_child(&leg);
+            }
+            // наклонная рампа на платформу (повёрнутый бокс — честная коллизия)
+            let ramp_len = 3.4f32;
+            let pitch = (ph / ramp_len).atan();
+            let full = (ramp_len * ramp_len + ph * ph).sqrt();
+            let rstart = ppos + Vector3::new(0.0, 0.0, pw * 0.5);
+            let mut ramp = make_box(
+                rstart + Vector3::new(0.0, ph * 0.5, ramp_len * 0.5),
+                Vector3::new(1.8, 0.25, full + 0.2),
+                c_dark, t_floor.as_ref(), 2.0);
+            ramp.set_rotation(Vector3::new(pitch, 0.0, 0.0));
+            root.add_child(&ramp);
+            // награда наверху
+            items.push(("gold_stack".into(), ppos + Vector3::new(0.0, ph, 0.0)));
+            if rng.chance(0.4) {
+                items.push(("big_potion".into(), ppos + Vector3::new(0.6, ph, 0.4)));
+            }
+        }
+
         // колонны в больших комнатах
         if r.w >= 6 && r.h >= 6 && rng.chance(0.6) {
             for (dx, dz) in [(-2, -2), (2, 2), (-2, 2), (2, -2)] {
@@ -316,10 +357,6 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache) -> DungeonPlan {
     root.add_child(&alt);
 
     // 5. Спавны
-    let mut enemies: Vec<EnemySpawn> = Vec::new();
-    let mut items:   Vec<(String, Vector3)> = Vec::new();
-    let mut ammo:    Vec<(AmmoType, u32, Vector3)> = Vec::new();
-    let mut weapons: Vec<(WeaponId, Vector3)> = Vec::new();
 
     let mult = 1.0 + (depth - 1) as f32 * 0.18;
     let pool_early: [&str; 3] = ["grunt", "fast", "cultist"];

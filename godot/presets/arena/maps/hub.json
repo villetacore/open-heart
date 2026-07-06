@@ -1,86 +1,531 @@
 {
   "id": "hub",
   "name_ru": "Кровавая арена",
-  "env": { "sky": "sky_storm", "fog_density": 0.018, "ambient": [0.34, 0.16, 0.2], "ambient_energy": 0.85 },
-  "player_spawn": [0, 1.1, 0],
-  "gate": [0, 0, -24],
-  "ground": { "size": 64, "tex": "dtile_58", "uv": 5, "border_h": 7.0, "border_tex": "wall_arena" },
-
+  "env": {
+    "sky": "sky_storm",
+    "fog_density": 0.018,
+    "ambient": [
+      0.34,
+      0.16,
+      0.2
+    ],
+    "ambient_energy": 0.85
+  },
+  "player_spawn": [
+    0,
+    1.1,
+    0
+  ],
+  "gate": [
+    0,
+    0,
+    -24
+  ],
+  "ground": {
+    "size": 64,
+    "tex": "dtile_58",
+    "uv": 5,
+    "border_h": 7.0,
+    "border_tex": "wall_arena"
+  },
   "blocks": [
-    { "shape": "box", "pos": [-14, 1.0, -14], "size": [8, 2.0, 8], "tex": "wall_arena", "uv": 3 },
-    { "shape": "ramp", "from": [-14, 0, -7.5], "to": [-14, 2.05, -11.5], "width": 3, "tex": "dtile_02", "uv": 2 },
-    { "shape": "box", "pos": [14, 1.0, 14], "size": [8, 2.0, 8], "tex": "wall_arena", "uv": 3 },
-    { "shape": "ramp", "from": [14, 0, 7.5], "to": [14, 2.05, 11.5], "width": 3, "tex": "dtile_02", "uv": 2 },
-    { "shape": "cylinder", "pos": [14, 0, -14], "radius": 2.2, "height": 3.4, "tex": "wall_boss", "uv": 2 },
-    { "shape": "cylinder", "pos": [-14, 0, 14], "radius": 2.2, "height": 3.4, "tex": "wall_boss", "uv": 2 },
-    { "shape": "box", "pos": [0, 0.5, 8], "size": [5, 1.0, 1.2], "tex": "wall_main", "rot": 20 },
-    { "shape": "box", "pos": [6, 0.5, -6], "size": [4, 1.0, 1.2], "tex": "wall_main", "rot": -35 },
-    { "shape": "box", "pos": [-7, 0.5, 2], "size": [4, 1.0, 1.2], "tex": "wall_main", "rot": 65 },
-    { "shape": "stairs", "from": [22, 0, 0], "to": [22, 3.0, -6], "width": 3, "steps": 8, "tex": "wall_main" },
-    { "shape": "box", "pos": [22, 3.0, -10], "size": [6, 0.4, 8], "tex": "dtile_19", "uv": 3 }
+    {
+      "shape": "box",
+      "pos": [
+        -14,
+        1.0,
+        -14
+      ],
+      "size": [
+        8,
+        2.0,
+        8
+      ],
+      "tex": "wall_arena",
+      "uv": 3
+    },
+    {
+      "shape": "ramp",
+      "from": [
+        -14,
+        0,
+        -7.5
+      ],
+      "to": [
+        -14,
+        2.05,
+        -11.5
+      ],
+      "width": 3,
+      "tex": "dtile_02",
+      "uv": 2
+    },
+    {
+      "shape": "box",
+      "pos": [
+        14,
+        1.0,
+        14
+      ],
+      "size": [
+        8,
+        2.0,
+        8
+      ],
+      "tex": "wall_arena",
+      "uv": 3
+    },
+    {
+      "shape": "ramp",
+      "from": [
+        14,
+        0,
+        7.5
+      ],
+      "to": [
+        14,
+        2.05,
+        11.5
+      ],
+      "width": 3,
+      "tex": "dtile_02",
+      "uv": 2
+    },
+    {
+      "shape": "cylinder",
+      "pos": [
+        14,
+        0,
+        -14
+      ],
+      "radius": 2.2,
+      "height": 3.4,
+      "tex": "wall_boss",
+      "uv": 2
+    },
+    {
+      "shape": "cylinder",
+      "pos": [
+        -14,
+        0,
+        14
+      ],
+      "radius": 2.2,
+      "height": 3.4,
+      "tex": "wall_boss",
+      "uv": 2
+    },
+    {
+      "shape": "box",
+      "pos": [
+        0,
+        0.5,
+        8
+      ],
+      "size": [
+        5,
+        1.0,
+        1.2
+      ],
+      "tex": "wall_main",
+      "rot": 20
+    },
+    {
+      "shape": "box",
+      "pos": [
+        6,
+        0.5,
+        -6
+      ],
+      "size": [
+        4,
+        1.0,
+        1.2
+      ],
+      "tex": "wall_main",
+      "rot": -35
+    },
+    {
+      "shape": "box",
+      "pos": [
+        -7,
+        0.5,
+        2
+      ],
+      "size": [
+        4,
+        1.0,
+        1.2
+      ],
+      "tex": "wall_main",
+      "rot": 65
+    },
+    {
+      "shape": "stairs",
+      "from": [
+        22,
+        0,
+        0
+      ],
+      "to": [
+        22,
+        3.0,
+        -6
+      ],
+      "width": 3,
+      "steps": 8,
+      "tex": "wall_main"
+    },
+    {
+      "shape": "box",
+      "pos": [
+        22,
+        3.0,
+        -10
+      ],
+      "size": [
+        6,
+        0.4,
+        8
+      ],
+      "tex": "dtile_19",
+      "uv": 3
+    }
   ],
-
   "glows": [
-    { "pos": [0, 0.03, 0],   "size": [6, 0.06, 6],  "tex": "liquid_red", "emission": [1.0, 0.25, 0.3], "uv": 2 },
-    { "pos": [-24, 0.03, 24],"size": [10, 0.06, 10],"tex": "liquid_red", "emission": [0.9, 0.2, 0.25], "uv": 3 }
+    {
+      "pos": [
+        0,
+        0.03,
+        0
+      ],
+      "size": [
+        6,
+        0.06,
+        6
+      ],
+      "tex": "liquid_red",
+      "emission": [
+        1.0,
+        0.25,
+        0.3
+      ],
+      "uv": 2
+    },
+    {
+      "pos": [
+        -24,
+        0.03,
+        24
+      ],
+      "size": [
+        10,
+        0.06,
+        10
+      ],
+      "tex": "liquid_red",
+      "emission": [
+        0.9,
+        0.2,
+        0.25
+      ],
+      "uv": 3
+    }
   ],
-
   "flats": [
-    { "tex": "neon_game_over", "pos": [0, 4.5, -31.2], "rot": 0, "px": 0.035, "glow": true },
-    { "tex": "neon_boys",      "pos": [-31.2, 3.2, 0], "rot": 90, "px": 0.03, "glow": true },
-    { "tex": "neon_hearts",    "pos": [31.2, 3.2, 0],  "rot": -90, "px": 0.03, "glow": true }
+    {
+      "tex": "neon_game_over",
+      "pos": [
+        0,
+        4.5,
+        -31.2
+      ],
+      "rot": 0,
+      "px": 0.035,
+      "glow": true
+    },
+    {
+      "tex": "neon_boys",
+      "pos": [
+        -31.2,
+        3.2,
+        0
+      ],
+      "rot": 90,
+      "px": 0.03,
+      "glow": true
+    },
+    {
+      "tex": "neon_hearts",
+      "pos": [
+        31.2,
+        3.2,
+        0
+      ],
+      "rot": -90,
+      "px": 0.03,
+      "glow": true
+    }
   ],
-
   "lights": [
-    { "pos": [0, 5.0, 0],    "color": [1.0, 0.3, 0.35], "energy": 2.2, "range": 26 },
-    { "pos": [-14, 4.2, -14],"color": [1.0, 0.5, 0.3],  "energy": 1.3, "range": 14 },
-    { "pos": [14, 4.2, 14],  "color": [1.0, 0.5, 0.3],  "energy": 1.3, "range": 14 },
-    { "pos": [22, 4.6, -10], "color": [0.7, 0.4, 1.0],  "energy": 1.2, "range": 12 },
-    { "pos": [0, 3.0, -24],  "color": [0.9, 0.3, 0.9],  "energy": 1.8, "range": 16 }
+    {
+      "pos": [
+        0,
+        5.0,
+        0
+      ],
+      "color": [
+        1.0,
+        0.3,
+        0.35
+      ],
+      "energy": 2.2,
+      "range": 26
+    },
+    {
+      "pos": [
+        -14,
+        4.2,
+        -14
+      ],
+      "color": [
+        1.0,
+        0.5,
+        0.3
+      ],
+      "energy": 1.3,
+      "range": 14
+    },
+    {
+      "pos": [
+        14,
+        4.2,
+        14
+      ],
+      "color": [
+        1.0,
+        0.5,
+        0.3
+      ],
+      "energy": 1.3,
+      "range": 14
+    },
+    {
+      "pos": [
+        22,
+        4.6,
+        -10
+      ],
+      "color": [
+        0.7,
+        0.4,
+        1.0
+      ],
+      "energy": 1.2,
+      "range": 12
+    },
+    {
+      "pos": [
+        0,
+        3.0,
+        -24
+      ],
+      "color": [
+        0.9,
+        0.3,
+        0.9
+      ],
+      "energy": 1.8,
+      "range": 16
+    }
   ],
-
   "props": [
-    { "tex": "street_dumpster", "pos": [-20, 0, 4], "px": 0.022 },
-    { "tex": "street_bags",     "pos": [18, 0, 6],  "px": 0.018 },
-    { "tex": "soul", "pos": [-14, 3.2, -14], "px": 0.010 },
-    { "tex": "soul", "pos": [14, 3.2, 14],   "px": 0.010 }
+    {
+      "tex": "street_dumpster",
+      "pos": [
+        -20,
+        0,
+        4
+      ],
+      "px": 0.022
+    },
+    {
+      "tex": "street_bags",
+      "pos": [
+        18,
+        0,
+        6
+      ],
+      "px": 0.018
+    },
+    {
+      "tex": "soul",
+      "pos": [
+        -14,
+        3.2,
+        -14
+      ],
+      "px": 0.01
+    },
+    {
+      "tex": "soul",
+      "pos": [
+        14,
+        3.2,
+        14
+      ],
+      "px": 0.01
+    }
   ],
-
   "spawns": {
     "spawn_enemies": [
-      { "kind": "grunt",   "x": -10, "z": -10 },
-      { "kind": "grunt",   "x": 10,  "z": -10 },
-      { "kind": "grunt",   "x": -10, "z": 10 },
-      { "kind": "fast",    "x": 12,  "z": 4 },
-      { "kind": "fast",    "x": -12, "z": -4 },
-      { "kind": "vermin",  "x": 6,   "z": 14 },
-      { "kind": "vermin",  "x": -6,  "z": 14 },
-      { "kind": "vermin",  "x": 0,   "z": -16 },
-      { "kind": "cultist", "x": 18,  "z": -18 },
-      { "kind": "pyro_cultist", "x": -18, "z": 18 },
-      { "kind": "heavy",   "x": 20,  "z": 20 },
-      { "kind": "warlord", "x": -22, "z": -22 }
+      {
+        "kind": "grunt",
+        "x": -18,
+        "z": -18
+      },
+      {
+        "kind": "grunt",
+        "x": 18,
+        "z": -18
+      },
+      {
+        "kind": "grunt",
+        "x": -18,
+        "z": 18
+      },
+      {
+        "kind": "fast",
+        "x": 22,
+        "z": 8
+      },
+      {
+        "kind": "fast",
+        "x": -22,
+        "z": -8
+      },
+      {
+        "kind": "vermin",
+        "x": 10,
+        "z": 24
+      },
+      {
+        "kind": "vermin",
+        "x": -10,
+        "z": 24
+      },
+      {
+        "kind": "vermin",
+        "x": 0,
+        "z": -26
+      },
+      {
+        "kind": "cultist",
+        "x": 24,
+        "z": -24
+      },
+      {
+        "kind": "pyro_cultist",
+        "x": -24,
+        "z": 24
+      },
+      {
+        "kind": "heavy",
+        "x": 26,
+        "z": 26
+      },
+      {
+        "kind": "warlord",
+        "x": -26,
+        "z": -26
+      }
     ],
     "spawn_items": [
-      { "kind": "medkit",     "x": -14, "z": -14 },
-      { "kind": "medkit",     "x": 14,  "z": 14 },
-      { "kind": "big_potion", "x": 22,  "z": -10 },
-      { "kind": "heart_1up",  "x": 0,   "z": 16 },
-      { "kind": "gold_stack", "x": -24, "z": 24 }
+      {
+        "kind": "medkit",
+        "x": -14,
+        "z": -14
+      },
+      {
+        "kind": "medkit",
+        "x": 14,
+        "z": 14
+      },
+      {
+        "kind": "big_potion",
+        "x": 22,
+        "z": -10
+      },
+      {
+        "kind": "heart_1up",
+        "x": 0,
+        "z": 16
+      },
+      {
+        "kind": "gold_stack",
+        "x": -24,
+        "z": 24
+      }
     ],
     "spawn_ammo": [
-      { "kind": "bullets", "amount": 60, "x": -4, "z": -4 },
-      { "kind": "shells",  "amount": 16, "x": 4,  "z": 4 },
-      { "kind": "cells",   "amount": 60, "x": -4, "z": 4 },
-      { "kind": "rockets", "amount": 6,  "x": 4,  "z": -4 },
-      { "kind": "bullets", "amount": 60, "x": 22, "z": -10 },
-      { "kind": "shells",  "amount": 16, "x": -14, "z": 14 }
+      {
+        "kind": "bullets",
+        "amount": 60,
+        "x": -4,
+        "z": -4
+      },
+      {
+        "kind": "shells",
+        "amount": 16,
+        "x": 4,
+        "z": 4
+      },
+      {
+        "kind": "cells",
+        "amount": 60,
+        "x": -4,
+        "z": 4
+      },
+      {
+        "kind": "rockets",
+        "amount": 6,
+        "x": 4,
+        "z": -4
+      },
+      {
+        "kind": "bullets",
+        "amount": 60,
+        "x": 22,
+        "z": -10
+      },
+      {
+        "kind": "shells",
+        "amount": 16,
+        "x": -14,
+        "z": 14
+      }
     ],
     "spawn_weapons": [
-      { "kind": "shotgun", "x": 0,   "z": 6 },
-      { "kind": "rifle",   "x": -6,  "z": 0 },
-      { "kind": "rocket",  "x": 22,  "z": -12 },
-      { "kind": "plasma",  "x": 6,   "z": 0 }
+      {
+        "kind": "shotgun",
+        "x": 0,
+        "z": 6
+      },
+      {
+        "kind": "rifle",
+        "x": -6,
+        "z": 0
+      },
+      {
+        "kind": "rocket",
+        "x": 22,
+        "z": -12
+      },
+      {
+        "kind": "plasma",
+        "x": 6,
+        "z": 0
+      }
     ]
   }
 }

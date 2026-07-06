@@ -145,6 +145,7 @@ pub struct Game3D {
 
     preset:      String,
     gate_pos:    Vector3,
+    world_name:  String,
 
     player:      Option<Gd<CharacterBody3D>>,
     npc_sprites: Vec<Gd<Sprite3D>>,
@@ -273,6 +274,7 @@ impl INode3D for Game3D {
             cfg: None,
             preset: "core".into(),
             gate_pos: world::GATE_POS,
+            world_name: "ПУСТОШИ НЕОНОВОГО СЕРДЦА".into(),
             player: None, npc_sprites: Vec::new(), npcs: Vec::new(),
             enemies: Vec::new(), world_items: Vec::new(),
             projectiles: Vec::new(), sprite_fx: Vec::new(), light_fx: Vec::new(),
@@ -348,6 +350,7 @@ impl INode3D for Game3D {
                 self.build_environment(Some(&built.env));
                 spawn = built.player_spawn;
                 self.gate_pos = built.gate.unwrap_or(world::GATE_POS);
+                self.world_name = built.name_ru.to_uppercase();
                 self.base_mut().add_child(&built.root);
                 // спавны из карты
                 let map_spawns = def.spawns.clone();
@@ -396,6 +399,7 @@ impl INode3D for Game3D {
         } else {
             self.open_class_select();
         }
+        self.update_loc_label();
     }
 
     fn process(&mut self, delta: f64) {
@@ -477,15 +481,15 @@ impl Game3D {
     }
 
     fn build_npcs(&mut self) {
-        // NPC из npcs.json пресета; если файла нет — legacy-таблица NPC_DATA.
-        let cfg_npcs: Vec<crate::config::NpcCfg> = self.cfg.as_ref()
-            .map(|c| c.npcs.clone())
+        // NPC из npcs.json пресета; legacy-таблица NPC_DATA — только если файла нет вовсе.
+        let (cfg_npcs, file_present): (Vec<crate::config::NpcCfg>, bool) = self.cfg.as_ref()
+            .map(|c| (c.npcs.clone(), c.npcs_file_present))
             .unwrap_or_default();
 
         let mut sprites: Vec<Gd<Sprite3D>> = Vec::new();
         let mut npcs: Vec<NpcRt> = Vec::new();
 
-        if cfg_npcs.is_empty() {
+        if cfg_npcs.is_empty() && !file_present {
             for cfg in NPC_DATA.iter() {
                 let (new_path, fallback) = npc_sprite_tex(cfg.id);
                 let path = if self.cache.get(new_path).is_some() { new_path } else { fallback };
@@ -1022,8 +1026,55 @@ impl Game3D {
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
 
+/// Полноэкранная постобработка: виньетка + лёгкая хроматическая аберрация +
+/// тонкие сканлайны. Canvas-шейдер — работает и в GL Compatibility.
+const POST_FX_SHADER: &str = r#"
+shader_type canvas_item;
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
+uniform float vignette : hint_range(0.0, 1.0) = 0.34;
+uniform float aberration = 1.4;
+uniform float scanline = 0.045;
+
+void fragment() {
+    vec2 uv = SCREEN_UV;
+    vec2 off = (uv - 0.5) * aberration * 0.0018;
+    float r = texture(screen_tex, uv + off).r;
+    float g = texture(screen_tex, uv).g;
+    float b = texture(screen_tex, uv - off).b;
+    vec3 col = vec3(r, g, b);
+    float d = length(uv - 0.5);
+    col *= 1.0 - vignette * smoothstep(0.32, 0.86, d);
+    col *= 1.0 - scanline * (0.5 + 0.5 * sin(uv.y * 620.0));
+    COLOR = vec4(col, 1.0);
+}
+"#;
+
 impl Game3D {
+    /// Слой постобработки поверх 3D, но ПОД HUD (layer -1 < HUD default 1... нет:
+    /// экранная текстура читается до HUD, поэтому вешаем на слой 0 ниже HUD-слоя 1).
+    fn build_post_fx(&mut self) {
+        use godot::classes::{ColorRect, Shader, ShaderMaterial};
+        use godot::classes::control::MouseFilter;
+
+        let mut shader = Shader::new_gd();
+        shader.set_code(POST_FX_SHADER);
+        let mut mat = ShaderMaterial::new_gd();
+        mat.set_shader(&shader);
+
+        let mut rect = ColorRect::new_alloc();
+        rect.set_anchors_preset(godot::classes::control::LayoutPreset::FULL_RECT);
+        rect.set_material(&mat);
+        rect.set_mouse_filter(MouseFilter::IGNORE);
+
+        let mut layer = CanvasLayer::new_alloc();
+        layer.set_layer(0); // под HUD (1), поверх 3D-вьюпорта
+        layer.add_child(&rect);
+        self.base_mut().add_child(&layer);
+    }
+
     fn build_hud(&mut self, lang: &str) {
+        self.build_post_fx();
+
         let mut layer = CanvasLayer::new_alloc();
         self.base_mut().add_child(&layer);
 
@@ -1092,6 +1143,30 @@ impl Game3D {
         ll.add_theme_color_override("font_color", C_DIM);
         layer.add_child(&ll);
         self.loc_label = Some(ll);
+
+        // Иконка HP (сердце)
+        if let Some(tex) = self.cache.get("res://assets/ui/ui_heart.png") {
+            let mut ic = TextureRect::new_alloc();
+            ic.set_texture(&tex);
+            ic.set_position(Vector2::new(24.0, HUD_H - 100.0));
+            ic.set_size(Vector2::new(34.0, 34.0));
+            ic.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
+            ic.set_stretch_mode(godot::classes::texture_rect::StretchMode::SCALE);
+            ic.set_texture_filter(godot::classes::canvas_item::TextureFilter::NEAREST);
+            layer.add_child(&ic);
+        }
+
+        // Иконка боезапаса
+        if let Some(tex) = self.cache.get("res://assets/ui/ui_ammo.png") {
+            let mut ic = TextureRect::new_alloc();
+            ic.set_texture(&tex);
+            ic.set_position(Vector2::new(HUD_W - 404.0, HUD_H - 66.0));
+            ic.set_size(Vector2::new(36.0, 36.0));
+            ic.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
+            ic.set_stretch_mode(godot::classes::texture_rect::StretchMode::SCALE);
+            ic.set_texture_filter(godot::classes::canvas_item::TextureFilter::NEAREST);
+            layer.add_child(&ic);
+        }
 
         // HP бар
         let mut hp_bg = Panel::new_alloc();
@@ -1455,7 +1530,7 @@ impl Game3D {
 
     fn update_loc_label(&mut self) {
         let text = match self.loc {
-            Loc::World => "ПУСТОШИ НЕОНОВОГО СЕРДЦА".to_string(),
+            Loc::World => self.world_name.clone(),
             Loc::Dungeon => format!("{} — глубина {}", self.dungeon_name, self.dungeon_depth),
         };
         if let Some(ref mut l) = self.loc_label { l.set_text(&text); }

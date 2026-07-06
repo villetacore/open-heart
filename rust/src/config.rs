@@ -131,6 +131,9 @@ pub struct GameConfig {
     pub level:   LevelCfg,
     pub npcs:    Vec<NpcCfg>,
     pub quests:  Vec<QuestCfg>,
+    /// npcs.json существует (пустой список ≠ отсутствие файла: пустой — это
+    /// осознанное «в этом пресете NPC нет», отсутствие — legacy-фолбэк).
+    pub npcs_file_present: bool,
 }
 
 fn read(path: &str) -> String {
@@ -148,11 +151,12 @@ impl GameConfig {
             .unwrap_or_default().items;
         let level   = serde_json::from_str::<LevelCfg>(&read(&format!("{base}/level.json")))
             .unwrap_or_default();
-        let npcs    = serde_json::from_str::<Vec<NpcCfg>>(&read(&format!("{base}/npcs.json")))
-            .unwrap_or_default();
+        let npcs_raw = read(&format!("{base}/npcs.json"));
+        let npcs_file_present = !npcs_raw.is_empty();
+        let npcs    = serde_json::from_str::<Vec<NpcCfg>>(&npcs_raw).unwrap_or_default();
         let quests  = serde_json::from_str::<Vec<QuestCfg>>(&read(&format!("{base}/quests.json")))
             .unwrap_or_default();
-        Self { enemies, items, level, npcs, quests }
+        Self { enemies, items, level, npcs, quests, npcs_file_present }
     }
 
     pub fn enemy(&self, id: &str) -> Option<&EnemyCfg> {

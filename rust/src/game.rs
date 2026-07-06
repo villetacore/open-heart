@@ -6,11 +6,12 @@
 use godot::prelude::*;
 use godot::classes::{
     AtlasTexture, CanvasLayer, CharacterBody3D, DirectionalLight3D,
-    Environment, Input, Label, Node3D, OmniLight3D, PanoramaSkyMaterial, Panel,
-    PhysicsRayQueryParameters3D, Sky, Sprite3D, StyleBoxFlat, TextureRect,
-    VBoxContainer, WorldEnvironment, INode3D,
+    Environment, Image, ImageTexture, Input, Label, Node3D, OmniLight3D,
+    PanoramaSkyMaterial, Panel, PhysicsRayQueryParameters3D, Sky, Sprite3D,
+    StyleBoxFlat, Texture2D, TextureRect, VBoxContainer, WorldEnvironment, INode3D,
 };
-use godot::classes::environment::{AmbientSource, BgMode};
+use godot::classes::environment::{AmbientSource, BgMode, ToneMapper};
+use godot::classes::image::Format;
 use godot::global::HorizontalAlignment;
 
 use crate::classes::{classes, compute_loadout, xp_to_next, ClassDef, Loadout};
@@ -226,6 +227,12 @@ pub struct Game3D {
     muzzle_light:    Option<Gd<OmniLight3D>>,
     muzzle_timer:    f32,
 
+    // миникарта данжа (floor_map генератора → текстура + точка игрока)
+    minimap_bg:      Option<Gd<Panel>>,
+    minimap_rect:    Option<Gd<TextureRect>>,
+    minimap_dot:     Option<Gd<Panel>>,
+    minimap_floor:   Vec<bool>,
+
     // выбор класса
     select_panel:    Option<Gd<Panel>>,
     select_title:    Option<Gd<Label>>,
@@ -307,6 +314,8 @@ impl INode3D for Game3D {
             damage_flash: None, damage_flash_timer: 0.0,
             weapon_rect: None, weapon_atlas: None,
             muzzle_light: None, muzzle_timer: 0.0,
+            minimap_bg: None, minimap_rect: None, minimap_dot: None,
+            minimap_floor: Vec::new(),
             select_panel: None, select_title: None,
             card_titles: Vec::new(), card_bodies: Vec::new(),
             game_time: 0.0,
@@ -430,6 +439,7 @@ impl INode3D for Game3D {
         self.update_xp_bar();
         self.update_ammo_hud();
         self.update_targeting_hud();
+        self.update_minimap();
     }
 }
 
@@ -442,9 +452,9 @@ impl Game3D {
         let sky_name = map_env
             .and_then(|e| e.sky.clone())
             .unwrap_or_else(|| "sky_purple".to_string());
-        let ambient = map_env.and_then(|e| e.ambient).unwrap_or([0.30, 0.22, 0.34]);
-        let ambient_energy = map_env.and_then(|e| e.ambient_energy).unwrap_or(0.75);
-        let fog_density = map_env.and_then(|e| e.fog_density).unwrap_or(0.012);
+        let ambient = map_env.and_then(|e| e.ambient).unwrap_or([0.32, 0.22, 0.38]);
+        let ambient_energy = map_env.and_then(|e| e.ambient_energy).unwrap_or(1.15);
+        let fog_density = map_env.and_then(|e| e.fog_density).unwrap_or(0.010);
 
         let mut env = Environment::new_gd();
         let sky_path = format!("res://assets/textures/sky/{}.png", sky_name);
@@ -460,13 +470,19 @@ impl Game3D {
         env.set_ambient_light_color(Color::from_rgba(ambient[0], ambient[1], ambient[2], 1.0));
         env.set_ambient_light_energy(ambient_energy);
         env.set_fog_enabled(true);
-        env.set_fog_light_color(Color::from_rgba(0.10, 0.05, 0.12, 1.0));
+        env.set_fog_light_color(Color::from_rgba(0.10, 0.05, 0.14, 1.0));
         env.set_fog_density(fog_density);
-        // Свечение неона: в Compatibility поддержано с Godot 4.3+; если рендерер
-        // не умеет — настройка просто игнорируется.
+
+        // bloom/glow — неоновая эстетика (Forward Mobile рендерер)
         env.set_glow_enabled(true);
-        env.set_glow_intensity(0.55);
-        env.set_glow_bloom(0.08);
+        env.set_glow_intensity(0.65);
+        env.set_glow_strength(1.0);
+        env.set_glow_bloom(0.18);
+        env.set_glow_hdr_bleed_threshold(1.0);
+
+        // tone mapping
+        env.set_tonemapper(ToneMapper::ACES);
+        env.set_tonemap_exposure(1.08);
 
         let mut we = WorldEnvironment::new_alloc();
         we.set_environment(&env);
@@ -704,6 +720,7 @@ impl Game3D {
         self.dungeon_root = Some(root);
         self.dungeon_depth = depth;
         self.dungeon_name = plan.theme_name;
+        self.minimap_floor = plan.floor_map.clone();
         self.exit_portal = DUNGEON_OFFSET + plan.exit_portal;
         self.next_portal = DUNGEON_OFFSET + plan.next_portal;
         self.boss_alive = plan.enemies.iter().any(|e| e.is_boss);
@@ -745,6 +762,10 @@ impl Game3D {
             self.show_flash("Новый квест: «Сердце данжа»");
         }
         self.show_flash(&format!("«{}» — глубина {}", plan.theme_name, depth));
+        self.build_minimap_texture();
+        if let Some(ref mut bg) = self.minimap_bg  { bg.set_visible(true); }
+        if let Some(ref mut mr) = self.minimap_rect { mr.set_visible(true); }
+        if let Some(ref mut d)  = self.minimap_dot  { d.set_visible(true); }
         self.update_loc_label();
     }
 
@@ -757,6 +778,10 @@ impl Game3D {
                 pl.bind_mut().teleport(gate + Vector3::new(0.0, 1.0, 3.5));
             }
         }
+        if let Some(ref mut bg) = self.minimap_bg  { bg.set_visible(false); }
+        if let Some(ref mut mr) = self.minimap_rect { mr.set_visible(false); }
+        if let Some(ref mut d)  = self.minimap_dot  { d.set_visible(false); }
+        self.minimap_floor.clear();
         self.show_flash("Пустоши Неонового Сердца");
         self.update_loc_label();
         self.auto_save();
@@ -1401,6 +1426,41 @@ impl Game3D {
             self.choice_box = Some(vbox);
             self.cl0 = Some(c0); self.cl1 = Some(c1);
             self.cl2 = Some(c2); self.cl3 = Some(c3);
+        }
+
+        // миникарта данжа (правый верхний угол)
+        {
+            const MAP_SZ: f32 = 176.0;
+            const MAP_X: f32 = HUD_W - MAP_SZ - 16.0;
+            const MAP_Y: f32 = 40.0;
+
+            let mut bg = Panel::new_alloc();
+            bg.set_position(Vector2::new(MAP_X - 4.0, MAP_Y - 4.0));
+            bg.set_size(Vector2::new(MAP_SZ + 8.0, MAP_SZ + 8.0));
+            bg.add_theme_stylebox_override("panel",
+                &make_style(Color::from_rgba(0.02, 0.01, 0.05, 0.88), C_BORDER, 1));
+            bg.set_visible(false);
+            layer.add_child(&bg);
+            self.minimap_bg = Some(bg);
+
+            let mut mr = TextureRect::new_alloc();
+            mr.set_position(Vector2::new(MAP_X, MAP_Y));
+            mr.set_size(Vector2::new(MAP_SZ, MAP_SZ));
+            mr.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
+            mr.set_stretch_mode(godot::classes::texture_rect::StretchMode::SCALE);
+            mr.set_texture_filter(godot::classes::canvas_item::TextureFilter::NEAREST);
+            mr.set_visible(false);
+            layer.add_child(&mr);
+            self.minimap_rect = Some(mr);
+
+            // точка игрока
+            let mut dot = Panel::new_alloc();
+            dot.set_size(Vector2::new(6.0, 6.0));
+            dot.add_theme_stylebox_override("panel",
+                &make_style(C_PINK, Color::TRANSPARENT_BLACK, 0));
+            dot.set_visible(false);
+            layer.add_child(&dot);
+            self.minimap_dot = Some(dot);
         }
 
         // экран смерти
@@ -2883,6 +2943,51 @@ impl Game3D {
         if let Some(ref mut lbl) = self.targeting_label {
             if text.is_empty() { lbl.set_visible(false); }
             else { lbl.set_text(&text); lbl.set_visible(true); }
+        }
+    }
+
+    /// Текстура миникарты из floor_map генератора (1 пиксель = 1 клетка).
+    fn build_minimap_texture(&mut self) {
+        let g = dungeon::GRID;
+        if self.minimap_floor.len() < g * g { return; }
+        let Some(mut img) = Image::create_empty(g as i32, g as i32, false, Format::RGBA8)
+            else { return };
+        img.fill(Color::from_rgba(0.06, 0.04, 0.10, 0.9));
+        for j in 0..g {
+            for i in 0..g {
+                if self.minimap_floor[j * g + i] {
+                    img.set_pixel(i as i32, j as i32,
+                                  Color::from_rgba(0.42, 0.30, 0.58, 1.0));
+                }
+            }
+        }
+        if let Some(tex) = ImageTexture::create_from_image(&img) {
+            let tex2d = tex.upcast::<Texture2D>();
+            if let Some(ref mut rect) = self.minimap_rect {
+                rect.set_texture(&tex2d);
+            }
+        }
+    }
+
+    /// Точка игрока на миникарте.
+    fn update_minimap(&mut self) {
+        if self.loc != Loc::Dungeon { return; }
+        let Some(ref p) = self.player else { return };
+        let pos = p.get_position() - DUNGEON_OFFSET;
+
+        const MAP_SZ: f32 = 176.0;
+        const MAP_X: f32 = HUD_W - MAP_SZ - 16.0;
+        const MAP_Y: f32 = 40.0;
+        let scale = MAP_SZ / dungeon::GRID as f32;
+        let pi = (pos.x / dungeon::CELL + dungeon::GRID as f32 * 0.5)
+            .clamp(0.0, dungeon::GRID as f32 - 1.0);
+        let pj = (pos.z / dungeon::CELL + dungeon::GRID as f32 * 0.5)
+            .clamp(0.0, dungeon::GRID as f32 - 1.0);
+
+        let dot_x = MAP_X + pi * scale - 3.0;
+        let dot_y = MAP_Y + pj * scale - 3.0;
+        if let Some(ref mut dot) = self.minimap_dot {
+            dot.set_position(Vector2::new(dot_x, dot_y));
         }
     }
 

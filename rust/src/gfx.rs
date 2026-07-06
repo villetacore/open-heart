@@ -48,7 +48,7 @@ pub fn make_box(
         mat.set_albedo(Color::WHITE);
         mat.set_texture(TextureParam::ALBEDO, t);
         mat.set_uv1_scale(Vector3::new(uv, uv, 1.0));
-        mat.set_texture_filter(TextureFilter::NEAREST_WITH_MIPMAPS);
+        mat.set_texture_filter(TextureFilter::NEAREST_WITH_MIPMAPS_ANISOTROPIC);
     } else {
         mat.set_albedo(color);
     }
@@ -88,7 +88,7 @@ pub fn make_glow_slab(
         mat.set_albedo(Color::WHITE);
         mat.set_texture(TextureParam::ALBEDO, t);
         mat.set_uv1_scale(Vector3::new(uv, uv, 1.0));
-        mat.set_texture_filter(TextureFilter::NEAREST_WITH_MIPMAPS);
+        mat.set_texture_filter(TextureFilter::NEAREST_WITH_MIPMAPS_ANISOTROPIC);
     }
     mat.set_feature(Feature::EMISSION, true);
     mat.set_emission(emission);
@@ -135,6 +135,7 @@ pub fn make_light(pos: Vector3, color: Color, energy: f32, range: f32) -> Gd<Omn
     l.set_color(color);
     l.set_param(Param::ENERGY, energy);
     l.set_param(Param::RANGE, range);
+    l.set_param(Param::ATTENUATION, 0.5);
     l
 }
 

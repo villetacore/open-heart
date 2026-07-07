@@ -11,6 +11,9 @@ use std::sync::RwLock;
 
 fn f_one() -> f32 { 1.0 }
 fn u_one() -> u32 { 1 }
+fn de_u32<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+    f64::deserialize(d).map(|v| v as u32)
+}
 
 /// Один эффект: либо аддитивный (`add`), либо мультипликативный (`mult`).
 #[derive(Deserialize, Clone)]
@@ -24,9 +27,9 @@ pub struct PerkEffect {
 pub struct PerkDef {
     pub id:        String,
     pub branch:    String,
-    pub tier:      u32,
-    pub max_ranks: u32,
-    #[serde(default = "u_one")] pub cost: u32,
+    #[serde(deserialize_with = "de_u32")] pub tier:      u32,
+    #[serde(deserialize_with = "de_u32")] pub max_ranks: u32,
+    #[serde(default = "u_one", deserialize_with = "de_u32")] pub cost: u32,
     #[serde(default)] pub requires: Vec<String>, // "perk_id:rank"
     pub name_ru:   String,
     pub desc_ru:   String,

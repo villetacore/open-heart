@@ -5,6 +5,14 @@ use godot::classes::{FileAccess, file_access::ModeFlags};
 
 fn default_scale() -> f32 { 1.0 }
 
+// ── Serde helpers: accept both JSON integers and floats for integer fields ────
+pub(crate) fn de_u32<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+    f64::deserialize(d).map(|v| v as u32)
+}
+pub(crate) fn de_i32<'de, D: serde::Deserializer<'de>>(d: D) -> Result<i32, D::Error> {
+    f64::deserialize(d).map(|v| v as i32)
+}
+
 // ── Структуры конфигов ────────────────────────────────────────────────────────
 
 fn default_xp() -> f32 { 15.0 }
@@ -58,7 +66,7 @@ pub struct ItemCfg {
     pub name_en:  String,
     pub desc_ru:  String,
     pub desc_en:  String,
-    pub value:    i32,
+    pub value:    f64,
     pub category: String,
     pub heal:     Option<f32>,
     pub color_r:  f32,
@@ -73,7 +81,11 @@ pub struct EnemySpawn { pub kind: String, pub x: f32, pub z: f32 }
 pub struct ItemSpawn  { pub kind: String, pub x: f32, pub z: f32 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct AmmoSpawn { pub kind: String, pub amount: u32, pub x: f32, pub z: f32 }
+pub struct AmmoSpawn {
+    pub kind: String,
+    #[serde(deserialize_with = "de_u32")] pub amount: u32,
+    pub x: f32, pub z: f32,
+}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct WeaponSpawn { pub kind: String, pub x: f32, pub z: f32 }
@@ -117,9 +129,9 @@ pub struct QuestCfg {
     pub giver:     String,
     pub kind:      String,
     #[serde(default)] pub target: String,
-    pub count:     u32,
-    #[serde(default)] pub reward_xp:   u32,
-    #[serde(default)] pub reward_gold: i32,
+    #[serde(deserialize_with = "de_u32")] pub count:       u32,
+    #[serde(default, deserialize_with = "de_u32")] pub reward_xp:   u32,
+    #[serde(default, deserialize_with = "de_i32")] pub reward_gold: i32,
 }
 
 #[derive(Deserialize, Default)] pub(crate) struct EnemiesFile { pub(crate) enemies: Vec<EnemyCfg> }

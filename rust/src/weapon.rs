@@ -279,6 +279,10 @@ pub struct Arsenal {
     pub current: WeaponId,
 }
 
+impl Default for Arsenal {
+    fn default() -> Self { Self::new() }
+}
+
 impl Arsenal {
     pub fn new() -> Self {
         Self { owned: [false; 8], ammo: [0; 4], current: WeaponId::Pistol }

@@ -105,6 +105,7 @@ fn cell_at(i: i32, j: i32, y: f32) -> Vector3 {
 
 // ── Вспомогательные функции carve ────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 fn carve_cell(floor: &mut [bool], fh: &mut [f32], cwh: &mut [f32],
               is_room: &[bool], i: i32, j: i32, h: f32, wh: f32) {
     if i < 1 || j < 1 || i >= GRID as i32 - 1 || j >= GRID as i32 - 1 { return; }

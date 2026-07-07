@@ -82,7 +82,7 @@ fn item_sprite_tex(id: &str) -> &'static str {
 // ── Режимы и полезная нагрузка предметов ─────────────────────────────────────
 
 #[derive(PartialEq, Clone, Copy)]
-enum Mode { ClassSelect, SpecSelect, Explore, Dialogue, Dead, Inventory, Perks }
+enum Mode { ClassSelect, SpecSelect, Explore, Dialogue, Dead, Inventory, Perks, Paused }
 
 #[derive(PartialEq, Clone, Copy)]
 enum Loc { World, Dungeon }
@@ -217,6 +217,8 @@ pub struct Game3D {
     perk_list:       Option<Gd<Label>>,
     crosshair:       Option<Gd<Label>>,
     dead_panel:      Option<Gd<Panel>>,
+    pause_panel:     Option<Gd<Panel>>,
+    enemies_frozen:  bool,
     compass_label:   Option<Gd<Label>>,
     targeting_label: Option<Gd<Label>>,
     damage_flash:    Option<Gd<Panel>>,
@@ -310,6 +312,7 @@ impl INode3D for Game3D {
             inv_panel: None, inv_list: None,
             perk_panel: None, perk_list: None,
             crosshair: None, dead_panel: None,
+            pause_panel: None, enemies_frozen: false,
             compass_label: None, targeting_label: None,
             damage_flash: None, damage_flash_timer: 0.0,
             weapon_rect: None, weapon_atlas: None,
@@ -400,7 +403,8 @@ impl INode3D for Game3D {
             if let Some(ref p) = self.player {
                 if let Ok(mut pl) = p.clone().try_cast::<Player>() {
                     let max = pl.bind().max_hp;
-                    pl.bind_mut().hp = player_hp.min(max);
+                    // кламп снизу: сейв с hp<=0 не должен дать «живого мертвеца»
+                    pl.bind_mut().hp = player_hp.min(max).max(1.0);
                 }
             }
             self.set_mode_explore();
@@ -419,11 +423,28 @@ impl INode3D for Game3D {
         self.tick_damage_flash(dt);
         self.tick_npc_anim(dt);
         self.tick_fx(dt);
-        self.tick_projectiles(dt);
         self.tick_weapon_anim(dt);
         self.tick_muzzle(dt);
-        self.collect_enemy_damage(dt);
         self.update_compass();
+
+        // Бой идёт только в Explore: в меню (инвентарь/перки/диалог/пауза/смерть)
+        // снаряды замирают, враги заморожены и не наносят урона.
+        let in_gameplay = self.mode == Mode::Explore;
+        if in_gameplay {
+            self.tick_projectiles(dt);
+            self.collect_enemy_damage(dt);
+        }
+        if self.enemies_frozen == in_gameplay {
+            let frozen = !in_gameplay;
+            for e in self.enemies.iter_mut() {
+                let mut b = e.bind_mut();
+                b.frozen = frozen;
+                // Удар, успевший лечь в pending_dmg в тик перехода в меню,
+                // сгорает: иначе он «прилетел бы из паузы» после закрытия.
+                if frozen { b.pending_dmg = 0.0; }
+            }
+            self.enemies_frozen = frozen;
+        }
 
         match self.mode {
             Mode::ClassSelect => self.process_class_select(),
@@ -433,6 +454,7 @@ impl INode3D for Game3D {
             Mode::Inventory   => self.process_inventory(),
             Mode::Perks       => self.process_perks(),
             Mode::Dead        => self.process_dead(),
+            Mode::Paused      => self.process_paused(),
         }
 
         self.update_hp_bar();
@@ -595,7 +617,10 @@ impl Game3D {
 
     fn spawn_enemy(&mut self, cfg: &GameConfig, kind: &str, pos: Vector3, mult: f32,
                    is_boss: bool, in_dungeon: bool) {
-        let Some(ecfg) = cfg.enemy(kind) else { return };
+        let Some(ecfg) = cfg.enemy(kind) else {
+            godot_warn!("[spawn] враг '{kind}' не найден в enemies.json пресета — пропускаю");
+            return;
+        };
         let mut e = Enemy::new_alloc();
         e.set_position(pos);
         self.base_mut().add_child(&e);
@@ -634,7 +659,10 @@ impl Game3D {
             });
             return;
         }
-        let Some(icfg) = cfg.item(kind) else { return };
+        let Some(icfg) = cfg.item(kind) else {
+            godot_warn!("[spawn] предмет '{kind}' не найден в items.json пресета — пропускаю");
+            return;
+        };
         let tex = item_sprite_tex(&icfg.id);
         let node = if tex.is_empty() {
             self.make_pickup_node("res://assets/sprites/items/item_potion.png", pos, 0.008)
@@ -1493,6 +1521,46 @@ impl Game3D {
             layer.add_child(&dp);
             self.dead_panel = Some(dp);
         }
+
+        // экран паузы
+        {
+            let mut pp = Panel::new_alloc();
+            pp.set_position(Vector2::ZERO);
+            pp.set_size(Vector2::new(HUD_W, HUD_H));
+            pp.add_theme_stylebox_override("panel",
+                &make_style(Color::from_rgba(0.02, 0.01, 0.05, 0.82), Color::TRANSPARENT_BLACK, 0));
+            pp.set_visible(false);
+
+            let mut title = Label::new_alloc();
+            title.set_text("ПАУЗА");
+            title.set_position(Vector2::new(0.0, HUD_H * 0.36));
+            title.set_size(Vector2::new(HUD_W, 60.0));
+            title.set_horizontal_alignment(HorizontalAlignment::CENTER);
+            title.add_theme_font_size_override("font_size", 52);
+            title.add_theme_color_override("font_color", C_PINK);
+            pp.add_child(&title);
+
+            let mut lines = Label::new_alloc();
+            lines.set_text("[ 1 / Esc ]  Продолжить\n\n[ 2 ]  Выйти в главное меню");
+            lines.set_position(Vector2::new(0.0, HUD_H * 0.36 + 90.0));
+            lines.set_size(Vector2::new(HUD_W, 120.0));
+            lines.set_horizontal_alignment(HorizontalAlignment::CENTER);
+            lines.add_theme_font_size_override("font_size", 22);
+            lines.add_theme_color_override("font_color", C_MAIN);
+            pp.add_child(&lines);
+
+            let mut note = Label::new_alloc();
+            note.set_text("Прогресс сохраняется автоматически");
+            note.set_position(Vector2::new(0.0, HUD_H * 0.36 + 230.0));
+            note.set_size(Vector2::new(HUD_W, 30.0));
+            note.set_horizontal_alignment(HorizontalAlignment::CENTER);
+            note.add_theme_font_size_override("font_size", 14);
+            note.add_theme_color_override("font_color", C_DIM);
+            pp.add_child(&note);
+
+            layer.add_child(&pp);
+            self.pause_panel = Some(pp);
+        }
     }
 
     /// Обновить AtlasTexture под текущее оружие.
@@ -1671,6 +1739,25 @@ impl Game3D {
 
         let input = Input::singleton();
 
+        // Смерть проверяется ДО обработки ввода: Esc в кадр смерти не должен
+        // открыть паузу поверх мёртвого игрока (и дать сохраниться с hp=0).
+        let player_dead = self.player.as_ref()
+            .and_then(|p| p.clone().try_cast::<Player>().ok())
+            .map(|pl| pl.bind().dead)
+            .unwrap_or(false);
+        if player_dead {
+            self.mode = Mode::Dead;
+            if let Some(ref mut dp) = self.dead_panel { dp.set_visible(true); }
+            Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::VISIBLE);
+            // Сейв НЕ стирается: смерть = возврат в хаб со штрафом (см. DESIGN_PLAN §13).
+            return;
+        }
+
+        if input.is_action_just_pressed("escape") {
+            self.open_pause();
+            return;
+        }
+
         if input.is_action_just_pressed("interact") {
             if let Some(kind) = self.near_portal {
                 self.use_portal(kind);
@@ -1734,22 +1821,39 @@ impl Game3D {
             self.open_perks();
         }
 
-        let player_dead = self.player.as_ref()
-            .and_then(|p| p.clone().try_cast::<Player>().ok())
-            .map(|pl| pl.bind().dead)
-            .unwrap_or(false);
-        if player_dead && self.mode != Mode::Dead {
-            self.mode = Mode::Dead;
-            if let Some(ref mut dp) = self.dead_panel { dp.set_visible(true); }
-            Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::VISIBLE);
-            // Сейв НЕ стирается: смерть = возврат в хаб со штрафом (см. DESIGN_PLAN §13).
-        }
     }
 
     fn process_dead(&mut self) {
         let input = Input::singleton();
         if input.is_action_just_pressed("interact") {
             self.respawn_at_hub();
+        }
+    }
+
+    // ── Пауза ────────────────────────────────────────────────────────────────
+
+    fn open_pause(&mut self) {
+        self.mode = Mode::Paused;
+        self.freeze_player(true);
+        if let Some(ref mut p) = self.pause_panel { p.set_visible(true); }
+        if let Some(ref mut lbl) = self.hint_label { lbl.set_visible(false); }
+        Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::VISIBLE);
+    }
+
+    fn close_pause(&mut self) {
+        if let Some(ref mut p) = self.pause_panel { p.set_visible(false); }
+        self.set_mode_explore();
+    }
+
+    fn process_paused(&mut self) {
+        let input = Input::singleton();
+        if input.is_action_just_pressed("escape") || input.is_action_just_pressed("choice_1") {
+            self.close_pause();
+            return;
+        }
+        if input.is_action_just_pressed("choice_2") {
+            self.auto_save();
+            self.base().get_tree().change_scene_to_file("res://main_menu.tscn");
         }
     }
 
@@ -1803,7 +1907,8 @@ impl Game3D {
     }
 
     fn process_inventory(&mut self) {
-        if Input::singleton().is_action_just_pressed("inventory") {
+        if Input::singleton().is_action_just_pressed("inventory")
+            || Input::singleton().is_action_just_pressed("escape") {
             self.close_inventory();
         }
         if Input::singleton().is_action_just_pressed("interact") {
@@ -2438,6 +2543,7 @@ impl Game3D {
 
     fn open_inventory(&mut self) {
         self.mode = Mode::Inventory;
+        self.freeze_player(true);
         self.refresh_inventory_ui();
         if let Some(ref mut p) = self.inv_panel { p.set_visible(true); }
         if let Some(ref mut lbl) = self.hint_label { lbl.set_visible(false); }
@@ -2445,9 +2551,8 @@ impl Game3D {
     }
 
     fn close_inventory(&mut self) {
-        self.mode = Mode::Explore;
         if let Some(ref mut p) = self.inv_panel { p.set_visible(false); }
-        Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::CAPTURED);
+        self.set_mode_explore();
     }
 
     fn refresh_inventory_ui(&mut self) {
@@ -2486,6 +2591,7 @@ impl Game3D {
 
     fn open_perks(&mut self) {
         self.mode = Mode::Perks;
+        self.freeze_player(true);
         self.refresh_perk_ui();
         if let Some(ref mut p) = self.perk_panel { p.set_visible(true); }
         if let Some(ref mut lbl) = self.hint_label { lbl.set_visible(false); }
@@ -2493,9 +2599,8 @@ impl Game3D {
     }
 
     fn close_perks(&mut self) {
-        self.mode = Mode::Explore;
         if let Some(ref mut p) = self.perk_panel { p.set_visible(false); }
-        Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::CAPTURED);
+        self.set_mode_explore();
     }
 
     fn process_perks(&mut self) {
@@ -2628,6 +2733,7 @@ impl Game3D {
         self.scene = Some(scene);
         self.line_idx = 0;
         self.mode = Mode::Dialogue;
+        self.freeze_player(true);
         self.at_choices = false;
         if let Some(ref mut p) = self.dlg_panel { p.set_visible(true); }
         if let Some(ref mut lbl) = self.hint_label { lbl.set_visible(false); }
@@ -2801,10 +2907,9 @@ impl Game3D {
     fn end_dialogue(&mut self) {
         self.scene = None;
         self.line_idx = 0;
-        self.mode = Mode::Explore;
         self.at_choices = false;
         if let Some(ref mut p) = self.dlg_panel { p.set_visible(false); }
-        Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::CAPTURED);
+        self.set_mode_explore();
         self.auto_save();
     }
 

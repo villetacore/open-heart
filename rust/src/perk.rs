@@ -77,10 +77,10 @@ impl PerkMods {
 
 // ── Загрузка ──────────────────────────────────────────────────────────────────
 
-fn parse_perks(json: &str) -> Result<Vec<PerkDef>, String> {
+pub(crate) fn parse_perks(json: &str) -> Result<Vec<PerkDef>, String> {
     serde_json::from_str(json).map_err(|e| e.to_string())
 }
-fn parse_syn(json: &str) -> Result<Vec<SynergyDef>, String> {
+pub(crate) fn parse_syn(json: &str) -> Result<Vec<SynergyDef>, String> {
     serde_json::from_str(json).map_err(|e| e.to_string())
 }
 

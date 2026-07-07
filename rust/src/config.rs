@@ -80,7 +80,9 @@ pub struct WeaponSpawn { pub kind: String, pub x: f32, pub z: f32 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct LevelCfg {
+    #[serde(default)]
     pub spawn_enemies: Vec<EnemySpawn>,
+    #[serde(default)]
     pub spawn_items:   Vec<ItemSpawn>,
     #[serde(default)]
     pub spawn_ammo:    Vec<AmmoSpawn>,
@@ -120,8 +122,8 @@ pub struct QuestCfg {
     #[serde(default)] pub reward_gold: i32,
 }
 
-#[derive(Deserialize, Default)] struct EnemiesFile { enemies: Vec<EnemyCfg> }
-#[derive(Deserialize, Default)] struct ItemsFile   { items:   Vec<ItemCfg>  }
+#[derive(Deserialize, Default)] pub(crate) struct EnemiesFile { pub(crate) enemies: Vec<EnemyCfg> }
+#[derive(Deserialize, Default)] pub(crate) struct ItemsFile   { pub(crate) items:   Vec<ItemCfg>  }
 
 // ── GameConfig ────────────────────────────────────────────────────────────────
 
@@ -136,26 +138,87 @@ pub struct GameConfig {
     pub npcs_file_present: bool,
 }
 
-fn read(path: &str) -> String {
-    FileAccess::open(path, ModeFlags::READ)
-        .map(|f| f.get_as_text().to_string())
-        .unwrap_or_default()
+fn read(path: &str) -> Option<String> {
+    FileAccess::open(path, ModeFlags::READ).map(|f| f.get_as_text().to_string())
+}
+
+// Встроенные копии core-пресета: битый JSON контент-мейкера не должен молча
+// превращаться в пустой мир (без врагов/предметов/квестов) — падаем на них
+// с предупреждением в лог (тот же принцип, что в weapon.rs/classes.rs/perk.rs).
+const EMBEDDED_ENEMIES: &str = include_str!("../../godot/presets/core/enemies.json");
+const EMBEDDED_ITEMS:   &str = include_str!("../../godot/presets/core/items.json");
+const EMBEDDED_LEVEL:   &str = include_str!("../../godot/presets/core/level.json");
+const EMBEDDED_NPCS:    &str = include_str!("../../godot/presets/core/npcs.json");
+const EMBEDDED_QUESTS:  &str = include_str!("../../godot/presets/core/quests.json");
+
+/// Распарсить текст конфига; при ошибке — громкое предупреждение и встроенная копия.
+fn parse_loud<T: serde::de::DeserializeOwned + Default>(text: &str, file: &str, embedded: &str) -> T {
+    match serde_json::from_str::<T>(text) {
+        Ok(v) => v,
+        Err(e) => {
+            godot::global::godot_warn!("[preset] {file}: ошибка разбора ({e}) — использую встроенную копию core");
+            serde_json::from_str(embedded).unwrap_or_else(|e2| {
+                godot::global::godot_warn!("[preset] встроенная копия {file} тоже не парсится: {e2}");
+                T::default()
+            })
+        }
+    }
+}
+
+/// Для cargo test: встроенные копии core обязаны парситься (последний рубеж фолбэков).
+#[cfg(test)]
+pub(crate) fn embedded_configs_parse_for_test() {
+    serde_json::from_str::<EnemiesFile>(EMBEDDED_ENEMIES).expect("embedded enemies.json");
+    serde_json::from_str::<ItemsFile>(EMBEDDED_ITEMS).expect("embedded items.json");
+    serde_json::from_str::<LevelCfg>(EMBEDDED_LEVEL).expect("embedded level.json");
+    serde_json::from_str::<Vec<NpcCfg>>(EMBEDDED_NPCS).expect("embedded npcs.json");
+    serde_json::from_str::<Vec<QuestCfg>>(EMBEDDED_QUESTS).expect("embedded quests.json");
 }
 
 impl GameConfig {
     /// Загрузить конфиги из корня пресета (например "res://presets/core").
+    ///
+    /// Отсутствие файла и битый файл — разные состояния: отсутствие quests/level —
+    /// осознанное «в этом пресете этого нет», отсутствие npcs — legacy-фолбэк на
+    /// NPC_DATA; битый JSON всегда даёт предупреждение и встроенную копию core.
     pub fn load_from(base: &str) -> Self {
-        let enemies = serde_json::from_str::<EnemiesFile>(&read(&format!("{base}/enemies.json")))
-            .unwrap_or_default().enemies;
-        let items   = serde_json::from_str::<ItemsFile>(&read(&format!("{base}/items.json")))
-            .unwrap_or_default().items;
-        let level   = serde_json::from_str::<LevelCfg>(&read(&format!("{base}/level.json")))
-            .unwrap_or_default();
+        use godot::global::godot_warn;
+
+        let enemies = match read(&format!("{base}/enemies.json")) {
+            Some(t) => parse_loud::<EnemiesFile>(&t, "enemies.json", EMBEDDED_ENEMIES),
+            None => {
+                godot_warn!("[preset] {base}/enemies.json не найден — использую встроенную копию core");
+                parse_loud::<EnemiesFile>(EMBEDDED_ENEMIES, "enemies.json", EMBEDDED_ENEMIES)
+            }
+        }.enemies;
+
+        let items = match read(&format!("{base}/items.json")) {
+            Some(t) => parse_loud::<ItemsFile>(&t, "items.json", EMBEDDED_ITEMS),
+            None => {
+                godot_warn!("[preset] {base}/items.json не найден — использую встроенную копию core");
+                parse_loud::<ItemsFile>(EMBEDDED_ITEMS, "items.json", EMBEDDED_ITEMS)
+            }
+        }.items;
+
+        // level.json опционален: карты пресета (maps/*.json) несут свои спавны.
+        let level = match read(&format!("{base}/level.json")) {
+            Some(t) => parse_loud::<LevelCfg>(&t, "level.json", EMBEDDED_LEVEL),
+            None => LevelCfg::default(),
+        };
+
         let npcs_raw = read(&format!("{base}/npcs.json"));
-        let npcs_file_present = !npcs_raw.is_empty();
-        let npcs    = serde_json::from_str::<Vec<NpcCfg>>(&npcs_raw).unwrap_or_default();
-        let quests  = serde_json::from_str::<Vec<QuestCfg>>(&read(&format!("{base}/quests.json")))
-            .unwrap_or_default();
+        let npcs_file_present = npcs_raw.is_some();
+        let npcs: Vec<NpcCfg> = match npcs_raw {
+            Some(t) => parse_loud(&t, "npcs.json", EMBEDDED_NPCS),
+            None => Vec::new(),
+        };
+
+        // квестов может осознанно не быть (например, чистая арена)
+        let quests: Vec<QuestCfg> = match read(&format!("{base}/quests.json")) {
+            Some(t) => parse_loud(&t, "quests.json", EMBEDDED_QUESTS),
+            None => Vec::new(),
+        };
+
         Self { enemies, items, level, npcs, quests, npcs_file_present }
     }
 

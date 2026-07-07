@@ -91,11 +91,8 @@ impl ICharacterBody3D for Player {
                 cam.set_rotation(Vector3::new(pitch, 0.0, 0.0));
             }
         }
-        if Input::singleton().is_action_just_pressed("escape") {
-            let mode = Input::singleton().get_mouse_mode();
-            let new_mode = if mode == MouseMode::CAPTURED { MouseMode::VISIBLE } else { MouseMode::CAPTURED };
-            Input::singleton().set_mouse_mode(new_mode);
-        }
+        // Esc обрабатывает Game3D (меню паузы); прежний тумблер мыши убран,
+        // чтобы не конфликтовать с ним.
     }
 }
 

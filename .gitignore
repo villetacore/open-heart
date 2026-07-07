@@ -2,6 +2,14 @@
 /rust/target/
 **/*.rs.bk
 
+# Скопированная в проект DLL (создаётся build.bat / run.ps1 / watch.ps1);
+# .gitkeep оставляет папку в свежем клоне
+/godot/bin/*
+!/godot/bin/.gitkeep
+
+# Результаты ИИ-генерации текстур (сырые, до постобработки)
+/tools/generated/
+
 # Godot / Redot
 .godot/
 *.import

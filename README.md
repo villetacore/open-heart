@@ -64,6 +64,7 @@ git clone <repo> open-heart && cd open-heart
 
 ```bash
 cd rust && cargo build      # → rust/target/debug/openheart.dll
+cp target/debug/openheart.dll ../godot/bin/   # движок ищет DLL внутри проекта
 godot -e --path ../godot    # редактор (F5 — играть) | без -e — сразу игра
 ```
 

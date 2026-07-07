@@ -174,6 +174,18 @@ var status: Label
 var lock_btn: Button
 var new_preset_edit: LineEdit
 
+# ИИ-генерация текстур (окно поверх панели)
+var gen_window: Window
+var gen_type: OptionButton
+var gen_id: LineEdit
+var gen_desc: TextEdit
+var gen_prompt_preview: Label
+var gen_status: Label
+var gen_preview: TextureRect
+var gen_btn: Button
+var gen_thread: Thread
+var gen_templates := {}
+
 
 func _ready() -> void:
 	name = "OpenHeartEditor"
@@ -181,6 +193,14 @@ func _ready() -> void:
 	_build_ui()
 	_scan_presets()
 	_load_category()
+
+
+func _exit_tree() -> void:
+	# Плагин выключают/перезагружают: дождаться потока генерации, иначе Godot
+	# ругается на Thread без wait_to_finish, а _gen_done прилетит в мёртвый узел.
+	if gen_thread != null:
+		gen_thread.wait_to_finish()
+		gen_thread = null
 
 
 # ── UI каркас ─────────────────────────────────────────────────────────────────
@@ -221,6 +241,12 @@ func _build_ui() -> void:
 	lock_btn.toggled.connect(_on_lock_toggled)
 	top.add_child(lock_btn)
 	_refresh_lock_button()
+
+	var gen_open := Button.new()
+	gen_open.text = "🎨 ИИ-текстуры"
+	gen_open.tooltip_text = "Сгенерировать спрайт/текстуру нейросетью (сервер настраивается в tools/aigen.json)"
+	gen_open.pressed.connect(_open_gen_window)
+	top.add_child(gen_open)
 
 	status = _mk_label("")
 	status.modulate = Color(1.0, 0.7, 0.9)
@@ -578,6 +604,169 @@ func _save_all() -> void:
 	_set_status("Сохранено файлов: %d (пресет %s)" % [saved, preset_id])
 	# обновить FileSystem-докcy редактора
 	EditorInterface.get_resource_filesystem().scan()
+
+
+# ── ИИ-генерация текстур ──────────────────────────────────────────────────────
+# Окно «в несколько кликов»: тип ассета + id + описание → tools/aigen.py
+# (HTTP к серверу нейросети + постобработка process_sprites.py). Итоговый PNG
+# ложится сразу в godot/assets/*, игра подхватывает его при следующем F5.
+
+func _tools_dir() -> String:
+	return ProjectSettings.globalize_path("res://").path_join("../tools").simplify_path()
+
+
+func _open_gen_window() -> void:
+	if gen_window == null:
+		_build_gen_window()
+	_refresh_gen_template()
+	gen_window.popup_centered(Vector2i(760, 700))
+
+
+func _build_gen_window() -> void:
+	var tpl = _read_json(_tools_dir().path_join("aigen_templates.json"))
+	gen_templates = tpl if typeof(tpl) == TYPE_DICTIONARY else {}
+
+	gen_window = Window.new()
+	gen_window.title = "ИИ-генерация текстур"
+	gen_window.close_requested.connect(func(): gen_window.hide())
+	add_child(gen_window)
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	for side in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
+		margin.add_theme_constant_override(side, 12)
+	gen_window.add_child(margin)
+
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	margin.add_child(v)
+
+	var row_type := HBoxContainer.new()
+	row_type.add_child(_mk_label("Тип ассета:"))
+	gen_type = OptionButton.new()
+	for k in gen_templates.keys():
+		if str(k).begins_with("_"):
+			continue
+		var idx := gen_type.item_count
+		gen_type.add_item("%s — %s" % [k, gen_templates[k].get("title_ru", "")])
+		gen_type.set_item_metadata(idx, k)
+	gen_type.item_selected.connect(func(_i): _refresh_gen_template())
+	row_type.add_child(gen_type)
+	v.add_child(row_type)
+
+	var row_id := HBoxContainer.new()
+	row_id.add_child(_mk_label("id:"))
+	gen_id = LineEdit.new()
+	gen_id.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_id.add_child(gen_id)
+	v.add_child(row_id)
+
+	v.add_child(_mk_label("Описание (вставляется в шаблон промпта):"))
+	gen_desc = TextEdit.new()
+	gen_desc.custom_minimum_size.y = 72
+	gen_desc.text_changed.connect(_refresh_gen_template)
+	v.add_child(gen_desc)
+
+	v.add_child(_mk_label("Итоговый промпт:"))
+	gen_prompt_preview = Label.new()
+	gen_prompt_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	gen_prompt_preview.modulate = Color(0.7, 0.7, 0.8)
+	v.add_child(gen_prompt_preview)
+
+	gen_btn = Button.new()
+	gen_btn.text = "⚡ Сгенерировать"
+	gen_btn.pressed.connect(_on_generate)
+	v.add_child(gen_btn)
+
+	gen_status = _mk_label("")
+	gen_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(gen_status)
+
+	gen_preview = TextureRect.new()
+	gen_preview.custom_minimum_size = Vector2(280, 280)
+	gen_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	gen_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	gen_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	gen_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(gen_preview)
+
+
+func _gen_selected_type() -> String:
+	if gen_type.selected < 0:
+		return ""
+	return str(gen_type.get_item_metadata(gen_type.selected))
+
+
+func _refresh_gen_template() -> void:
+	var t := _gen_selected_type()
+	var tpl: Dictionary = gen_templates.get(t, {})
+	gen_id.placeholder_text = str(tpl.get("id_hint", "id"))
+	var desc := gen_desc.text.strip_edges()
+	gen_prompt_preview.text = str(tpl.get("prompt", "{desc}")) \
+		.format({"desc": desc if not desc.is_empty() else "<описание>"})
+
+
+func _on_generate() -> void:
+	var type := _gen_selected_type()
+	var id := gen_id.text.strip_edges()
+	var desc := gen_desc.text.strip_edges().replace("\n", " ")
+	if type.is_empty() or id.is_empty() or desc.is_empty():
+		gen_status.text = "Заполни тип, id и описание"
+		return
+	if gen_thread != null:
+		gen_status.text = "Генерация уже идёт…"
+		return
+
+	var py := "python"
+	var cfg = _read_json(_tools_dir().path_join("aigen.json"))
+	if typeof(cfg) == TYPE_DICTIONARY:
+		py = str(cfg.get("python", "python"))
+
+	gen_btn.disabled = true
+	gen_status.text = "Генерация… (%s @ %s)" % [
+		cfg.get("backend", "?") if typeof(cfg) == TYPE_DICTIONARY else "?",
+		cfg.get("url", "?") if typeof(cfg) == TYPE_DICTIONARY else "?"]
+	var args := PackedStringArray([_tools_dir().path_join("aigen.py"), type, id, desc])
+	gen_thread = Thread.new()
+	gen_thread.start(_gen_worker.bind(py, args))
+
+
+func _gen_worker(py: String, args: PackedStringArray) -> void:
+	var out := []
+	var code := OS.execute(py, args, out, true)
+	call_deferred("_gen_done", code, out)
+
+
+func _gen_done(code: int, out: Array) -> void:
+	if gen_thread != null:
+		gen_thread.wait_to_finish()
+		gen_thread = null
+	if not is_instance_valid(gen_btn):
+		return  # окно уже уничтожено (плагин выключили во время генерации)
+	gen_btn.disabled = false
+
+	var text := ""
+	for o in out:
+		text += str(o)
+	var ok_path := ""
+	var err_msg := ""
+	for line in text.split("\n"):
+		var l: String = line.strip_edges()
+		if l.begins_with("OK "):
+			ok_path = l.substr(3)
+		elif l.begins_with("ERR "):
+			err_msg = l.substr(4)
+
+	if code == 0 and not ok_path.is_empty():
+		gen_status.text = "Готово: %s" % ok_path
+		var img := Image.load_from_file(ok_path)
+		if img != null:
+			gen_preview.texture = ImageTexture.create_from_image(img)
+		EditorInterface.get_resource_filesystem().scan()
+	elif not err_msg.is_empty():
+		gen_status.text = "Ошибка: %s" % err_msg
+	else:
+		gen_status.text = "Сбой генерации (код %d). Вывод:\n%s" % [code, text.right(600)]
 
 
 # ── Замок ядра ────────────────────────────────────────────────────────────────

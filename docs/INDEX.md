@@ -82,7 +82,7 @@ API, каждый файл данных, ассеты и инструменты.
 | Путь | Назначение |
 |---|---|
 | `project.godot` | Godot 4.7, рендерер **mobile** (Forward Mobile/Vulkan), стретч canvas_items 1920×1080, все input-actions, включённый плагин oh_editor |
-| `OpenHeart.gdextension` | Маппинг платформа → `rust/target/{debug,release}/openheart.{dll,so,dylib}`; `reloadable=true` |
+| `OpenHeart.gdextension` | Маппинг платформа → `res://bin/openheart.{dll,so,dylib}` — DLL живёт внутри проекта (копируют build.bat/run.ps1/watch.ps1), иначе экспорт не соберётся; `reloadable=true` |
 | `main_menu.tscn` | Стартовая сцена (нода `MainMenu`) |
 | `main.tscn` | Игровая сцена: `Game3D` + `Player`(+Camera3D, капсула) |
 
@@ -138,12 +138,14 @@ API, каждый файл данных, ассеты и инструменты.
 
 | Скрипт | Назначение |
 |---|---|
+| `aigen.py` | **ИИ-генерация ассетов**: HTTP-клиент к серверу SD (A1111/ComfyUI, конфиг `aigen.json`, шаблоны `aigen_templates.json`) + постобработка `process_sprites.py`; вызывается кнопкой «🎨 ИИ-текстуры» редактора |
 | `slice_atlases.py` | Главная нарезка атласов: оружие FP, пикапы, эффекты, UI, небо, тайлы, пропсы; контактные листы в `tools/preview/` |
 | `slice_fix.py` | Правочный проход: подписи, слипшиеся ячейки, ровная сетка неба |
 | `slice_props.py` | Пропсы по вручную измеренным боксам (финальная версия) |
 | `analyze_weapons.py`, `analyze_regions.py` | Поиск координат секций атласа по плотности пикселей |
 | `ASSET_GUIDE.md` | Промпты генерации новых атласов + спецификации форматов |
-| остальные (`extract_atlas.py`, `process_sprites.py`, `debug_cells.py`, …) | Ранние/одноразовые инструменты, оставлены для справки |
+| `process_sprites.py` | Постобработка одиночных изображений: фон→альфа, ресайз, сборка листов кадров, раскладка по `godot/assets/` (использует aigen.py) |
+| остальные (`extract_atlas.py`, `debug_cells.py`, …) | Ранние/одноразовые инструменты, оставлены для справки |
 | `ChatGPT Image 30 июн….png` | Исходный мастер-атлас (эффекты/UI/небо/жидкости) |
 
 ## 5. `docs/` — документация

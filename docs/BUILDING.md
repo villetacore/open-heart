@@ -61,6 +61,13 @@ cargo build
 `use crate::...`, в файл `rust/target/debug/openheart.dll`. Это обычная динамическая библиотека
 Windows — движок будет вызывать её функции напрямую.
 
+**Важно:** движок ищет DLL внутри проекта — `godot/bin/openheart.dll` (так её видит и экспорт
+игры). Скрипты `run.ps1`/`build.bat`/`watch.ps1` копируют её туда сами; при ручной сборке скопируй:
+
+```powershell
+Copy-Item rust\target\debug\openheart.dll godot\bin\openheart.dll -Force
+```
+
 Долго собирается **только первый раз** (компилируются все зависимости, включая сам `gdext`).
 Повторные сборки после мелких правок — секунды.
 

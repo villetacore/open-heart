@@ -219,7 +219,7 @@ impl WeaponRaw {
     }
 }
 
-fn parse(json: &str) -> Result<Vec<WeaponDef>, String> {
+pub(crate) fn parse(json: &str) -> Result<Vec<WeaponDef>, String> {
     let raws: Vec<WeaponRaw> = serde_json::from_str(json).map_err(|e| e.to_string())?;
     let mut slots: Vec<Option<WeaponDef>> = (0..8).map(|_| None).collect();
     for r in raws {

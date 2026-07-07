@@ -9,6 +9,11 @@ use crate::quest::QuestState;
 use crate::weapon::{Arsenal, WeaponId};
 
 const SAVE_PATH: &str = "user://save.json";
+/// Куда откладывается нечитаемый сейв (вместо тихой потери «Продолжить»).
+const CORRUPT_PATH: &str = "user://save.corrupt.json";
+/// Текущая версия формата. Поднимать при несовместимых изменениях; чтение
+/// старых версий обеспечивают `#[serde(default)]`-поля (см. load()).
+pub const SAVE_VERSION: u32 = 2;
 
 fn default_level() -> u32 { 1 }
 fn default_seed() -> u64 { 0x5EED_0001 }
@@ -51,7 +56,7 @@ fn default_preset() -> String { "core".into() }
 impl SaveData {
     pub fn from_game(state: &GameState, player_hp: f32, ars: &Arsenal) -> Self {
         Self {
-            version:   2,
+            version:   SAVE_VERSION,
             day:       state.day,
             gold:      state.gold,
             int_:      state.stats.intelligence,
@@ -148,9 +153,26 @@ pub fn save(state: &GameState, player_hp: f32, ars: &Arsenal) -> bool {
 }
 
 pub fn load() -> Option<(GameState, f32, Arsenal)> {
+    use godot::global::godot_warn;
     let f    = FileAccess::open(SAVE_PATH, ModeFlags::READ)?;
     let text = f.get_as_text().to_string();
-    let data: SaveData = serde_json::from_str(&text).ok()?;
+    drop(f); // закрыть до возможного переименования
+    let data: SaveData = match serde_json::from_str(&text) {
+        Ok(d) => d,
+        Err(e) => {
+            // Битый сейв НЕ считается «сейва нет» (иначе новая игра молча его
+            // перезапишет): откладываем в save.corrupt.json и громко сообщаем.
+            godot_warn!("[save] save.json не читается ({e}) — отложен в {CORRUPT_PATH}");
+            if let Some(mut dir) = godot::classes::DirAccess::open("user://") {
+                let _ = dir.rename(SAVE_PATH, CORRUPT_PATH);
+            }
+            return None;
+        }
+    };
+    if data.version > SAVE_VERSION {
+        godot_warn!("[save] сейв версии {} новее поддерживаемой {} — читаю, что смогу",
+                    data.version, SAVE_VERSION);
+    }
     Some(data.into_game())
 }
 

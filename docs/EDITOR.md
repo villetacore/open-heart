@@ -57,6 +57,37 @@ OpenHeart редактируется не правкой движка, а соб
 Моддинг без исходников: игроки могут класть пресеты в `user://presets/<id>/`
 (`%APPDATA%\Godot\app_userdata\OpenHeart\presets\` на Windows) — игра найдёт их сама.
 
+## 🎨 ИИ-генерация текстур
+
+Кнопка **«🎨 ИИ-текстуры»** в верхней панели открывает окно генерации ассетов
+нейросетью — «в несколько кликов»:
+
+1. Выбери **тип ассета**: персонаж/враг (512×256), тайловая текстура (512×512),
+   иконка предмета (128×64) или FP-оружие (384×256).
+2. Введи **id** (подсказка формата — в плейсхолдере: `enemy_*`, `wall_*`, `item_*`…)
+   и **описание** — оно подставится в шаблон промпта типа (шаблоны:
+   `tools/aigen_templates.json`, итоговый промпт виден тут же).
+3. **«⚡ Сгенерировать»** — запрос уходит на сервер генерации, результат проходит
+   постобработку (`tools/process_sprites.py`: удаление фона, ресайз, сборка кадров)
+   и ложится сразу в `godot/assets/…`. Превью — в этом же окне; в игре ассет
+   подхватится при следующем F5 (импорт Godot не нужен).
+
+Сервер настраивается в **`tools/aigen.json`**: `url` — адрес сервера,
+`backend` — `a1111` (AUTOMATIC1111 WebUI) или `comfyui`, плюс модель/шаги/сэмплер.
+Редактор вызывает `python tools/aigen.py` (нужен Python с Pillow — `pip install Pillow`);
+генерация идёт в фоне, редактор не блокируется. CLI работает и без редактора:
+
+```bash
+python tools/aigen.py character enemy_pyro "cultist in burning red robes"
+python tools/aigen.py texture wall_lab "sci-fi metal panels, green glowing vents"
+python tools/aigen.py item item_bomb "round black bomb with lit fuse" --seed 42
+python tools/aigen.py character enemy_x --input got_from_chatgpt.png   # только постобработка
+```
+
+Сырые изображения до постобработки сохраняются в `tools/generated/` (в git не попадают).
+Для нового врага не забудь указать его лист в `enemies.json`: поле `sprite` = имя
+после `enemy_` (подсказку выводит и сам скрипт).
+
 ## 🔒 Замок ядра
 
 Кнопка «Защитить ядро» ставит **read-only** (атрибут файловой системы) на фундаментальные

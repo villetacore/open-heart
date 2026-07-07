@@ -1,0 +1,31 @@
+{
+  "_comment": "Шаблоны промптов по типам ассетов (из tools/ASSET_GUIDE.md). {desc} заменяется описанием из редактора.",
+  "character": {
+    "title_ru": "Персонаж / враг (спрайт 512×256)",
+    "prompt": "Game character sprite, anime style, full body, front-facing pose, {desc}, pure black background, no shadow, clean edges, vertical portrait composition, the character takes up 80% of the frame, clear silhouette, game-ready 2D sprite",
+    "width": 832,
+    "height": 1216,
+    "id_hint": "npc_<имя> или enemy_<имя>"
+  },
+  "texture": {
+    "title_ru": "Тайловая текстура (512×512)",
+    "prompt": "Seamless tileable texture, {desc}, top-down flat view, dark gothic style, game texture, no perspective distortion, high detail",
+    "width": 1024,
+    "height": 1024,
+    "id_hint": "wall_*, floor_*, dtile_* (данж), sky_* (панорама неба)"
+  },
+  "item": {
+    "title_ru": "Иконка предмета (128×64, 2 кадра)",
+    "prompt": "Pixel art game item icon, {desc}, isolated on pure black background, simple clean design, fantasy RPG style, small icon, bright readable silhouette",
+    "width": 1024,
+    "height": 1024,
+    "id_hint": "item_<имя>"
+  },
+  "weapon": {
+    "title_ru": "FP-оружие для HUD (384×256, 3 кадра)",
+    "prompt": "First-person view game weapon sprite, {desc}, pure black background, viewed from first-person perspective as if holding it, bottom-center orientation, anime stylized, no HUD elements, isolated weapon only, clean edges",
+    "width": 832,
+    "height": 1216,
+    "id_hint": "результат: sprites/weapon/weapon_pistol.png"
+  }
+}

@@ -62,6 +62,8 @@ pub struct Enemy {
 
     player:           Option<Gd<CharacterBody3D>>,
     pub alive:        bool,
+    /// Мир «на паузе» (игрок в меню/диалоге): AI не двигается и не атакует.
+    pub frozen:       bool,
     pub pending_dmg:  f32,
 
     // визуал
@@ -165,6 +167,7 @@ impl ICharacterBody3D for Enemy {
             spawn_pos: Vector3::ZERO,
             player: None,
             alive: true,
+            frozen: false,
             pending_dmg: 0.0,
             pending_color: Color::from_rgba(1.0, 1.0, 1.0, 1.0),
             tex_path: ENEMY_TEX_FALLBACK.to_string(),
@@ -218,7 +221,7 @@ impl ICharacterBody3D for Enemy {
     }
 
     fn physics_process(&mut self, delta: f64) {
-        if !self.alive || self.state == EState::Dead { return; }
+        if !self.alive || self.frozen || self.state == EState::Dead { return; }
         let dt = delta as f32;
 
         // флэш урона

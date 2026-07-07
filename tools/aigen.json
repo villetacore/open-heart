@@ -1,0 +1,16 @@
+{
+  "_comment": "Настройки клиента ИИ-генерации текстур (tools/aigen.py). url — адрес сервера с нейросетью.",
+  "backend": "a1111",
+  "url": "http://127.0.0.1:7860",
+  "model": "",
+  "steps": 28,
+  "cfg_scale": 7.0,
+  "sampler": "Euler a",
+  "negative": "blurry, low quality, watermark, text, letters, signature, jpeg artifacts, deformed",
+  "timeout_sec": 300,
+  "python": "python",
+  "comfyui": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "poll_interval_sec": 1.0
+  }
+}

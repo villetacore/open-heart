@@ -8,5 +8,7 @@ if %errorlevel% neq 0 (
     pause
     exit /b 1
 )
+if not exist "%~dp0godot\bin" mkdir "%~dp0godot\bin"
+copy /Y "%~dp0rust\target\debug\openheart.dll" "%~dp0godot\bin\openheart.dll" >nul
 echo.
-echo [OK] openheart.dll built: rust\target\debug\openheart.dll
+echo [OK] openheart.dll built and copied to godot\bin\openheart.dll

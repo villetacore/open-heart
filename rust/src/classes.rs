@@ -100,7 +100,7 @@ impl ClassRaw {
     }
 }
 
-fn parse(json: &str) -> Result<Vec<ClassDef>, String> {
+pub(crate) fn parse(json: &str) -> Result<Vec<ClassDef>, String> {
     let raws: Vec<ClassRaw> = serde_json::from_str(json).map_err(|e| e.to_string())?;
     if raws.len() < 3 {
         return Err(format!("classes.json: needs 3 classes, got {}", raws.len()));

@@ -18,7 +18,11 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Pop-Location
-Write-Host "[OK] openheart.dll ready" -ForegroundColor Green
+
+# DLL живёт внутри проекта (godot/bin) — так её видит экспорт игры
+New-Item -ItemType Directory -Force -Path "$PSScriptRoot\godot\bin" | Out-Null
+Copy-Item "$PSScriptRoot\rust\target\debug\openheart.dll" "$PSScriptRoot\godot\bin\openheart.dll" -Force
+Write-Host "[OK] openheart.dll ready (godot\bin)" -ForegroundColor Green
 
 # 2. Find engine (Redot / Godot)
 $found = $null

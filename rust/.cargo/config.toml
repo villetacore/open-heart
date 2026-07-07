@@ -1,3 +1,14 @@
-# Redot LTS 26.1 = Godot 4.3 LTS fork.
-# api-4-3 feature is set in Cargo.toml — no binary needed for codegen.
+# Rust cross-compilation config for OpenHeart CI/CD
 
+# ── Web / WASM (Emscripten 3.1.39) ───────────────────────────────────────────
+# Requires: rustup target add wasm32-unknown-emscripten
+#           + Emscripten SDK matching Godot 4.7's version
+# Guide: https://godot-rust.github.io/book/toolchain/export-web.html
+[target.wasm32-unknown-emscripten]
+rustflags = [
+    "-C", "link-arg=-sSIDE_MODULE=2",
+    "-C", "link-arg=-sWASM_BIGINT",
+    "-C", "link-arg=-sDYNAMIC_EXECUTION=0",
+    "-C", "opt-level=2",
+    "-Z", "link-native-libraries=no",
+]

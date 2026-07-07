@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: "Rust (check + test)"
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: cargo check
+        run: cargo check
+        working-directory: rust
+
+      - name: cargo clippy
+        run: cargo clippy -- -D warnings
+        working-directory: rust
+
+      - name: cargo test
+        run: cargo test
+        working-directory: rust
+
+  rust-linux:
+    name: "Rust (Linux build)"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: cargo build --release
+        run: cargo build --release
+        working-directory: rust

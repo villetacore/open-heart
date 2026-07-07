@@ -1,15 +1,8 @@
 @tool
 extends Control
-## Главная панель «OpenHeart»: редактор пресетов игры.
-##
-## Слева — категория и список записей, справа — форма полей по схеме.
-## Всё редактирование идёт в память (Dictionary/Array из JSON) и пишется на диск
-## кнопкой «Сохранить пресет». Схемы описывают каждый тип контента декларативно,
-## так что новая категория = несколько строк в SCHEMAS.
+## OpenHeart Editor — данные, карта, текстуры, анимации.
 
-# ── Схемы контента ────────────────────────────────────────────────────────────
-# type: str | text (многострочный) | float | int | bool | enum | json
-# json — вложенные структуры (массивы/объекты) как текст c проверкой синтаксиса.
+# ─────────────────────────────── СХЕМЫ ────────────────────────────────────────
 
 const SCHEMAS := {
 	"Оружие": {
@@ -17,7 +10,7 @@ const SCHEMAS := {
 		"fields": [
 			{"key": "id", "type": "str"}, {"key": "name_ru", "type": "str"},
 			{"key": "damage", "type": "float"},
-			{"key": "dmg_type", "type": "enum", "options": ["physical", "fire", "energy", "void"]},
+			{"key": "dmg_type", "type": "enum", "options": ["physical","fire","energy","void"]},
 			{"key": "cooldown", "type": "float"}, {"key": "range", "type": "float"},
 			{"key": "auto", "type": "bool"},
 			{"key": "fire", "type": "json"}, {"key": "ammo", "type": "json"},
@@ -41,7 +34,7 @@ const SCHEMAS := {
 		"file": "perks.json", "root": [],
 		"fields": [
 			{"key": "id", "type": "str"},
-			{"key": "branch", "type": "enum", "options": ["survival", "offense", "utility"]},
+			{"key": "branch", "type": "enum", "options": ["survival","offense","utility"]},
 			{"key": "tier", "type": "int"}, {"key": "max_ranks", "type": "int"},
 			{"key": "cost", "type": "int"}, {"key": "requires", "type": "json"},
 			{"key": "name_ru", "type": "str"}, {"key": "desc_ru", "type": "text"},
@@ -65,7 +58,7 @@ const SCHEMAS := {
 			{"key": "attack_cooldown", "type": "float"}, {"key": "chase_range", "type": "float"},
 			{"key": "patrol_radius", "type": "float"}, {"key": "xp", "type": "float"},
 			{"key": "sprite", "type": "enum",
-			 "options": ["grunt", "fast", "heavy", "brute", "sniper", "cultist"]},
+			 "options": ["grunt","fast","heavy","brute","sniper","cultist"]},
 			{"key": "scale", "type": "float"},
 			{"key": "color_r", "type": "float"}, {"key": "color_g", "type": "float"},
 			{"key": "color_b", "type": "float"},
@@ -78,7 +71,7 @@ const SCHEMAS := {
 			{"key": "id", "type": "str"}, {"key": "name_ru", "type": "str"},
 			{"key": "name_en", "type": "str"}, {"key": "desc_ru", "type": "text"},
 			{"key": "desc_en", "type": "str"}, {"key": "value", "type": "int"},
-			{"key": "category", "type": "enum", "options": ["consumable", "currency", "key"]},
+			{"key": "category", "type": "enum", "options": ["consumable","currency","key"]},
 			{"key": "heal", "type": "json"},
 			{"key": "color_r", "type": "float"}, {"key": "color_g", "type": "float"},
 			{"key": "color_b", "type": "float"},
@@ -98,7 +91,7 @@ const SCHEMAS := {
 		"fields": [
 			{"key": "id", "type": "str"}, {"key": "title_ru", "type": "str"},
 			{"key": "desc_ru", "type": "text"}, {"key": "giver", "type": "str"},
-			{"key": "kind", "type": "enum", "options": ["kill", "collect", "clear_dungeon"]},
+			{"key": "kind", "type": "enum", "options": ["kill","collect","clear_dungeon"]},
 			{"key": "target", "type": "str"}, {"key": "count", "type": "int"},
 			{"key": "reward_xp", "type": "int"}, {"key": "reward_gold", "type": "int"},
 		],
@@ -106,11 +99,10 @@ const SCHEMAS := {
 	"Карта: блоки": {
 		"file": "maps/hub.json", "root": ["blocks"],
 		"fields": [
-			{"key": "shape", "type": "enum", "options": ["box", "ramp", "stairs", "cylinder"]},
+			{"key": "shape", "type": "enum", "options": ["box","ramp","stairs","cylinder"]},
 			{"key": "pos", "type": "json"}, {"key": "size", "type": "json"},
-			{"key": "rot", "type": "float"},
-			{"key": "from", "type": "json"}, {"key": "to", "type": "json"},
-			{"key": "width", "type": "float"}, {"key": "steps", "type": "int"},
+			{"key": "rot", "type": "float"}, {"key": "from", "type": "json"},
+			{"key": "to", "type": "json"}, {"key": "width", "type": "float"},
 			{"key": "radius", "type": "float"}, {"key": "height", "type": "float"},
 			{"key": "tex", "type": "str"}, {"key": "uv", "type": "float"},
 		],
@@ -120,7 +112,7 @@ const SCHEMAS := {
 		"fields": [
 			{"key": "pos", "type": "json"}, {"key": "size", "type": "json"},
 			{"key": "tex", "type": "str"}, {"key": "sign", "type": "str"},
-			{"key": "sign_side", "type": "enum", "options": ["n", "s", "e", "w"]},
+			{"key": "sign_side", "type": "enum", "options": ["n","s","e","w"]},
 		],
 	},
 	"Карта: свет": {
@@ -153,160 +145,765 @@ const SCHEMAS := {
 	},
 }
 
-## Фундаментальные файлы игры — их защищает «Замок ядра» (read-only на диске).
 const CORE_FILES := [
 	"res://main.tscn", "res://main_menu.tscn",
 	"res://project.godot", "res://OpenHeart.gdextension",
 ]
 
-# ── Состояние ─────────────────────────────────────────────────────────────────
+# Property-панель для визуального редактора карты
+const MAP_SCHEMAS := {
+	"blocks":         [
+		{"key":"shape","type":"enum","options":["box","ramp","stairs","cylinder"]},
+		{"key":"pos","type":"json"},{"key":"size","type":"json"},
+		{"key":"from","type":"json"},{"key":"to","type":"json"},
+		{"key":"rot","type":"float"},{"key":"radius","type":"float"},
+		{"key":"height","type":"float"},{"key":"tex","type":"str"},{"key":"uv","type":"float"},
+	],
+	"buildings":      [
+		{"key":"pos","type":"json"},{"key":"size","type":"json"},
+		{"key":"tex","type":"str"},{"key":"sign","type":"str"},
+		{"key":"sign_side","type":"enum","options":["n","s","e","w"]},
+	],
+	"lights":         [
+		{"key":"pos","type":"json"},{"key":"color","type":"json"},
+		{"key":"energy","type":"float"},{"key":"range","type":"float"},
+	],
+	"props":          [{"key":"tex","type":"str"},{"key":"pos","type":"json"},{"key":"px","type":"float"}],
+	"glows":          [{"key":"pos","type":"json"},{"key":"size","type":"json"},{"key":"tex","type":"str"},{"key":"emission","type":"json"},{"key":"uv","type":"float"}],
+	"spawns_enemies": [{"key":"kind","type":"str"},{"key":"x","type":"float"},{"key":"z","type":"float"}],
+	"spawns_items":   [{"key":"kind","type":"str"},{"key":"x","type":"float"},{"key":"z","type":"float"}],
+}
 
-var preset_id := "core"
-var category := "Оружие"
-var file_cache := {}       # относительный путь → распарсенные данные (общий на файл!)
-var dirty := false
+# ────────────────────── ХОЛСТ КАРТЫ (inner class) ──────────────────────────────
 
-var preset_pick: OptionButton
-var cat_list: ItemList
-var rec_list: ItemList
-var form_box: VBoxContainer
-var status: Label
-var lock_btn: Button
+class MapCanvas extends Control:
+	var pan  := Vector2(500.0, 400.0)
+	var zoom := 4.0
+
+	var sel_layer := ""
+	var sel_idx   := -1
+
+	var _drag_active    := false
+	var _drag_world_ofs := Vector2.ZERO
+	var _pan_drag       := false
+	var _pan_start      := Vector2.ZERO
+	var _pan_origin     := Vector2.ZERO
+
+	var blocks:        Array = []
+	var buildings:     Array = []
+	var lights:        Array = []
+	var props:         Array = []
+	var glows:         Array = []
+	var spawn_enemies: Array = []
+	var spawn_items:   Array = []
+
+	signal selection_changed(layer: String, idx: int)
+	signal data_modified()
+
+	func _ready() -> void:
+		mouse_filter = MOUSE_FILTER_STOP
+		focus_mode   = FOCUS_ALL
+
+	func w2c(x: float, z: float) -> Vector2:
+		return Vector2(x * zoom + pan.x, z * zoom + pan.y)
+
+	func c2w(p: Vector2) -> Vector2:
+		return (p - pan) / zoom
+
+	func reset_view() -> void:
+		zoom = 4.0; pan = size * 0.5; queue_redraw()
+
+	func _draw() -> void:
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.05, 0.09))
+		_draw_grid(); _draw_boundary()
+		_draw_glows_v(); _draw_blocks_v(); _draw_buildings_v()
+		_draw_lights_v(); _draw_props_v(); _draw_spawns_v()
+
+	func _draw_grid() -> void:
+		var step := 10.0 * zoom
+		var ox := fmod(pan.x, step); var oy := fmod(pan.y, step)
+		var col := Color(0.14, 0.11, 0.17)
+		var x := ox
+		while x < size.x: draw_line(Vector2(x, 0), Vector2(x, size.y), col, 0.5); x += step
+		var y := oy
+		while y < size.y: draw_line(Vector2(0, y), Vector2(size.x, y), col, 0.5); y += step
+		draw_line(Vector2(pan.x, 0), Vector2(pan.x, size.y), Color(0.30, 0.20, 0.40), 1.0)
+		draw_line(Vector2(0, pan.y), Vector2(size.x, pan.y), Color(0.30, 0.20, 0.40), 1.0)
+
+	func _draw_boundary() -> void:
+		var tl := w2c(-100.0, -100.0); var br := w2c(100.0, 100.0)
+		draw_rect(Rect2(tl, br-tl), Color(0.20,0.15,0.28,0.10), true)
+		draw_rect(Rect2(tl, br-tl), Color(0.60,0.40,0.90,0.60), false, 1.5)
+
+	func _item_rect(item: Dictionary, two_d: bool) -> Rect2:
+		var shape: String = item.get("shape", "box")
+		if shape in ["ramp","stairs"] and item.has("from") and item.has("to"):
+			var fr = item["from"]; var to = item["to"]
+			if fr is Array and to is Array and fr.size() >= 3 and to.size() >= 3:
+				var tl := w2c(minf(float(fr[0]),float(to[0])), minf(float(fr[2]),float(to[2])))
+				var br := w2c(maxf(float(fr[0]),float(to[0])), maxf(float(fr[2]),float(to[2])))
+				return Rect2(tl, (br-tl).abs() + Vector2(1,1))
+		var pos = item.get("pos", null); var sz = item.get("size", null)
+		if not (pos is Array and sz is Array): return Rect2()
+		var px: float; var pz: float
+		if two_d and pos.size() >= 2: px = float(pos[0]); pz = float(pos[1])
+		elif pos.size() >= 3:         px = float(pos[0]); pz = float(pos[2])
+		else: return Rect2()
+		var sw: float = float(sz[0]) if sz.size() >= 1 else 1.0
+		var sd: float = float(sz[2]) if sz.size() >= 3 else (float(sz[1]) if sz.size() >= 2 else 1.0)
+		var tl := w2c(px - sw*0.5, pz - sd*0.5); var br := w2c(px + sw*0.5, pz + sd*0.5)
+		return Rect2(tl, (br-tl).abs() + Vector2(1,1))
+
+	func _sel(layer: String, i: int) -> bool: return sel_layer == layer and sel_idx == i
+
+	func _draw_blocks_v() -> void:
+		for i in blocks.size():
+			var b: Dictionary = blocks[i]; var s := _sel("blocks", i)
+			var shape: String = b.get("shape","box")
+			var fill  := Color(0.25,0.42,0.85, 0.9 if s else 0.70)
+			var bdr   := Color(1.0,1.0,0.5) if s else Color(0.50,0.70,1.00)
+			if shape == "cylinder":
+				var pos = b.get("pos",null)
+				if not (pos is Array and pos.size() >= 3): continue
+				var cp := w2c(float(pos[0]),float(pos[2]))
+				var rp: float = float(b.get("radius",1.0)) * zoom
+				draw_circle(cp, rp, fill); draw_arc(cp, rp, 0, TAU, 32, bdr, 2.5 if s else 1.0)
+				if s: draw_arc(cp, rp+3, 0, TAU, 32, Color(1,1,0.5,0.4), 1.0)
+			else:
+				var r := _item_rect(b, false)
+				if r.size.x > 0.5: draw_rect(r, fill); draw_rect(r, bdr, false, 2.5 if s else 1.0)
+
+	func _draw_buildings_v() -> void:
+		for i in buildings.size():
+			var b: Dictionary = buildings[i]; var s := _sel("buildings", i)
+			var fill  := Color(0.85,0.44,0.10, 0.9 if s else 0.70)
+			var bdr   := Color(1.0,1.0,0.5) if s else Color(1.00,0.65,0.20)
+			var r := _item_rect(b, true)
+			if r.size.x > 0.5:
+				draw_rect(r, fill); draw_rect(r, bdr, false, 2.5 if s else 1.0)
+				if s: draw_rect(r.grow(3), Color(1,1,0.5,0.3), false, 1.0)
+				if zoom >= 3.0 and r.size.x > 30:
+					draw_string(ThemeDB.fallback_font, r.position+Vector2(3,13),
+						b.get("sign",""), HORIZONTAL_ALIGNMENT_LEFT, r.size.x-6, 9, Color(1,1,1,0.7))
+
+	func _draw_glows_v() -> void:
+		for i in glows.size():
+			var g: Dictionary = glows[i]; var s := _sel("glows", i)
+			var em = g.get("emission", [0.9,0.3,0.5])
+			var fill := Color(
+				float(em[0]) if em is Array and em.size()>0 else 0.9,
+				float(em[1]) if em is Array and em.size()>1 else 0.3,
+				float(em[2]) if em is Array and em.size()>2 else 0.5,
+				0.65 if s else 0.35)
+			var r := _item_rect(g, false)
+			if r.size.x > 0.5: draw_rect(r, fill); draw_rect(r, fill.lightened(0.4), false, 2.0 if s else 1.0)
+
+	func _draw_lights_v() -> void:
+		for i in lights.size():
+			var l: Dictionary = lights[i]; var s := _sel("lights", i)
+			var pos = l.get("pos",null)
+			if not (pos is Array and pos.size() >= 3): continue
+			var ca = l.get("color",[1.0,0.85,0.3])
+			var lcol := Color(
+				float(ca[0]) if ca is Array and ca.size()>0 else 1.0,
+				float(ca[1]) if ca is Array and ca.size()>1 else 0.85,
+				float(ca[2]) if ca is Array and ca.size()>2 else 0.3, 0.25)
+			var cp := w2c(float(pos[0]),float(pos[2]))
+			var rp: float = float(l.get("range",6.0)) * zoom
+			draw_circle(cp, rp, lcol)
+			draw_arc(cp, maxf(rp,3), 0, TAU, 32, Color(1.0,1.0,0.5) if s else Color(1,0.9,0.3), 2.0 if s else 1.0)
+
+	func _draw_props_v() -> void:
+		for i in props.size():
+			var p: Dictionary = props[i]; var pos = p.get("pos",null)
+			if not (pos is Array and pos.size() >= 3): continue
+			var cp := w2c(float(pos[0]),float(pos[2]))
+			if cp.x < -12 or cp.x > size.x+12 or cp.y < -12 or cp.y > size.y+12: continue
+			var s := _sel("props", i)
+			draw_circle(cp, 5.0 if s else 4.0, Color(0.25,0.90,0.35,0.85))
+			if s: draw_arc(cp, 8, 0, TAU, 16, Color(1,1,0.5), 2.0)
+			if zoom >= 5.0:
+				draw_string(ThemeDB.fallback_font, cp+Vector2(5,-4),
+					p.get("tex",""), HORIZONTAL_ALIGNMENT_LEFT, 80, 9, Color(0.8,1,0.8,0.7))
+
+	func _draw_spawns_v() -> void:
+		for i in spawn_enemies.size():
+			var sp: Dictionary = spawn_enemies[i]
+			var cp := w2c(float(sp.get("x",0)),float(sp.get("z",0)))
+			if cp.x < -12 or cp.x > size.x+12 or cp.y < -12 or cp.y > size.y+12: continue
+			var s := _sel("spawns_enemies", i)
+			var pts := PackedVector2Array([cp+Vector2(0,-8), cp+Vector2(7,6), cp+Vector2(-7,6)])
+			draw_colored_polygon(pts, Color(0.90,0.18,0.18,0.85))
+			if s: draw_polyline(PackedVector2Array([pts[0],pts[1],pts[2],pts[0]]), Color(1,1,0.5), 2.0)
+			if zoom >= 4.0:
+				draw_string(ThemeDB.fallback_font, cp+Vector2(8,4), sp.get("kind",""),
+					HORIZONTAL_ALIGNMENT_LEFT, 80, 9, Color(1,0.6,0.6,0.8))
+		for i in spawn_items.size():
+			var sp: Dictionary = spawn_items[i]
+			var cp := w2c(float(sp.get("x",0)),float(sp.get("z",0)))
+			if cp.x < -12 or cp.x > size.x+12 or cp.y < -12 or cp.y > size.y+12: continue
+			var s := _sel("spawns_items", i)
+			draw_circle(cp, 5.0, Color(0.25,0.80,0.95,0.85))
+			if s: draw_arc(cp, 8, 0, TAU, 16, Color(1,1,0.5), 2.0)
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton:
+			var mb: InputEventMouseButton = event
+			match mb.button_index:
+				MOUSE_BUTTON_MIDDLE:
+					_pan_drag = mb.pressed
+					if mb.pressed: _pan_start = mb.position; _pan_origin = pan
+				MOUSE_BUTTON_LEFT:
+					if mb.pressed:
+						var hit := _hit_test(mb.position)
+						if hit.is_empty():
+							sel_layer = ""; sel_idx = -1
+							emit_signal("selection_changed", "", -1)
+						else:
+							sel_layer = hit["layer"]; sel_idx = hit["idx"]
+							emit_signal("selection_changed", sel_layer, sel_idx)
+							_drag_active = true
+							_drag_world_ofs = _get_xz(sel_layer, sel_idx) - c2w(mb.position)
+						queue_redraw()
+					else:
+						_drag_active = false
+				MOUSE_BUTTON_WHEEL_UP:   _zoom_at(mb.position, 1.15)
+				MOUSE_BUTTON_WHEEL_DOWN: _zoom_at(mb.position, 0.87)
+		elif event is InputEventMouseMotion:
+			var mm: InputEventMouseMotion = event
+			if _pan_drag:
+				pan = _pan_origin + (mm.position - _pan_start); queue_redraw()
+			elif _drag_active and sel_idx >= 0:
+				var wp := c2w(mm.position) + _drag_world_ofs
+				_set_xz(sel_layer, sel_idx, snappedf(wp.x,0.5), snappedf(wp.y,0.5))
+				emit_signal("data_modified"); queue_redraw()
+		elif event is InputEventKey and event.pressed:
+			if event.keycode == KEY_DELETE and sel_idx >= 0:
+				var arr := _arr(sel_layer)
+				if sel_idx < arr.size():
+					arr.remove_at(sel_idx); sel_idx = -1
+					selection_changed.emit("", -1); data_modified.emit(); queue_redraw()
+			elif event.keycode == KEY_R: reset_view()
+
+	func _zoom_at(c: Vector2, f: float) -> void:
+		var nz := clampf(zoom*f, 0.5, 30.0)
+		pan = c + (pan-c) * (nz/zoom); zoom = nz; queue_redraw()
+
+	func _hit_test(cp: Vector2) -> Dictionary:
+		for i in range(spawn_items.size()-1,-1,-1):
+			if cp.distance_to(w2c(float(spawn_items[i].get("x",0)),float(spawn_items[i].get("z",0)))) <= 10: return {"layer":"spawns_items","idx":i}
+		for i in range(spawn_enemies.size()-1,-1,-1):
+			if cp.distance_to(w2c(float(spawn_enemies[i].get("x",0)),float(spawn_enemies[i].get("z",0)))) <= 10: return {"layer":"spawns_enemies","idx":i}
+		for i in range(props.size()-1,-1,-1):
+			var pos = props[i].get("pos",null)
+			if pos is Array and pos.size()>=3 and cp.distance_to(w2c(float(pos[0]),float(pos[2]))) <= 10: return {"layer":"props","idx":i}
+		for i in range(lights.size()-1,-1,-1):
+			var pos = lights[i].get("pos",null)
+			if pos is Array and pos.size()>=3 and cp.distance_to(w2c(float(pos[0]),float(pos[2]))) <= 12: return {"layer":"lights","idx":i}
+		for i in range(buildings.size()-1,-1,-1):
+			if _item_rect(buildings[i], true).has_point(cp): return {"layer":"buildings","idx":i}
+		for i in range(blocks.size()-1,-1,-1):
+			var b: Dictionary = blocks[i]
+			if b.get("shape","box") == "cylinder":
+				var pos = b.get("pos",null)
+				if pos is Array and pos.size()>=3 and cp.distance_to(w2c(float(pos[0]),float(pos[2]))) <= float(b.get("radius",1.0))*zoom+4: return {"layer":"blocks","idx":i}
+			elif _item_rect(b, false).has_point(cp): return {"layer":"blocks","idx":i}
+		for i in range(glows.size()-1,-1,-1):
+			if _item_rect(glows[i], false).has_point(cp): return {"layer":"glows","idx":i}
+		return {}
+
+	func _arr(layer: String) -> Array:
+		match layer:
+			"blocks":         return blocks
+			"buildings":      return buildings
+			"lights":         return lights
+			"props":          return props
+			"glows":          return glows
+			"spawns_enemies": return spawn_enemies
+			"spawns_items":   return spawn_items
+		return []
+
+	func _get_xz(layer: String, idx: int) -> Vector2:
+		var arr := _arr(layer)
+		if idx >= arr.size(): return Vector2.ZERO
+		var item: Dictionary = arr[idx]
+		if layer in ["spawns_enemies","spawns_items"]: return Vector2(float(item.get("x",0)),float(item.get("z",0)))
+		var pos = item.get("pos",null)
+		if not pos is Array: return Vector2.ZERO
+		if layer == "buildings" and pos.size()>=2: return Vector2(float(pos[0]),float(pos[1]))
+		if pos.size()>=3: return Vector2(float(pos[0]),float(pos[2]))
+		return Vector2.ZERO
+
+	func _set_xz(layer: String, idx: int, x: float, z: float) -> void:
+		var arr := _arr(layer)
+		if idx >= arr.size(): return
+		var item: Dictionary = arr[idx]
+		if layer in ["spawns_enemies","spawns_items"]: item["x"] = x; item["z"] = z; return
+		if not item.has("pos"): item["pos"] = []
+		var pos: Array = item["pos"]
+		if layer == "buildings":
+			if pos.size()<2: pos.resize(2); pos[0] = x; pos[1] = z
+		else:
+			if pos.size()<3: pos.resize(3)
+			pos[0] = x
+			if pos.size()>=3: pos[2] = z
+
+
+# ────────────────────── ХОЛСТ ТЕКСТУР (inner class) ───────────────────────────
+
+class TexCanvas extends Control:
+	var image:   Image
+	var texture: ImageTexture
+	var zoom    := 8
+	var pan     := Vector2.ZERO
+	var tool    := "pencil"
+	var paint_color := Color.WHITE
+	var _painting   := false
+
+	signal color_picked(c: Color)
+
+	func _ready() -> void:
+		mouse_filter = MOUSE_FILTER_STOP; focus_mode = FOCUS_ALL
+
+	func load_img(img: Image) -> void:
+		image = img.duplicate()
+		texture = ImageTexture.create_from_image(image)
+		zoom = clampi(256 / maxi(image.get_width(), image.get_height()), 1, 16)
+		_center(); queue_redraw()
+
+	func _center() -> void:
+		if not image: return
+		pan = size*0.5 - Vector2(image.get_width()*zoom, image.get_height()*zoom)*0.5
+
+	func _draw() -> void:
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.10,0.08,0.13))
+		if not image:
+			draw_string(ThemeDB.fallback_font, size*0.5-Vector2(70,8),
+				"Загрузи PNG кнопкой 📂", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.4,0.4,0.4))
+			return
+		var w := image.get_width(); var h := image.get_height()
+		var cw := w*zoom; var ch := h*zoom
+		var cs := maxi(zoom,4); var rp := 0; var ry := 0
+		while ry < ch:
+			var cp := rp; var rx := 0
+			while rx < cw:
+				draw_rect(Rect2(pan+Vector2(rx,ry), Vector2(mini(cs,cw-rx),mini(cs,ch-ry))),
+					Color(0.45,0.45,0.45) if cp%2==0 else Color(0.60,0.60,0.60))
+				cp += 1; rx += cs
+			rp += 1; ry += cs
+		draw_texture_rect(texture, Rect2(pan, Vector2(cw,ch)), false)
+		if zoom >= 4:
+			for gy in h+1: draw_line(pan+Vector2(0,gy*zoom), pan+Vector2(cw,gy*zoom), Color(0,0,0,0.25), 0.5)
+			for gx in w+1: draw_line(pan+Vector2(gx*zoom,0), pan+Vector2(gx*zoom,ch), Color(0,0,0,0.25), 0.5)
+		draw_rect(Rect2(pan, Vector2(cw,ch)), Color(0.5,0.5,0.8,0.5), false, 1.0)
+
+	func _px(cp: Vector2) -> Vector2i:
+		return Vector2i(int((cp.x-pan.x)/zoom), int((cp.y-pan.y)/zoom))
+
+	func _paint(cp: Vector2) -> void:
+		if not image: return
+		var p := _px(cp)
+		if p.x<0 or p.x>=image.get_width() or p.y<0 or p.y>=image.get_height(): return
+		match tool:
+			"pencil": image.set_pixel(p.x, p.y, paint_color); _flush()
+			"eraser": image.set_pixel(p.x, p.y, Color(0,0,0,0)); _flush()
+			"fill":
+				var tgt := image.get_pixel(p.x, p.y)
+				if not tgt.is_equal_approx(paint_color): _flood(p.x,p.y,tgt,paint_color); _flush()
+			"pick": emit_signal("color_picked", image.get_pixel(p.x,p.y))
+
+	func _flood(sx:int, sy:int, tgt:Color, fill:Color) -> void:
+		var w := image.get_width(); var h := image.get_height()
+		var stack := [[sx,sy]]; var vis := {}; var lim := w*h; var n := 0
+		while stack.size()>0 and n<lim:
+			n += 1; var pos: Array = stack.pop_back(); var x:int=pos[0]; var y:int=pos[1]
+			if x<0 or x>=w or y<0 or y>=h: continue
+			var k := x+y*w
+			if vis.has(k): continue
+			vis[k] = true
+			if not image.get_pixel(x,y).is_equal_approx(tgt): continue
+			image.set_pixel(x,y,fill)
+			stack.push_back([x+1,y]); stack.push_back([x-1,y])
+			stack.push_back([x,y+1]); stack.push_back([x,y-1])
+
+	func _flush() -> void:
+		if texture: texture.update(image); queue_redraw()
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton:
+			var mb: InputEventMouseButton = event
+			if mb.button_index == MOUSE_BUTTON_LEFT:
+				_painting = mb.pressed
+				if mb.pressed: _paint(mb.position)
+			elif mb.button_index == MOUSE_BUTTON_WHEEL_UP:
+				var oz := zoom; zoom = mini(zoom*2, 64)
+				if zoom!=oz: pan = mb.position+(pan-mb.position)*(float(zoom)/oz); queue_redraw()
+			elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				var oz := zoom; zoom = maxi(zoom/2, 1)
+				if zoom!=oz: pan = mb.position+(pan-mb.position)*(float(zoom)/oz); queue_redraw()
+		elif event is InputEventMouseMotion:
+			var mm: InputEventMouseMotion = event
+			if _painting and (mm.button_mask & MOUSE_BUTTON_MASK_LEFT): _paint(mm.position)
+
+
+# ─────────────────────────── СОСТОЯНИЕ ────────────────────────────────────────
+
+# Вкладка «Данные»
+var preset_id      := "core"
+var category       := "Оружие"
+var file_cache     := {}
+var dirty          := false
+var preset_pick:   OptionButton
+var cat_list:      ItemList
+var rec_list:      ItemList
+var form_box:      VBoxContainer
+var status:        Label
+var lock_btn:      Button
 var new_preset_edit: LineEdit
 
-# ИИ-генерация текстур (окно поверх панели)
-var gen_window: Window
-var gen_type: OptionButton
-var gen_id: LineEdit
-var gen_desc: TextEdit
-var gen_prompt_preview: Label
-var gen_status: Label
-var gen_preview: TextureRect
-var gen_btn: Button
-var gen_thread: Thread
-var gen_templates := {}
+# Вкладка «Карта»
+var map_canvas:    MapCanvas
+var map_prop_box:  VBoxContainer
+var map_status:    Label
+var _map_ref:      Dictionary = {}
 
+# Вкладка «Текстуры»
+var tex_canvas:   TexCanvas
+var tex_path_lbl: LineEdit
+var tex_status:   Label
+var tex_picker:   ColorPickerButton
+var tex_cur_path  := ""
+
+# Вкладка «Анимации»
+var anim_path_lbl:  LineEdit
+var anim_sheet_tr:  TextureRect
+var anim_frame_lst: ItemList
+var anim_preview:   TextureRect
+var anim_overlay:   Control
+var anim_status:    Label
+var anim_fw:        SpinBox
+var anim_fh:        SpinBox
+var anim_fps:       SpinBox
+var anim_frames: Array[Dictionary] = []
+var anim_sheet_img: Image
+var anim_sheet_tex: Texture2D
+var anim_timer := 0.0
+var anim_fidx  := 0
+var anim_play  := false
+
+# ────────────────────────── LIFECYCLE ─────────────────────────────────────────
 
 func _ready() -> void:
 	name = "OpenHeartEditor"
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	_build_ui()
-	_scan_presets()
-	_load_category()
+	_build_ui(); _scan_presets(); _load_category()
 
+func _process(delta: float) -> void:
+	if anim_play and anim_frames.size() > 0:
+		anim_timer += delta
+		var fps := anim_fps.value if anim_fps else 8.0
+		if anim_timer >= 1.0 / maxf(fps, 1.0):
+			anim_timer = 0.0
+			anim_fidx = (anim_fidx + 1) % anim_frames.size()
+			_anim_show(anim_fidx)
 
-func _exit_tree() -> void:
-	# Плагин выключают/перезагружают: дождаться потока генерации, иначе Godot
-	# ругается на Thread без wait_to_finish, а _gen_done прилетит в мёртвый узел.
-	if gen_thread != null:
-		gen_thread.wait_to_finish()
-		gen_thread = null
-
-
-# ── UI каркас ─────────────────────────────────────────────────────────────────
+# ──────────────────────────── UI ROOT ─────────────────────────────────────────
 
 func _build_ui() -> void:
-	var root := VBoxContainer.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(root)
+	var tabs := TabContainer.new()
+	tabs.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(tabs)
+	var p0 := _mk_pane("Данные");   tabs.add_child(p0); _build_data_tab(p0)
+	var p1 := _mk_pane("Карта");    tabs.add_child(p1); _build_map_tab(p1)
+	var p2 := _mk_pane("Текстуры"); tabs.add_child(p2); _build_tex_tab(p2)
+	var p3 := _mk_pane("Анимации"); tabs.add_child(p3); _build_anim_tab(p3)
 
-	# Верхняя панель
-	var top := HBoxContainer.new()
-	root.add_child(top)
+func _mk_pane(n: String) -> Control:
+	var c := Control.new(); c.name = n; c.set_anchors_preset(Control.PRESET_FULL_RECT); return c
 
-	top.add_child(_mk_label("Пресет:"))
-	preset_pick = OptionButton.new()
-	preset_pick.item_selected.connect(_on_preset_selected)
-	top.add_child(preset_pick)
+# ──────────────────── ВКЛАДКА «ДАННЫЕ» ────────────────────────────────────────
 
-	new_preset_edit = LineEdit.new()
-	new_preset_edit.placeholder_text = "id нового пресета…"
-	new_preset_edit.custom_minimum_size.x = 160
-	top.add_child(new_preset_edit)
-	var np := Button.new()
-	np.text = "Создать копию"
-	np.tooltip_text = "Скопировать текущий пресет в presets/<id> — отдельная игра"
-	np.pressed.connect(_on_new_preset)
-	top.add_child(np)
-
+func _build_data_tab(parent: Control) -> void:
+	var root := VBoxContainer.new(); root.set_anchors_preset(Control.PRESET_FULL_RECT); parent.add_child(root)
+	var top := HBoxContainer.new(); root.add_child(top)
+	top.add_child(_mk_lbl("Пресет:"))
+	preset_pick = OptionButton.new(); preset_pick.item_selected.connect(_on_preset_sel); top.add_child(preset_pick)
+	new_preset_edit = LineEdit.new(); new_preset_edit.placeholder_text = "id нового…"; new_preset_edit.custom_minimum_size.x = 140; top.add_child(new_preset_edit)
+	var np := Button.new(); np.text = "Создать копию"; np.pressed.connect(_on_new_preset); top.add_child(np)
 	top.add_spacer(false)
+	var sb := Button.new(); sb.text = "💾 Сохранить"; sb.pressed.connect(_save_all); top.add_child(sb)
+	lock_btn = Button.new(); lock_btn.toggle_mode = true; lock_btn.toggled.connect(_on_lock_tog); top.add_child(lock_btn)
+	_refresh_lock()
+	status = _mk_lbl(""); status.modulate = Color(1,0.7,0.9); top.add_child(status)
 
-	var save_btn := Button.new()
-	save_btn.text = "💾 Сохранить пресет"
-	save_btn.pressed.connect(_save_all)
-	top.add_child(save_btn)
+	var split := HSplitContainer.new(); split.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(split)
+	var left := VBoxContainer.new(); left.custom_minimum_size.x = 380; split.add_child(left)
+	left.add_child(_mk_lbl("Категория"))
+	cat_list = ItemList.new(); cat_list.custom_minimum_size.y = 220; cat_list.max_columns = 1
+	for k in SCHEMAS.keys(): cat_list.add_item(k)
+	cat_list.item_selected.connect(_on_cat_sel); left.add_child(cat_list)
+	left.add_child(_mk_lbl("Записи"))
+	rec_list = ItemList.new(); rec_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	rec_list.custom_minimum_size.y = 120; rec_list.max_columns = 1
+	rec_list.item_selected.connect(_on_rec_sel); left.add_child(rec_list)
+	var crud := HBoxContainer.new(); left.add_child(crud)
+	var ba := Button.new(); ba.text = "＋"; ba.pressed.connect(_on_add)
+	var bd := Button.new(); bd.text = "⧉"; bd.pressed.connect(_on_dup)
+	var bx := Button.new(); bx.text = "🗑"; bx.pressed.connect(_on_del)
+	crud.add_child(ba); crud.add_child(bd); crud.add_child(bx)
 
-	lock_btn = Button.new()
-	lock_btn.toggle_mode = true
-	lock_btn.toggled.connect(_on_lock_toggled)
-	top.add_child(lock_btn)
-	_refresh_lock_button()
+	var scroll := ScrollContainer.new(); scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL; scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; split.add_child(scroll)
+	form_box = VBoxContainer.new(); form_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL; scroll.add_child(form_box)
 
-	var gen_open := Button.new()
-	gen_open.text = "🎨 ИИ-текстуры"
-	gen_open.tooltip_text = "Сгенерировать спрайт/текстуру нейросетью (сервер настраивается в tools/aigen.json)"
-	gen_open.pressed.connect(_open_gen_window)
-	top.add_child(gen_open)
+# ──────────────────── ВКЛАДКА «КАРТА» ─────────────────────────────────────────
 
-	status = _mk_label("")
-	status.modulate = Color(1.0, 0.7, 0.9)
-	top.add_child(status)
+func _build_map_tab(parent: Control) -> void:
+	var root := VBoxContainer.new(); root.set_anchors_preset(Control.PRESET_FULL_RECT); parent.add_child(root)
+	var bar := HBoxContainer.new(); root.add_child(bar)
+	var rl := Button.new(); rl.text = "↺ Загрузить"; rl.pressed.connect(_map_load); bar.add_child(rl)
+	var sv := Button.new(); sv.text = "💾 Сохранить"; sv.pressed.connect(_map_save); bar.add_child(sv)
+	var rs := Button.new(); rs.text = "⊡ Сброс"; rs.pressed.connect(func(): if map_canvas: map_canvas.reset_view()); bar.add_child(rs)
+	bar.add_spacer(false)
+	for pair in [["blocks","Блок"],["buildings","Здание"],["lights","Свет"],["props","Проп"],["glows","Глоу"],["spawns_enemies","Враг"],["spawns_items","Лут"]]:
+		var btn := Button.new(); btn.text = "+ %s" % pair[1]; btn.pressed.connect(_map_add.bind(pair[0])); bar.add_child(btn)
+	map_status = _mk_lbl("← Загрузи карту"); map_status.modulate = Color(0.7,1,0.8); bar.add_child(map_status)
 
-	# Основная область
-	var split := HSplitContainer.new()
-	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(split)
+	var split := HSplitContainer.new(); split.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(split)
+	map_canvas = MapCanvas.new(); map_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL; map_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_canvas.selection_changed.connect(_on_map_sel); map_canvas.data_modified.connect(func(): dirty = true); split.add_child(map_canvas)
+	var rscroll := ScrollContainer.new(); rscroll.custom_minimum_size.x = 320; rscroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; split.add_child(rscroll)
+	map_prop_box = VBoxContainer.new(); map_prop_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL; rscroll.add_child(map_prop_box)
+	map_prop_box.add_child(_mk_lbl("← Выбери объект на холсте"))
 
-	var left := VBoxContainer.new()
-	left.custom_minimum_size.x = 420
-	split.add_child(left)
+func _map_load() -> void:
+	var rel := "maps/hub.json"
+	if not file_cache.has(rel):
+		var p = _read_json("%s/%s" % [_preset_root(), rel])
+		file_cache[rel] = p if p != null else {}
+	_map_ref = file_cache[rel]
+	for k in ["blocks","buildings","lights","props","glows"]:
+		if not _map_ref.has(k): _map_ref[k] = []
+	if not _map_ref.has("spawns"): _map_ref["spawns"] = {}
+	if not _map_ref["spawns"].has("spawn_enemies"): _map_ref["spawns"]["spawn_enemies"] = []
+	if not _map_ref["spawns"].has("spawn_items"):   _map_ref["spawns"]["spawn_items"] = []
+	map_canvas.blocks        = _map_ref["blocks"]
+	map_canvas.buildings     = _map_ref["buildings"]
+	map_canvas.lights        = _map_ref["lights"]
+	map_canvas.props         = _map_ref["props"]
+	map_canvas.glows         = _map_ref["glows"]
+	map_canvas.spawn_enemies = _map_ref["spawns"]["spawn_enemies"]
+	map_canvas.spawn_items   = _map_ref["spawns"]["spawn_items"]
+	map_canvas.reset_view()
+	map_status.text = "Загружено: %d блоков, %d зданий" % [map_canvas.blocks.size(), map_canvas.buildings.size()]
 
-	left.add_child(_mk_label("Категория"))
-	cat_list = ItemList.new()
-	cat_list.custom_minimum_size.y = 230
-	for k in SCHEMAS.keys():
-		cat_list.add_item(k)
-	cat_list.item_selected.connect(_on_category_selected)
-	left.add_child(cat_list)
+func _map_save() -> void: _save_all(); map_status.text = "Сохранено ✓"
 
-	left.add_child(_mk_label("Записи"))
-	rec_list = ItemList.new()
-	rec_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rec_list.item_selected.connect(_on_record_selected)
-	left.add_child(rec_list)
+func _map_add(layer: String) -> void:
+	if _map_ref.is_empty(): _map_load()
+	var arr := map_canvas._arr(layer)
+	var blank: Dictionary
+	match layer:
+		"blocks":         blank = {"shape":"box","pos":[0.0,0.0,0.0],"size":[4.0,3.0,4.0],"tex":"wall_main","uv":2.0}
+		"buildings":      blank = {"pos":[0.0,0.0],"size":[10.0,5.0,8.0],"tex":"wall_main","sign":"","sign_side":"s"}
+		"lights":         blank = {"pos":[0.0,2.0,0.0],"color":[1.0,0.8,0.3],"energy":1.0,"range":8.0}
+		"props":          blank = {"tex":"street_bench","pos":[0.0,0.0,0.0],"px":0.020}
+		"glows":          blank = {"pos":[0.0,0.03,0.0],"size":[4.0,0.06,4.0],"tex":"liquid_pink","emission":[0.9,0.3,0.6],"uv":2.0}
+		"spawns_enemies": blank = {"kind":"grunt","x":0.0,"z":0.0}
+		"spawns_items":   blank = {"kind":"medkit","x":0.0,"z":0.0}
+		_: blank = {}
+	arr.append(blank)
+	map_canvas.sel_layer = layer; map_canvas.sel_idx = arr.size()-1
+	map_canvas.queue_redraw(); _on_map_sel(layer, arr.size()-1); dirty = true
 
-	var crud := HBoxContainer.new()
-	left.add_child(crud)
-	var b_add := Button.new(); b_add.text = "＋ Добавить"; b_add.pressed.connect(_on_add)
-	var b_dup := Button.new(); b_dup.text = "⧉ Дублировать"; b_dup.pressed.connect(_on_dup)
-	var b_del := Button.new(); b_del.text = "🗑 Удалить"; b_del.pressed.connect(_on_del)
-	crud.add_child(b_add); crud.add_child(b_dup); crud.add_child(b_del)
+func _on_map_sel(layer: String, idx: int) -> void:
+	for c in map_prop_box.get_children(): c.queue_free()
+	if layer.is_empty() or idx < 0: map_prop_box.add_child(_mk_lbl("← Выбери объект")); return
+	var arr := map_canvas._arr(layer)
+	if idx >= arr.size(): return
+	var rec: Dictionary = arr[idx]
+	var hdr := _mk_lbl("[%s] #%d" % [layer, idx]); hdr.add_theme_color_override("font_color", Color(1,0.85,0.4)); map_prop_box.add_child(hdr)
+	for field in MAP_SCHEMAS.get(layer, []):
+		var key: String = field["key"]
+		if not rec.has(key): continue
+		var row := HBoxContainer.new()
+		var lbl := _mk_lbl(key); lbl.custom_minimum_size.x = 90; row.add_child(lbl)
+		var ed := _make_field(field, rec, -1); ed.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(ed)
+		map_prop_box.add_child(row)
+	var db := Button.new(); db.text = "🗑 Удалить"
+	db.pressed.connect(func():
+		arr.remove_at(idx); map_canvas.sel_idx = -1; map_canvas.queue_redraw()
+		_on_map_sel("", -1); dirty = true)
+	map_prop_box.add_child(db)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	split.add_child(scroll)
-	form_box = VBoxContainer.new()
-	form_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(form_box)
+# ──────────────────── ВКЛАДКА «ТЕКСТУРЫ» ──────────────────────────────────────
 
+func _build_tex_tab(parent: Control) -> void:
+	var root := VBoxContainer.new(); root.set_anchors_preset(Control.PRESET_FULL_RECT); parent.add_child(root)
+	var bar := HBoxContainer.new(); root.add_child(bar)
+	tex_path_lbl = LineEdit.new(); tex_path_lbl.placeholder_text = "res://assets/textures/wall_main.png"; tex_path_lbl.custom_minimum_size.x = 340; bar.add_child(tex_path_lbl)
+	var opn := Button.new(); opn.text = "📂"; opn.pressed.connect(_tex_load); bar.add_child(opn)
+	var sav := Button.new(); sav.text = "💾"; sav.pressed.connect(_tex_save); bar.add_child(sav)
+	for pair in [["pencil","✏"],["eraser","◻"],["fill","🪣"],["pick","💧"]]:
+		var btn := Button.new(); btn.text = pair[1]; btn.toggle_mode = true; btn.button_pressed = (pair[0]=="pencil")
+		btn.pressed.connect(_set_tex_tool.bind(pair[0])); bar.add_child(btn)
+	tex_picker = ColorPickerButton.new(); tex_picker.color = Color.WHITE; tex_picker.custom_minimum_size = Vector2(44,26)
+	tex_picker.color_changed.connect(func(c: Color): if tex_canvas: tex_canvas.paint_color = c); bar.add_child(tex_picker)
+	var zm := Button.new(); zm.text="−"; zm.pressed.connect(func(): if tex_canvas: tex_canvas.zoom=maxi(tex_canvas.zoom/2,1); tex_canvas.queue_redraw()); bar.add_child(zm)
+	var zp := Button.new(); zp.text="＋"; zp.pressed.connect(func(): if tex_canvas: tex_canvas.zoom=mini(tex_canvas.zoom*2,64); tex_canvas.queue_redraw()); bar.add_child(zp)
+	var zf := Button.new(); zf.text="⊡"; zf.pressed.connect(func(): if tex_canvas: tex_canvas._center(); tex_canvas.queue_redraw()); bar.add_child(zf)
+	tex_status = _mk_lbl("Загрузи PNG"); tex_status.modulate = Color(0.7,1,0.8); bar.add_child(tex_status)
 
-func _mk_label(text: String) -> Label:
-	var l := Label.new()
-	l.text = text
-	return l
+	tex_canvas = TexCanvas.new(); tex_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL; tex_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tex_canvas.color_picked.connect(func(c: Color): tex_picker.color = c; tex_canvas.paint_color = c); root.add_child(tex_canvas)
 
+	var pal := HBoxContainer.new(); root.add_child(pal); pal.add_child(_mk_lbl("Палитра: "))
+	for pc in [Color("#ff4fa3"),Color("#a855f7"),Color("#3b82f6"),Color("#10b981"),Color("#f59e0b"),Color("#ef4444"),Color("#6b7280"),Color("#1c0a2e"),Color.WHITE,Color.BLACK]:
+		var cb := ColorRect.new(); cb.color=pc; cb.custom_minimum_size=Vector2(22,22)
+		cb.gui_input.connect(func(ev: InputEvent):
+			if ev is InputEventMouseButton and ev.button_index==MOUSE_BUTTON_LEFT and ev.pressed:
+				tex_picker.color=pc; if tex_canvas: tex_canvas.paint_color=pc)
+		pal.add_child(cb)
 
-func _set_status(text: String, ok := true) -> void:
-	status.text = text
-	status.modulate = Color(0.6, 1.0, 0.7) if ok else Color(1.0, 0.5, 0.5)
+func _set_tex_tool(tn: String) -> void:
+	if tex_canvas: tex_canvas.tool = tn
 
+func _tex_load() -> void:
+	var path := tex_path_lbl.text.strip_edges()
+	if path.is_empty(): return
+	var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+	if not img: tex_status.text = "Не открылся: %s" % path; tex_status.modulate = Color(1,0.5,0.5); return
+	tex_canvas.load_img(img); tex_cur_path = path
+	tex_status.text = "%s  (%dx%d)" % [path.get_file(), img.get_width(), img.get_height()]; tex_status.modulate = Color(0.6,1,0.7)
 
-# ── Пресеты ───────────────────────────────────────────────────────────────────
+func _tex_save() -> void:
+	if not tex_canvas or not tex_canvas.image: return
+	var path := tex_cur_path if not tex_cur_path.is_empty() else tex_path_lbl.text.strip_edges()
+	if path.is_empty(): return
+	var err := tex_canvas.image.save_png(ProjectSettings.globalize_path(path))
+	if err == OK: tex_status.text = "Сохранено ✓"; EditorInterface.get_resource_filesystem().scan()
+	else: tex_status.text = "Ошибка %d" % err; tex_status.modulate = Color(1,0.5,0.5)
 
-func _preset_root() -> String:
-	return "res://presets/%s" % preset_id
+# ──────────────────── ВКЛАДКА «АНИМАЦИИ» ──────────────────────────────────────
 
+func _build_anim_tab(parent: Control) -> void:
+	var root := VBoxContainer.new(); root.set_anchors_preset(Control.PRESET_FULL_RECT); parent.add_child(root)
+	var bar := HBoxContainer.new(); root.add_child(bar)
+	anim_path_lbl = LineEdit.new(); anim_path_lbl.placeholder_text = "res://assets/sprites/weapons/weapon_00.png"; anim_path_lbl.custom_minimum_size.x = 320; bar.add_child(anim_path_lbl)
+	var opn := Button.new(); opn.text = "📂 Лист"; opn.pressed.connect(_anim_load); bar.add_child(opn)
+	bar.add_child(_mk_lbl("  W:")); anim_fw = SpinBox.new(); anim_fw.min_value=1; anim_fw.max_value=1024; anim_fw.value=96; anim_fw.value_changed.connect(func(_v): if anim_overlay: anim_overlay.queue_redraw()); bar.add_child(anim_fw)
+	bar.add_child(_mk_lbl(" H:")); anim_fh = SpinBox.new(); anim_fh.min_value=1; anim_fh.max_value=1024; anim_fh.value=256; anim_fh.value_changed.connect(func(_v): if anim_overlay: anim_overlay.queue_redraw()); bar.add_child(anim_fh)
+	bar.add_child(_mk_lbl(" FPS:")); anim_fps = SpinBox.new(); anim_fps.min_value=1; anim_fps.max_value=60; anim_fps.value=8; bar.add_child(anim_fps)
+	anim_status = _mk_lbl("Загрузи спрайт-лист"); anim_status.modulate = Color(0.7,1,0.8); bar.add_child(anim_status)
+
+	var split := HSplitContainer.new(); split.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(split)
+	var sheet_sc := ScrollContainer.new(); sheet_sc.size_flags_horizontal = Control.SIZE_EXPAND_FILL; sheet_sc.size_flags_vertical = Control.SIZE_EXPAND_FILL; split.add_child(sheet_sc)
+	var sheet_con := Control.new(); sheet_con.custom_minimum_size = Vector2(512,512); sheet_sc.add_child(sheet_con)
+	anim_sheet_tr = TextureRect.new(); anim_sheet_tr.set_anchors_preset(Control.PRESET_FULL_RECT)
+	anim_sheet_tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; anim_sheet_tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	anim_sheet_tr.texture_filter = TEXTURE_FILTER_NEAREST; sheet_con.add_child(anim_sheet_tr)
+	anim_overlay = Control.new(); anim_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	anim_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	anim_overlay.draw.connect(_anim_draw_ov.bind(anim_overlay)); anim_overlay.gui_input.connect(_anim_click); sheet_con.add_child(anim_overlay)
+
+	var right := VBoxContainer.new(); right.custom_minimum_size.x = 260; split.add_child(right)
+	right.add_child(_mk_lbl("Последовательность (кликай по листу):"))
+	anim_frame_lst = ItemList.new(); anim_frame_lst.custom_minimum_size.y = 180; anim_frame_lst.size_flags_vertical = Control.SIZE_EXPAND_FILL; anim_frame_lst.max_columns = 1; right.add_child(anim_frame_lst)
+	var acrud := HBoxContainer.new(); right.add_child(acrud)
+	var rem := Button.new(); rem.text = "− Убрать"; rem.pressed.connect(_anim_rem); acrud.add_child(rem)
+	var clr := Button.new(); clr.text = "✕ Очистить"; clr.pressed.connect(_anim_clr); acrud.add_child(clr)
+	var pbar := HBoxContainer.new(); right.add_child(pbar)
+	var pb := Button.new(); pb.text = "▶ Play"; pb.pressed.connect(func(): anim_play=true; anim_fidx=0; anim_timer=0.0); pbar.add_child(pb)
+	var sb2 := Button.new(); sb2.text = "■ Stop"; sb2.pressed.connect(func(): anim_play=false); pbar.add_child(sb2)
+	right.add_child(_mk_lbl("Предпросмотр:"))
+	anim_preview = TextureRect.new(); anim_preview.custom_minimum_size = Vector2(128,128)
+	anim_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED; anim_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	anim_preview.texture_filter = TEXTURE_FILTER_NEAREST; right.add_child(anim_preview)
+	var cpb := Button.new(); cpb.text = "📋 Скопировать индексы"; cpb.pressed.connect(_anim_copy); right.add_child(cpb)
+
+func _anim_load() -> void:
+	var path := anim_path_lbl.text.strip_edges()
+	if path.is_empty(): return
+	var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+	if not img: anim_status.text = "Не открылся: %s" % path; anim_status.modulate = Color(1,0.5,0.5); return
+	anim_sheet_img = img; anim_sheet_tex = ImageTexture.create_from_image(img)
+	anim_sheet_tr.texture = anim_sheet_tex
+	anim_fw.value = floori(img.get_width() / 4.0); anim_fh.value = img.get_height()
+	if anim_sheet_tr.get_parent(): anim_sheet_tr.get_parent().custom_minimum_size = Vector2(img.get_width(), img.get_height())
+	anim_frames.clear(); _anim_refresh_lst()
+	if anim_overlay: anim_overlay.queue_redraw()
+	anim_status.text = "%s  (%dx%d)" % [path.get_file(), img.get_width(), img.get_height()]; anim_status.modulate = Color(0.6,1,0.7)
+
+func _anim_draw_ov(canvas: Control) -> void:
+	if not anim_sheet_img: return
+	var fw := int(anim_fw.value); var fh := int(anim_fh.value)
+	var iw := anim_sheet_img.get_width(); var ih := anim_sheet_img.get_height()
+	if fw<=0 or fh<=0: return
+	var csz := canvas.size; var sc := minf(csz.x/iw, csz.y/ih)
+	var off := (csz - Vector2(iw*sc, ih*sc))*0.5
+	var cols := maxi(iw/fw,1); var rows := maxi(ih/fh,1)
+	for c in cols+1: canvas.draw_line(Vector2(off.x+c*fw*sc,off.y), Vector2(off.x+c*fw*sc,off.y+ih*sc), Color(1,1,1,0.35), 1.0)
+	for r in rows+1: canvas.draw_line(Vector2(off.x,off.y+r*fh*sc), Vector2(off.x+iw*sc,off.y+r*fh*sc), Color(1,1,1,0.35), 1.0)
+	for frame in anim_frames:
+		var fc: int = frame["col"]; var fr: int = frame["row"]
+		canvas.draw_rect(Rect2(off.x+fc*fw*sc, off.y+fr*fh*sc, fw*sc, fh*sc), Color(1,1,0,0.22), true)
+		canvas.draw_rect(Rect2(off.x+fc*fw*sc, off.y+fr*fh*sc, fw*sc, fh*sc), Color(1,1,0.5,0.8), false, 1.5)
+	if sc*fw > 20:
+		var idx := 0
+		for r in rows:
+			for c in cols:
+				canvas.draw_string(ThemeDB.fallback_font, Vector2(off.x+c*fw*sc+2, off.y+r*fh*sc+13), str(idx), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1,1,1,0.6))
+				idx += 1
+
+func _anim_click(event: InputEvent) -> void:
+	if not event is InputEventMouseButton: return
+	var mb: InputEventMouseButton = event
+	if mb.button_index != MOUSE_BUTTON_LEFT or not mb.pressed: return
+	if not anim_sheet_img: return
+	var fw := int(anim_fw.value); var fh := int(anim_fh.value)
+	var iw := anim_sheet_img.get_width(); var ih := anim_sheet_img.get_height()
+	if fw<=0 or fh<=0: return
+	var csz := anim_overlay.size; var sc := minf(csz.x/iw, csz.y/ih)
+	var off := (csz - Vector2(iw*sc, ih*sc))*0.5
+	var rel := mb.position - off
+	if rel.x<0 or rel.y<0 or rel.x>iw*sc or rel.y>ih*sc: return
+	var col := int(rel.x/(fw*sc)); var row := int(rel.y/(fh*sc))
+	anim_frames.append({"col":col,"row":row}); _anim_refresh_lst(); _anim_show(anim_frames.size()-1)
+	if anim_overlay: anim_overlay.queue_redraw()
+
+func _anim_refresh_lst() -> void:
+	anim_frame_lst.clear()
+	var cols := maxi(int(anim_sheet_img.get_width() if anim_sheet_img else 1) / int(anim_fw.value if anim_fw else 1), 1)
+	for i in anim_frames.size():
+		var f: Dictionary = anim_frames[i]
+		anim_frame_lst.add_item("#%d — кол%d ряд%d (idx %d)" % [i, f["col"], f["row"], f["row"]*cols+f["col"]])
+
+func _anim_show(idx: int) -> void:
+	if idx<0 or idx>=anim_frames.size() or not anim_sheet_img: return
+	var f: Dictionary = anim_frames[idx]
+	var fw := int(anim_fw.value); var fh := int(anim_fh.value)
+	var sub := anim_sheet_img.get_region(Rect2(f["col"]*fw, f["row"]*fh, fw, fh))
+	anim_preview.texture = ImageTexture.create_from_image(sub)
+
+func _anim_rem() -> void:
+	var sel := anim_frame_lst.get_selected_items()
+	if sel.is_empty(): return
+	anim_frames.remove_at(sel[0]); _anim_refresh_lst()
+	if anim_overlay: anim_overlay.queue_redraw()
+
+func _anim_clr() -> void:
+	anim_frames.clear(); _anim_refresh_lst()
+	if anim_overlay: anim_overlay.queue_redraw()
+
+func _anim_copy() -> void:
+	if not anim_sheet_img: return
+	var cols := maxi(int(anim_sheet_img.get_width())/int(anim_fw.value), 1)
+	var idx := []; for f in anim_frames: idx.append(f["row"]*cols+f["col"])
+	DisplayServer.clipboard_set(JSON.stringify(idx))
+	anim_status.text = "Скопировано: %s" % JSON.stringify(idx)
+
+# ──────────────────── ДАННЫЕ: ПРЕСЕТЫ / ФАЙЛЫ ─────────────────────────────────
+
+func _preset_root() -> String: return "res://presets/%s" % preset_id
 
 func _scan_presets() -> void:
 	preset_pick.clear()
@@ -314,484 +911,203 @@ func _scan_presets() -> void:
 	var dir := DirAccess.open("res://presets")
 	if dir:
 		for d in dir.get_directories():
-			if not d.begins_with("."):
-				found.append(d)
+			if not d.begins_with("."): found.append(d)
 	found.sort()
 	for i in found.size():
 		preset_pick.add_item(found[i])
-		if found[i] == preset_id:
-			preset_pick.select(i)
+		if found[i] == preset_id: preset_pick.select(i)
 	if not found.has(preset_id) and found.size() > 0:
-		preset_id = found[0]
-		preset_pick.select(0)
+		preset_id = found[0]; preset_pick.select(0)
 
-
-func _on_preset_selected(idx: int) -> void:
-	if dirty:
-		_save_all()
-	preset_id = preset_pick.get_item_text(idx)
-	file_cache.clear()
-	_load_category()
-	_set_status("Пресет: %s" % preset_id)
-
+func _on_preset_sel(idx: int) -> void:
+	if dirty: _save_all()
+	preset_id = preset_pick.get_item_text(idx); file_cache.clear(); _map_ref.clear(); _load_category()
 
 func _on_new_preset() -> void:
-	var new_id := new_preset_edit.text.strip_edges()
-	if new_id.is_empty() or not new_id.is_valid_filename():
-		_set_status("Некорректный id пресета", false)
-		return
-	var src := _preset_root()
-	var dst := "res://presets/%s" % new_id
-	if DirAccess.dir_exists_absolute(dst):
-		_set_status("Пресет %s уже существует" % new_id, false)
-		return
-	_copy_dir(src, dst)
-	# правим манифест
+	var nid := new_preset_edit.text.strip_edges()
+	if nid.is_empty() or not nid.is_valid_filename(): _set_st("Некорректный id", false); return
+	var dst := "res://presets/%s" % nid
+	if DirAccess.dir_exists_absolute(dst): _set_st("Уже есть: %s" % nid, false); return
+	_copy_dir(_preset_root(), dst)
 	var mp := "%s/preset.json" % dst
 	var info = _read_json(mp)
-	if typeof(info) == TYPE_DICTIONARY:
-		info["id"] = new_id
-		info["name_ru"] = new_id
-		_write_json(mp, info)
-	preset_id = new_id
-	file_cache.clear()
-	_scan_presets()
-	_load_category()
-	_set_status("Создан пресет %s — теперь это отдельная игра" % new_id)
-
+	if typeof(info)==TYPE_DICTIONARY: info["id"]=nid; info["name_ru"]=nid; _write_json(mp,info)
+	preset_id = nid; file_cache.clear(); _scan_presets(); _load_category()
 
 func _copy_dir(src: String, dst: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dst)
 	var dir := DirAccess.open(src)
-	if not dir:
-		return
-	for f in dir.get_files():
-		dir.copy("%s/%s" % [src, f], "%s/%s" % [dst, f])
-	for d in dir.get_directories():
-		_copy_dir("%s/%s" % [src, d], "%s/%s" % [dst, d])
-
-
-# ── Файлы и данные ────────────────────────────────────────────────────────────
+	if not dir: return
+	for f in dir.get_files(): dir.copy("%s/%s" % [src,f], "%s/%s" % [dst,f])
+	for d in dir.get_directories(): _copy_dir("%s/%s" % [src,d], "%s/%s" % [dst,d])
 
 func _read_json(path: String):
 	var f := FileAccess.open(path, FileAccess.READ)
-	if not f:
-		return null
+	if not f: return null
 	return JSON.parse_string(f.get_as_text())
-
 
 func _write_json(path: String, data) -> bool:
 	var f := FileAccess.open(path, FileAccess.WRITE)
-	if not f:
-		return false
-	f.store_string(JSON.stringify(data, "  ", false))
-	return true
+	if not f: return false
+	f.store_string(JSON.stringify(data, "  ", false)); return true
 
+func _schema() -> Dictionary: return SCHEMAS[category]
 
-func _schema() -> Dictionary:
-	return SCHEMAS[category]
-
-
-## Массив записей текущей категории (внутри общего файла — по root-пути).
 func _records() -> Array:
 	var rel: String = _schema()["file"]
 	if not file_cache.has(rel):
 		var parsed = _read_json("%s/%s" % [_preset_root(), rel])
-		if parsed == null:
-			parsed = [] if (_schema()["root"] as Array).is_empty() else {}
+		if parsed == null: parsed = [] if (_schema()["root"] as Array).is_empty() else {}
 		file_cache[rel] = parsed
 	var node = file_cache[rel]
 	for key in _schema()["root"]:
-		if typeof(node) == TYPE_DICTIONARY and node.has(key):
-			node = node[key]
-		else:
-			return []
-	return node if typeof(node) == TYPE_ARRAY else []
+		if typeof(node)==TYPE_DICTIONARY and node.has(key): node = node[key]
+		else: return []
+	return node if typeof(node)==TYPE_ARRAY else []
 
+# ──────────────────── ДАННЫЕ: СПИСКИ ─────────────────────────────────────────
 
-# ── Списки и форма ────────────────────────────────────────────────────────────
-
-func _on_category_selected(idx: int) -> void:
-	category = cat_list.get_item_text(idx)
-	_load_category()
-
+func _on_cat_sel(idx: int) -> void: category = cat_list.get_item_text(idx); _load_category()
+func _on_rec_sel(idx: int) -> void: _build_form(idx)
 
 func _load_category() -> void:
 	for i in cat_list.item_count:
-		if cat_list.get_item_text(i) == category:
-			cat_list.select(i)
-			break
-	_refresh_records(0)
+		if cat_list.get_item_text(i) == category: cat_list.select(i); break
+	_refresh_recs(0)
 
-
-func _refresh_records(select_idx: int) -> void:
+func _refresh_recs(sel: int) -> void:
 	rec_list.clear()
 	var recs := _records()
-	for r in recs:
-		rec_list.add_item(_record_title(r))
+	for r in recs: rec_list.add_item(_rec_title(r))
 	if recs.size() > 0:
-		select_idx = clampi(select_idx, 0, recs.size() - 1)
-		rec_list.select(select_idx)
-		_build_form(select_idx)
-	else:
-		_clear_form()
+		sel = clampi(sel, 0, recs.size()-1)
+		rec_list.select(sel); _build_form(sel)
+	else: _clear_form()
 
+func _rec_title(r) -> String:
+	if typeof(r) != TYPE_DICTIONARY: return str(r)
+	var id   = r.get("id", r.get("kind", r.get("shape", r.get("tex", "запись"))))
+	var name = r.get("name_ru", r.get("name", r.get("title_ru", "")))
+	return "%s — %s" % [id, name] if name else str(id)
 
-func _record_title(r) -> String:
-	if typeof(r) != TYPE_DICTIONARY:
-		return str(r)
-	var id_part = r.get("id", r.get("kind", r.get("shape", r.get("tex", "запись"))))
-	var name_part = r.get("name_ru", r.get("name", r.get("title_ru", "")))
-	return "%s — %s" % [id_part, name_part] if name_part else str(id_part)
-
-
-func _selected_index() -> int:
-	var sel := rec_list.get_selected_items()
-	return sel[0] if sel.size() > 0 else -1
-
-
-func _on_record_selected(idx: int) -> void:
-	_build_form(idx)
-
+func _sel_idx() -> int:
+	var sel := rec_list.get_selected_items(); return sel[0] if sel.size() > 0 else -1
 
 func _clear_form() -> void:
-	for c in form_box.get_children():
-		c.queue_free()
-
+	for c in form_box.get_children(): c.queue_free()
 
 func _build_form(idx: int) -> void:
 	_clear_form()
 	var recs := _records()
-	if idx < 0 or idx >= recs.size():
-		return
+	if idx < 0 or idx >= recs.size(): return
 	var rec: Dictionary = recs[idx]
-
 	for field in _schema()["fields"]:
-		var key: String = field["key"]
 		var row := HBoxContainer.new()
-		var lbl := _mk_label(key)
-		lbl.custom_minimum_size.x = 150
-		row.add_child(lbl)
-		var editor := _make_field_editor(field, rec, idx)
-		editor.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(editor)
+		var lbl := _mk_lbl(field["key"]); lbl.custom_minimum_size.x = 140; row.add_child(lbl)
+		var ed := _make_field(field, rec, idx); ed.size_flags_horizontal = Control.SIZE_EXPAND_FILL; row.add_child(ed)
 		form_box.add_child(row)
 
+# ──────────────────── ДАННЫЕ: РЕДАКТОР ПОЛЯ ──────────────────────────────────
 
-## Редактор одного поля; пишет прямо в запись при изменении.
-func _make_field_editor(field: Dictionary, rec: Dictionary, rec_idx: int) -> Control:
-	var key: String = field["key"]
-	var t: String = field["type"]
-	var val = rec.get(key)
-
+func _make_field(field: Dictionary, rec: Dictionary, rec_idx: int) -> Control:
+	var key: String = field["key"]; var t: String = field["type"]; var val = rec.get(key)
 	match t:
 		"str":
-			var e := LineEdit.new()
-			e.text = str(val) if val != null else ""
-			e.text_changed.connect(func(txt): rec[key] = txt; _mark_dirty(rec_idx))
-			return e
+			var e := LineEdit.new(); e.text = str(val) if val!=null else ""
+			e.text_changed.connect(func(s): rec[key]=s; if rec_idx>=0: _mark(rec_idx)); return e
 		"text":
-			var e := TextEdit.new()
-			e.custom_minimum_size.y = 64
-			e.text = str(val) if val != null else ""
-			e.text_changed.connect(func(): rec[key] = e.text; _mark_dirty(rec_idx))
-			return e
+			var e := TextEdit.new(); e.custom_minimum_size.y = 56; e.text = str(val) if val!=null else ""
+			e.text_changed.connect(func(): rec[key]=e.text; if rec_idx>=0: _mark(rec_idx)); return e
 		"float":
-			var e := SpinBox.new()
-			e.step = 0.05
-			e.min_value = -100000.0
-			e.max_value = 100000.0
-			e.value = float(val) if val != null else 0.0
-			e.value_changed.connect(func(v): rec[key] = v; _mark_dirty(rec_idx))
-			return e
+			var e := SpinBox.new(); e.step=0.05; e.min_value=-1e5; e.max_value=1e5; e.value=float(val) if val!=null else 0.0
+			e.value_changed.connect(func(v): rec[key]=v; if rec_idx>=0: _mark(rec_idx)); return e
 		"int":
-			var e := SpinBox.new()
-			e.step = 1
-			e.min_value = -1000000
-			e.max_value = 1000000
-			e.value = int(val) if val != null else 0
-			e.value_changed.connect(func(v): rec[key] = int(v); _mark_dirty(rec_idx))
-			return e
+			var e := SpinBox.new(); e.step=1; e.min_value=-1000000; e.max_value=1000000; e.value=int(val) if val!=null else 0
+			e.value_changed.connect(func(v): rec[key]=int(v); if rec_idx>=0: _mark(rec_idx)); return e
 		"bool":
-			var e := CheckBox.new()
-			e.button_pressed = bool(val) if val != null else false
-			e.toggled.connect(func(on): rec[key] = on; _mark_dirty(rec_idx))
-			return e
+			var e := CheckBox.new(); e.button_pressed = bool(val) if val!=null else false
+			e.toggled.connect(func(on): rec[key]=on; if rec_idx>=0: _mark(rec_idx)); return e
 		"enum":
-			var e := OptionButton.new()
-			var opts: Array = field["options"]
-			for o in opts:
-				e.add_item(o)
-			var cur := opts.find(val)
-			if cur >= 0:
-				e.select(cur)
-			e.item_selected.connect(func(i): rec[key] = opts[i]; _mark_dirty(rec_idx))
-			return e
+			var e := OptionButton.new(); var opts: Array = field["options"]
+			for o in opts: e.add_item(o)
+			var cur := opts.find(val); if cur>=0: e.select(cur)
+			e.item_selected.connect(func(i): rec[key]=opts[i]; if rec_idx>=0: _mark(rec_idx)); return e
 		_:
-			# json: вложенные структуры (массивы, объекты, null)
-			var e := TextEdit.new()
-			e.custom_minimum_size.y = 56
-			e.text = JSON.stringify(val) if val != null else "null"
+			var e := TextEdit.new(); e.custom_minimum_size.y = 48; e.text = JSON.stringify(val) if val!=null else "null"
 			e.text_changed.connect(func():
-				var parsed = JSON.parse_string(e.text)
-				if parsed == null and e.text.strip_edges() != "null":
-					_set_status("%s: некорректный JSON" % key, false)
+				var p = JSON.parse_string(e.text)
+				var valid := (p != null) or (e.text.strip_edges() == "null")
+				if valid:
+					rec[key] = p
+					if rec_idx >= 0:
+						_mark(rec_idx)
 				else:
-					rec[key] = parsed
-					_mark_dirty(rec_idx)
-					_set_status("")
-			)
+					_set_st("%s: bad JSON" % key, false))
 			return e
 
-
-func _mark_dirty(rec_idx: int) -> void:
+func _mark(idx: int) -> void:
 	dirty = true
-	if rec_idx >= 0 and rec_idx < rec_list.item_count:
-		rec_list.set_item_text(rec_idx, _record_title(_records()[rec_idx]))
+	var recs := _records()
+	if idx>=0 and idx<rec_list.item_count and idx<recs.size():
+		rec_list.set_item_text(idx, _rec_title(recs[idx]))
 
-
-# ── CRUD ─────────────────────────────────────────────────────────────────────
+# ──────────────────── ДАННЫЕ: CRUD ────────────────────────────────────────────
 
 func _on_add() -> void:
-	var recs := _records()
-	var blank := {}
-	for field in _schema()["fields"]:
-		match field["type"]:
-			"str", "text": blank[field["key"]] = ""
-			"float": blank[field["key"]] = 0.0
-			"int": blank[field["key"]] = 0
-			"bool": blank[field["key"]] = false
-			"enum": blank[field["key"]] = field["options"][0]
-			_: blank[field["key"]] = null
-	if blank.has("id"):
-		blank["id"] = "new_%d" % (recs.size() + 1)
-	recs.append(blank)
-	dirty = true
-	_refresh_records(recs.size() - 1)
-
+	var recs := _records(); var blank := {}
+	for f in _schema()["fields"]:
+		match f["type"]:
+			"str","text": blank[f["key"]] = ""
+			"float":      blank[f["key"]] = 0.0
+			"int":        blank[f["key"]] = 0
+			"bool":       blank[f["key"]] = false
+			"enum":       blank[f["key"]] = f["options"][0]
+			_:            blank[f["key"]] = null
+	if blank.has("id"): blank["id"] = "new_%d" % (recs.size()+1)
+	recs.append(blank); dirty = true; _refresh_recs(recs.size()-1)
 
 func _on_dup() -> void:
-	var idx := _selected_index()
-	var recs := _records()
-	if idx < 0 or idx >= recs.size():
-		return
+	var idx := _sel_idx(); var recs := _records()
+	if idx<0 or idx>=recs.size(): return
 	var copy = recs[idx].duplicate(true)
-	if typeof(copy) == TYPE_DICTIONARY and copy.has("id"):
-		copy["id"] = str(copy["id"]) + "_copy"
-	recs.insert(idx + 1, copy)
-	dirty = true
-	_refresh_records(idx + 1)
-
+	if typeof(copy)==TYPE_DICTIONARY and copy.has("id"): copy["id"] = str(copy["id"])+"_copy"
+	recs.insert(idx+1, copy); dirty = true; _refresh_recs(idx+1)
 
 func _on_del() -> void:
-	var idx := _selected_index()
-	var recs := _records()
-	if idx < 0 or idx >= recs.size():
-		return
-	recs.remove_at(idx)
-	dirty = true
-	_refresh_records(idx)
+	var idx := _sel_idx(); var recs := _records()
+	if idx<0 or idx>=recs.size(): return
+	recs.remove_at(idx); dirty = true; _refresh_recs(idx)
 
-
-# ── Сохранение ────────────────────────────────────────────────────────────────
+# ──────────────────── СОХРАНЕНИЕ ──────────────────────────────────────────────
 
 func _save_all() -> void:
-	var saved := 0
+	var n := 0
 	for rel in file_cache.keys():
-		if _write_json("%s/%s" % [_preset_root(), rel], file_cache[rel]):
-			saved += 1
-	dirty = false
-	_set_status("Сохранено файлов: %d (пресет %s)" % [saved, preset_id])
-	# обновить FileSystem-докcy редактора
+		if _write_json("%s/%s" % [_preset_root(), rel], file_cache[rel]): n += 1
+	dirty = false; _set_st("Сохранено: %d файлов" % n)
 	EditorInterface.get_resource_filesystem().scan()
 
-
-# ── ИИ-генерация текстур ──────────────────────────────────────────────────────
-# Окно «в несколько кликов»: тип ассета + id + описание → tools/aigen.py
-# (HTTP к серверу нейросети + постобработка process_sprites.py). Итоговый PNG
-# ложится сразу в godot/assets/*, игра подхватывает его при следующем F5.
-
-func _tools_dir() -> String:
-	return ProjectSettings.globalize_path("res://").path_join("../tools").simplify_path()
-
-
-func _open_gen_window() -> void:
-	if gen_window == null:
-		_build_gen_window()
-	_refresh_gen_template()
-	gen_window.popup_centered(Vector2i(760, 700))
-
-
-func _build_gen_window() -> void:
-	var tpl = _read_json(_tools_dir().path_join("aigen_templates.json"))
-	gen_templates = tpl if typeof(tpl) == TYPE_DICTIONARY else {}
-
-	gen_window = Window.new()
-	gen_window.title = "ИИ-генерация текстур"
-	gen_window.close_requested.connect(func(): gen_window.hide())
-	add_child(gen_window)
-
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for side in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
-		margin.add_theme_constant_override(side, 12)
-	gen_window.add_child(margin)
-
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	margin.add_child(v)
-
-	var row_type := HBoxContainer.new()
-	row_type.add_child(_mk_label("Тип ассета:"))
-	gen_type = OptionButton.new()
-	for k in gen_templates.keys():
-		if str(k).begins_with("_"):
-			continue
-		var idx := gen_type.item_count
-		gen_type.add_item("%s — %s" % [k, gen_templates[k].get("title_ru", "")])
-		gen_type.set_item_metadata(idx, k)
-	gen_type.item_selected.connect(func(_i): _refresh_gen_template())
-	row_type.add_child(gen_type)
-	v.add_child(row_type)
-
-	var row_id := HBoxContainer.new()
-	row_id.add_child(_mk_label("id:"))
-	gen_id = LineEdit.new()
-	gen_id.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row_id.add_child(gen_id)
-	v.add_child(row_id)
-
-	v.add_child(_mk_label("Описание (вставляется в шаблон промпта):"))
-	gen_desc = TextEdit.new()
-	gen_desc.custom_minimum_size.y = 72
-	gen_desc.text_changed.connect(_refresh_gen_template)
-	v.add_child(gen_desc)
-
-	v.add_child(_mk_label("Итоговый промпт:"))
-	gen_prompt_preview = Label.new()
-	gen_prompt_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	gen_prompt_preview.modulate = Color(0.7, 0.7, 0.8)
-	v.add_child(gen_prompt_preview)
-
-	gen_btn = Button.new()
-	gen_btn.text = "⚡ Сгенерировать"
-	gen_btn.pressed.connect(_on_generate)
-	v.add_child(gen_btn)
-
-	gen_status = _mk_label("")
-	gen_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(gen_status)
-
-	gen_preview = TextureRect.new()
-	gen_preview.custom_minimum_size = Vector2(280, 280)
-	gen_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	gen_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	gen_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	gen_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	v.add_child(gen_preview)
-
-
-func _gen_selected_type() -> String:
-	if gen_type.selected < 0:
-		return ""
-	return str(gen_type.get_item_metadata(gen_type.selected))
-
-
-func _refresh_gen_template() -> void:
-	var t := _gen_selected_type()
-	var tpl: Dictionary = gen_templates.get(t, {})
-	gen_id.placeholder_text = str(tpl.get("id_hint", "id"))
-	var desc := gen_desc.text.strip_edges()
-	gen_prompt_preview.text = str(tpl.get("prompt", "{desc}")) \
-		.format({"desc": desc if not desc.is_empty() else "<описание>"})
-
-
-func _on_generate() -> void:
-	var type := _gen_selected_type()
-	var id := gen_id.text.strip_edges()
-	var desc := gen_desc.text.strip_edges().replace("\n", " ")
-	if type.is_empty() or id.is_empty() or desc.is_empty():
-		gen_status.text = "Заполни тип, id и описание"
-		return
-	if gen_thread != null:
-		gen_status.text = "Генерация уже идёт…"
-		return
-
-	var py := "python"
-	var cfg = _read_json(_tools_dir().path_join("aigen.json"))
-	if typeof(cfg) == TYPE_DICTIONARY:
-		py = str(cfg.get("python", "python"))
-
-	gen_btn.disabled = true
-	gen_status.text = "Генерация… (%s @ %s)" % [
-		cfg.get("backend", "?") if typeof(cfg) == TYPE_DICTIONARY else "?",
-		cfg.get("url", "?") if typeof(cfg) == TYPE_DICTIONARY else "?"]
-	var args := PackedStringArray([_tools_dir().path_join("aigen.py"), type, id, desc])
-	gen_thread = Thread.new()
-	gen_thread.start(_gen_worker.bind(py, args))
-
-
-func _gen_worker(py: String, args: PackedStringArray) -> void:
-	var out := []
-	var code := OS.execute(py, args, out, true)
-	call_deferred("_gen_done", code, out)
-
-
-func _gen_done(code: int, out: Array) -> void:
-	if gen_thread != null:
-		gen_thread.wait_to_finish()
-		gen_thread = null
-	if not is_instance_valid(gen_btn):
-		return  # окно уже уничтожено (плагин выключили во время генерации)
-	gen_btn.disabled = false
-
-	var text := ""
-	for o in out:
-		text += str(o)
-	var ok_path := ""
-	var err_msg := ""
-	for line in text.split("\n"):
-		var l: String = line.strip_edges()
-		if l.begins_with("OK "):
-			ok_path = l.substr(3)
-		elif l.begins_with("ERR "):
-			err_msg = l.substr(4)
-
-	if code == 0 and not ok_path.is_empty():
-		gen_status.text = "Готово: %s" % ok_path
-		var img := Image.load_from_file(ok_path)
-		if img != null:
-			gen_preview.texture = ImageTexture.create_from_image(img)
-		EditorInterface.get_resource_filesystem().scan()
-	elif not err_msg.is_empty():
-		gen_status.text = "Ошибка: %s" % err_msg
-	else:
-		gen_status.text = "Сбой генерации (код %d). Вывод:\n%s" % [code, text.right(600)]
-
-
-# ── Замок ядра ────────────────────────────────────────────────────────────────
-# Контент-мейкер работает только с data-файлами. Кнопка ставит/снимает read-only
-# на фундаментальных файлах игры (сцены, project.godot, .gdextension), чтобы их
-# нельзя было случайно перезаписать даже из самого Godot-редактора.
+# ──────────────────── ЗАМОК ЯДРА ──────────────────────────────────────────────
 
 func _core_locked() -> bool:
-	var probe := ProjectSettings.globalize_path(CORE_FILES[0])
-	var out := []
-	OS.execute("attrib", [probe.replace("/", "\\")], out)
-	return out.size() > 0 and "R" in str(out[0]).split(probe.replace("/", "\\"))[0]
+	var probe := ProjectSettings.globalize_path(CORE_FILES[0]); var out := []
+	OS.execute("attrib", [probe.replace("/","\\")], out)
+	return out.size()>0 and "R" in str(out[0]).split(probe.replace("/","\\"))[0]
 
-
-func _on_lock_toggled(on: bool) -> void:
+func _on_lock_tog(on: bool) -> void:
 	var flag := "+R" if on else "-R"
-	for f in CORE_FILES:
-		var p := ProjectSettings.globalize_path(f).replace("/", "\\")
-		OS.execute("attrib", [flag, p])
-	_refresh_lock_button()
-	_set_status("Ядро игры защищено (read-only)" if on else "Защита ядра снята")
+	for f in CORE_FILES: OS.execute("attrib", [flag, ProjectSettings.globalize_path(f).replace("/","\\")])
+	_refresh_lock(); _set_st("Ядро %s" % ("защищено" if on else "разблокировано"))
 
-
-func _refresh_lock_button() -> void:
+func _refresh_lock() -> void:
 	var locked := _core_locked()
 	lock_btn.set_pressed_no_signal(locked)
-	lock_btn.text = "🔒 Ядро защищено" if locked else "🔓 Защитить ядро"
-	lock_btn.tooltip_text = "Ставит read-only на main.tscn, main_menu.tscn, project.godot и .gdextension.\nКонтент-мейкер меняет игру только через эту панель."
+	lock_btn.text = "🔒 Ядро" if locked else "🔓 Ядро"
+
+# ──────────────────── УТИЛИТЫ ─────────────────────────────────────────────────
+
+func _mk_lbl(t: String) -> Label: var l := Label.new(); l.text = t; return l
+
+func _set_st(t: String, ok := true) -> void:
+	if not status: return
+	status.text = t; status.modulate = Color(0.6,1,0.7) if ok else Color(1,0.5,0.5)

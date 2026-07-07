@@ -2,9 +2,9 @@
   {
     "id": "thick_skin",
     "branch": "survival",
-    "tier": 1,
-    "max_ranks": 3,
-    "cost": 1,
+    "tier": 1.0,
+    "max_ranks": 3.0,
+    "cost": 1.0,
     "requires": [],
     "name_ru": "Толстая кожа",
     "desc_ru": "+15 к максимуму HP за ранг.",
@@ -18,9 +18,9 @@
   {
     "id": "adrenaline",
     "branch": "survival",
-    "tier": 2,
-    "max_ranks": 2,
-    "cost": 1,
+    "tier": 2.0,
+    "max_ranks": 2.0,
+    "cost": 1.0,
     "requires": [
       "thick_skin:1"
     ],
@@ -36,9 +36,9 @@
   {
     "id": "vampirism",
     "branch": "survival",
-    "tier": 2,
-    "max_ranks": 3,
-    "cost": 1,
+    "tier": 2.0,
+    "max_ranks": 3.0,
+    "cost": 1.0,
     "requires": [
       "thick_skin:1"
     ],
@@ -54,9 +54,9 @@
   {
     "id": "juggernaut",
     "branch": "survival",
-    "tier": 3,
-    "max_ranks": 2,
-    "cost": 2,
+    "tier": 3.0,
+    "max_ranks": 2.0,
+    "cost": 2.0,
     "requires": [
       "thick_skin:2"
     ],
@@ -72,9 +72,9 @@
   {
     "id": "sharpshooter",
     "branch": "offense",
-    "tier": 1,
-    "max_ranks": 3,
-    "cost": 1,
+    "tier": 1.0,
+    "max_ranks": 3.0,
+    "cost": 1.0,
     "requires": [],
     "name_ru": "Меткач",
     "desc_ru": "+6% урона за ранг.",
@@ -88,9 +88,9 @@
   {
     "id": "overkill",
     "branch": "offense",
-    "tier": 1,
-    "max_ranks": 2,
-    "cost": 1,
+    "tier": 1.0,
+    "max_ranks": 2.0,
+    "cost": 1.0,
     "requires": [],
     "name_ru": "Оверкилл",
     "desc_ru": "+5% урона за ранг.",
@@ -104,9 +104,9 @@
   {
     "id": "rapid_fire",
     "branch": "offense",
-    "tier": 2,
-    "max_ranks": 3,
-    "cost": 1,
+    "tier": 2.0,
+    "max_ranks": 3.0,
+    "cost": 1.0,
     "requires": [
       "sharpshooter:1"
     ],
@@ -122,9 +122,9 @@
   {
     "id": "executioner",
     "branch": "offense",
-    "tier": 3,
-    "max_ranks": 2,
-    "cost": 2,
+    "tier": 3.0,
+    "max_ranks": 2.0,
+    "cost": 2.0,
     "requires": [
       "sharpshooter:2"
     ],
@@ -140,9 +140,9 @@
   {
     "id": "fleet_footed",
     "branch": "utility",
-    "tier": 1,
-    "max_ranks": 3,
-    "cost": 1,
+    "tier": 1.0,
+    "max_ranks": 3.0,
+    "cost": 1.0,
     "requires": [],
     "name_ru": "Лёгкая поступь",
     "desc_ru": "+6% скорость бега за ранг.",
@@ -156,9 +156,9 @@
   {
     "id": "scavenger",
     "branch": "utility",
-    "tier": 1,
-    "max_ranks": 3,
-    "cost": 1,
+    "tier": 1.0,
+    "max_ranks": 3.0,
+    "cost": 1.0,
     "requires": [],
     "name_ru": "Собиратель",
     "desc_ru": "+15% к лимиту боезапаса за ранг.",
@@ -172,9 +172,9 @@
   {
     "id": "quick_hands",
     "branch": "utility",
-    "tier": 2,
-    "max_ranks": 2,
-    "cost": 1,
+    "tier": 2.0,
+    "max_ranks": 2.0,
+    "cost": 1.0,
     "requires": [
       "fleet_footed:1"
     ],
@@ -190,9 +190,9 @@
   {
     "id": "deep_pockets",
     "branch": "utility",
-    "tier": 3,
-    "max_ranks": 2,
-    "cost": 2,
+    "tier": 3.0,
+    "max_ranks": 2.0,
+    "cost": 2.0,
     "requires": [
       "scavenger:2"
     ],
@@ -208,9 +208,9 @@
   {
     "id": "second_wind",
     "branch": "survival",
-    "tier": 2,
-    "max_ranks": 1,
-    "cost": 1,
+    "tier": 2.0,
+    "max_ranks": 1.0,
+    "cost": 1.0,
     "requires": [
       "thick_skin:1"
     ],
@@ -230,9 +230,9 @@
   {
     "id": "iron_will",
     "branch": "survival",
-    "tier": 3,
-    "max_ranks": 2,
-    "cost": 2,
+    "tier": 3.0,
+    "max_ranks": 2.0,
+    "cost": 2.0,
     "requires": [
       "adrenaline:1"
     ],
@@ -252,9 +252,9 @@
   {
     "id": "berserk_rage",
     "branch": "offense",
-    "tier": 2,
-    "max_ranks": 2,
-    "cost": 1,
+    "tier": 2.0,
+    "max_ranks": 2.0,
+    "cost": 1.0,
     "requires": [
       "overkill:1"
     ],
@@ -274,9 +274,9 @@
   {
     "id": "heavy_rounds",
     "branch": "offense",
-    "tier": 3,
-    "max_ranks": 2,
-    "cost": 2,
+    "tier": 3.0,
+    "max_ranks": 2.0,
+    "cost": 2.0,
     "requires": [
       "rapid_fire:2"
     ],
@@ -292,9 +292,9 @@
   {
     "id": "packrat",
     "branch": "utility",
-    "tier": 2,
-    "max_ranks": 2,
-    "cost": 1,
+    "tier": 2.0,
+    "max_ranks": 2.0,
+    "cost": 1.0,
     "requires": [
       "scavenger:1"
     ],
@@ -310,9 +310,9 @@
   {
     "id": "leech_rounds",
     "branch": "utility",
-    "tier": 3,
-    "max_ranks": 2,
-    "cost": 2,
+    "tier": 3.0,
+    "max_ranks": 2.0,
+    "cost": 2.0,
     "requires": [
       "quick_hands:1"
     ],

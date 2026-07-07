@@ -130,7 +130,14 @@ impl GameState {
             spec_idx: 0,
             level: 1,
             xp: 0,
-            dungeon_seed: 0x5EED_0001,
+            dungeon_seed: {
+                // Мешаем время и константу → уникальный сид для каждой новой игры.
+                let t = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_nanos() as u64)
+                    .unwrap_or(0x5EED_0001);
+                t ^ 0xDEAD_BEEF_CAFE_0001
+            },
             dungeons_cleared: 0,
             hearts: 0,
             perks: HashMap::new(),

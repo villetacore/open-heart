@@ -2705,6 +2705,16 @@ impl Game3D {
 
     // ── Диалог ───────────────────────────────────────────────────────────────
 
+    /// Сцена по id: сначала dialogues.json пресета (данные приоритетнее кода —
+    /// пресет может переопределять встроенные сцены), затем story.rs.
+    fn resolve_scene(&self, id: &str) -> Option<Scene> {
+        if id.is_empty() { return None; }
+        if let Some(s) = self.cfg.as_ref().and_then(|c| c.dialogue(id)) {
+            return Some(s.clone());
+        }
+        self.state.as_ref().and_then(|st| get_scene(id, st))
+    }
+
     fn start_dialogue(&mut self, npc_idx: usize) {
         let Some(npc) = self.npcs.get(npc_idx) else { return };
         let (npc_id, npc_name) = (npc.id.clone(), npc.name.clone());
@@ -2719,11 +2729,9 @@ impl Game3D {
                 let dynamic = self.state.as_ref()
                     .map(|s| npc_scene_id(&npc_id, s))
                     .unwrap_or("");
-                self.state.as_ref().and_then(|s| get_scene(dynamic, s))
+                self.resolve_scene(dynamic)
             }
-            Some(id) if !id.is_empty() => {
-                self.state.as_ref().and_then(|s| get_scene(id, s))
-            }
+            Some(id) if !id.is_empty() => self.resolve_scene(id),
             _ => None,
         };
         let _ = quest_id;
@@ -2892,7 +2900,7 @@ impl Game3D {
             self.apply_loadout(ci, si, false);
         }
         if let Some(next_id) = next {
-            let new_scene = self.state.as_ref().and_then(|s| get_scene(&next_id, s));
+            let new_scene = self.resolve_scene(&next_id);
             if let Some(sc) = new_scene {
                 self.scene = Some(sc);
                 self.line_idx = 0;

@@ -133,6 +133,8 @@ pub struct GameConfig {
     pub level:   LevelCfg,
     pub npcs:    Vec<NpcCfg>,
     pub quests:  Vec<QuestCfg>,
+    /// Data-driven сцены диалогов (dialogues.json); приоритетнее story.rs.
+    pub dialogues: Vec<crate::dialogue::Scene>,
     /// npcs.json существует (пустой список ≠ отсутствие файла: пустой — это
     /// осознанное «в этом пресете NPC нет», отсутствие — legacy-фолбэк).
     pub npcs_file_present: bool,
@@ -219,7 +221,29 @@ impl GameConfig {
             None => Vec::new(),
         };
 
-        Self { enemies, items, level, npcs, quests, npcs_file_present }
+        // диалоги: отсутствие файла — норма (story.rs остаётся встроенным контентом)
+        let dialogues = match read(&format!("{base}/dialogues.json")) {
+            None => Vec::new(),
+            Some(t) => match crate::dialogue::parse_scenes(&t) {
+                Ok((scenes, errors)) => {
+                    for e in errors {
+                        godot_warn!("[preset] dialogues.json: {e} — сцена пропущена");
+                    }
+                    scenes
+                }
+                Err(e) => {
+                    godot_warn!("[preset] dialogues.json: ошибка разбора ({e}) — диалоги пресета не загружены");
+                    Vec::new()
+                }
+            },
+        };
+
+        Self { enemies, items, level, npcs, quests, dialogues, npcs_file_present }
+    }
+
+    /// JSON-сцена диалога по id (приоритетнее story.rs — см. game.rs).
+    pub fn dialogue(&self, id: &str) -> Option<&crate::dialogue::Scene> {
+        self.dialogues.iter().find(|s| s.id == id)
     }
 
     pub fn enemy(&self, id: &str) -> Option<&EnemyCfg> {

@@ -13,6 +13,18 @@ impl StatKind {
             Self::Willpower => "WIL",
         }
     }
+
+    /// Стат по id из данных (dialogues.json): int/chr/fit/rep/wil (без регистра).
+    pub fn from_id(s: &str) -> Option<Self> {
+        Some(match s.to_ascii_lowercase().as_str() {
+            "int" | "intelligence" => Self::Intelligence,
+            "chr" | "charm"        => Self::Charm,
+            "fit" | "fitness"      => Self::Fitness,
+            "rep" | "reputation"   => Self::Reputation,
+            "wil" | "willpower"    => Self::Willpower,
+            _ => return None,
+        })
+    }
 }
 
 #[derive(Clone, Debug)]

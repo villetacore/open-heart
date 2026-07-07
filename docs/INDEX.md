@@ -69,7 +69,7 @@ API, каждый файл данных, ассеты и инструменты.
 
 | Модуль | Строк | Ключевой API | Отвечает за |
 |---|---|---|---|
-| `dialogue.rs` | 56 | `Scene`, `Line`, `Choice`, `Effect` (Stat/Rel/Flag/Gold/**Xp**/Quest/QuestDone/Flash) | Структуры диалоговой системы |
+| `dialogue.rs` | ~170 | `Scene`/`Line`/`Choice`/`Effect` + raw-структуры `dialogues.json` (`SceneRaw`, `parse_scenes`) | Структуры диалоговой системы; JSON-сцены приоритетнее story.rs |
 | `story.rs` | 1023 | `get_scene(id, state)` | Авторские сцены 8 story-NPC (хардкод; план — вынести в JSON, M2/§12) |
 | `quest.rs` | 59 | `Quest`, `QuestLog`, `QuestState` | Журнал квестов (актив/завершён) |
 | `item.rs` | 55 | `Item`, `Inventory` | Стековый инвентарь |
@@ -107,6 +107,7 @@ API, каждый файл данных, ассеты и инструменты.
 | `items.json` | 18 предметов | копия |
 | `npcs.json` | 12 NPC | пусто (осознанно) |
 | `quests.json` | 7 квестов | пусто |
+| `dialogues.json` | 2 демо-сцены (data-driven диалоги, приоритет над story.rs) | — |
 | `level.json` | legacy-спавны (фолбэк) | пусто |
 | `maps/hub.json` | многоярусный квартал | компактный колизей |
 

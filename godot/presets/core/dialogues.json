@@ -1,0 +1,28 @@
+[
+  {
+    "id": "demo_dialogue",
+    "lines": [
+      { "speaker": "", "text": "Пример data-driven сцены из dialogues.json. Такие сцены добавляются и правятся в редакторе (вкладка OpenHeart → Диалоги) без пересборки." },
+      { "speaker": "Незнакомец", "portrait": "stranger", "text": "Чтобы NPC говорил эту сцену, впиши её id в поле scene этого NPC. Сцена с тем же id, что у встроенной, переопределит её." }
+    ],
+    "choices": [
+      {
+        "text": "Понятно.",
+        "effects": [ { "kind": "flash", "text": "Демо-сцена закончена" } ]
+      },
+      {
+        "text": "[ИНТ 7] А что ещё умеют эффекты?",
+        "requires": { "stat": "int", "min": 7 },
+        "effects": [ { "kind": "xp", "value": 5 } ],
+        "next": "demo_dialogue_2"
+      }
+    ]
+  },
+  {
+    "id": "demo_dialogue_2",
+    "lines": [
+      { "speaker": "Незнакомец", "portrait": "stranger", "text": "Статы, отношения, флаги, золото, опыт, выдача и сдача квестов, всплывающий текст. Полный список — docs/DATA_FORMATS.md." }
+    ],
+    "choices": []
+  }
+]

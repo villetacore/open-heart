@@ -9,7 +9,12 @@ extends Control
 
 # ── Схемы контента ────────────────────────────────────────────────────────────
 # type: str | text (многострочный) | float | int | bool | enum | json
+#       vec2 | vec3 (спинбоксы) | color ([r,g,b] через палитру)
+#       dyn_enum — выпадающий список из ДАННЫХ пресета (source: npcs | enemies |
+#       items | targets | quests | weapons | scenes | enemy_sprites)
 # json — вложенные структуры (массивы/объекты) как текст c проверкой синтаксиса.
+# Файл "maps/*" означает «выбранная карта» (переключатель в верхней панели).
+# "single": true — файл-одиночная запись (preset.json), без CRUD.
 
 const SCHEMAS := {
 	"Оружие": {
@@ -64,8 +69,7 @@ const SCHEMAS := {
 			{"key": "attack_damage", "type": "float"}, {"key": "attack_range", "type": "float"},
 			{"key": "attack_cooldown", "type": "float"}, {"key": "chase_range", "type": "float"},
 			{"key": "patrol_radius", "type": "float"}, {"key": "xp", "type": "float"},
-			{"key": "sprite", "type": "enum",
-			 "options": ["grunt", "fast", "heavy", "brute", "sniper", "cultist"]},
+			{"key": "sprite", "type": "dyn_enum", "source": "enemy_sprites"},
 			{"key": "scale", "type": "float"},
 			{"key": "color_r", "type": "float"}, {"key": "color_g", "type": "float"},
 			{"key": "color_b", "type": "float"},
@@ -88,26 +92,45 @@ const SCHEMAS := {
 		"file": "npcs.json", "root": [],
 		"fields": [
 			{"key": "id", "type": "str"}, {"key": "name_ru", "type": "str"},
-			{"key": "sprite", "type": "str"}, {"key": "pos", "type": "json"},
-			{"key": "color", "type": "json"}, {"key": "scene", "type": "str"},
-			{"key": "quest", "type": "str"},
+			{"key": "sprite", "type": "str"}, {"key": "pos", "type": "vec2"},
+			{"key": "color", "type": "json"},
+			{"key": "scene", "type": "dyn_enum", "source": "scenes", "nullable": true},
+			{"key": "quest", "type": "dyn_enum", "source": "quests", "nullable": true},
 		],
 	},
 	"Квесты": {
 		"file": "quests.json", "root": [],
 		"fields": [
 			{"key": "id", "type": "str"}, {"key": "title_ru", "type": "str"},
-			{"key": "desc_ru", "type": "text"}, {"key": "giver", "type": "str"},
+			{"key": "desc_ru", "type": "text"},
+			{"key": "giver", "type": "dyn_enum", "source": "npcs"},
 			{"key": "kind", "type": "enum", "options": ["kill", "collect", "clear_dungeon"]},
-			{"key": "target", "type": "str"}, {"key": "count", "type": "int"},
+			{"key": "target", "type": "dyn_enum", "source": "targets"},
+			{"key": "count", "type": "int"},
 			{"key": "reward_xp", "type": "int"}, {"key": "reward_gold", "type": "int"},
 		],
 	},
+	"Диалоги": {
+		"file": "dialogues.json", "root": [],
+		"fields": [
+			{"key": "id", "type": "str"},
+			{"key": "lines", "type": "json"},
+			{"key": "choices", "type": "json"},
+		],
+	},
+	"Пресет": {
+		"file": "preset.json", "root": [], "single": true,
+		"fields": [
+			{"key": "id", "type": "str"}, {"key": "name_ru", "type": "str"},
+			{"key": "desc_ru", "type": "text"}, {"key": "author", "type": "str"},
+			{"key": "version", "type": "int"},
+		],
+	},
 	"Карта: блоки": {
-		"file": "maps/hub.json", "root": ["blocks"],
+		"file": "maps/*", "root": ["blocks"],
 		"fields": [
 			{"key": "shape", "type": "enum", "options": ["box", "ramp", "stairs", "cylinder"]},
-			{"key": "pos", "type": "json"}, {"key": "size", "type": "json"},
+			{"key": "pos", "type": "vec3"}, {"key": "size", "type": "vec3"},
 			{"key": "rot", "type": "float"},
 			{"key": "from", "type": "json"}, {"key": "to", "type": "json"},
 			{"key": "width", "type": "float"}, {"key": "steps", "type": "int"},
@@ -116,39 +139,70 @@ const SCHEMAS := {
 		],
 	},
 	"Карта: здания": {
-		"file": "maps/hub.json", "root": ["buildings"],
+		"file": "maps/*", "root": ["buildings"],
 		"fields": [
-			{"key": "pos", "type": "json"}, {"key": "size", "type": "json"},
+			{"key": "pos", "type": "vec2"}, {"key": "size", "type": "vec3"},
 			{"key": "tex", "type": "str"}, {"key": "sign", "type": "str"},
-			{"key": "sign_side", "type": "enum", "options": ["n", "s", "e", "w"]},
+			{"key": "sign_side", "type": "enum", "options": ["n", "s", "e", "w"], "nullable": true},
 		],
 	},
 	"Карта: свет": {
-		"file": "maps/hub.json", "root": ["lights"],
+		"file": "maps/*", "root": ["lights"],
 		"fields": [
-			{"key": "pos", "type": "json"}, {"key": "color", "type": "json"},
+			{"key": "pos", "type": "vec3"}, {"key": "color", "type": "color"},
 			{"key": "energy", "type": "float"}, {"key": "range", "type": "float"},
 		],
 	},
 	"Карта: пропсы": {
-		"file": "maps/hub.json", "root": ["props"],
+		"file": "maps/*", "root": ["props"],
 		"fields": [
-			{"key": "tex", "type": "str"}, {"key": "pos", "type": "json"},
+			{"key": "tex", "type": "str"}, {"key": "pos", "type": "vec3"},
 			{"key": "px", "type": "float"},
 		],
 	},
-	"Карта: спавн врагов": {
-		"file": "maps/hub.json", "root": ["spawns", "spawn_enemies"],
+	"Карта: флэты": {
+		"file": "maps/*", "root": ["flats"],
 		"fields": [
-			{"key": "kind", "type": "str"}, {"key": "x", "type": "float"},
-			{"key": "z", "type": "float"},
+			{"key": "tex", "type": "str"}, {"key": "pos", "type": "vec3"},
+			{"key": "rot", "type": "float"}, {"key": "px", "type": "float"},
+			{"key": "glow", "type": "bool"},
+		],
+	},
+	"Карта: глоу-каналы": {
+		"file": "maps/*", "root": ["glows"],
+		"fields": [
+			{"key": "pos", "type": "vec3"}, {"key": "size", "type": "vec3"},
+			{"key": "tex", "type": "str"}, {"key": "emission", "type": "color"},
+			{"key": "uv", "type": "float"},
+		],
+	},
+	"Карта: спавн врагов": {
+		"file": "maps/*", "root": ["spawns", "spawn_enemies"],
+		"fields": [
+			{"key": "kind", "type": "dyn_enum", "source": "enemies"},
+			{"key": "x", "type": "float"}, {"key": "z", "type": "float"},
 		],
 	},
 	"Карта: спавн лута": {
-		"file": "maps/hub.json", "root": ["spawns", "spawn_items"],
+		"file": "maps/*", "root": ["spawns", "spawn_items"],
 		"fields": [
-			{"key": "kind", "type": "str"}, {"key": "x", "type": "float"},
-			{"key": "z", "type": "float"},
+			{"key": "kind", "type": "dyn_enum", "source": "items"},
+			{"key": "x", "type": "float"}, {"key": "z", "type": "float"},
+		],
+	},
+	"Карта: спавн патронов": {
+		"file": "maps/*", "root": ["spawns", "spawn_ammo"],
+		"fields": [
+			{"key": "kind", "type": "enum", "options": ["bullets", "shells", "rockets", "cells"]},
+			{"key": "amount", "type": "int"},
+			{"key": "x", "type": "float"}, {"key": "z", "type": "float"},
+		],
+	},
+	"Карта: спавн оружия": {
+		"file": "maps/*", "root": ["spawns", "spawn_weapons"],
+		"fields": [
+			{"key": "kind", "type": "dyn_enum", "source": "weapons"},
+			{"key": "x", "type": "float"}, {"key": "z", "type": "float"},
 		],
 	},
 }
@@ -163,12 +217,16 @@ const CORE_FILES := [
 
 var preset_id := "core"
 var category := "Оружие"
+var current_map := "hub.json"   # выбранный файл в maps/ (категории "maps/*")
 var file_cache := {}       # относительный путь → распарсенные данные (общий на файл!)
 var dirty := false
 
 var preset_pick: OptionButton
+var map_pick: OptionButton
 var cat_list: ItemList
 var rec_list: ItemList
+var rec_map: Array[int] = []    # строка списка → индекс записи (фильтр поиска)
+var search_edit: LineEdit
 var form_box: VBoxContainer
 var status: Label
 var lock_btn: Button
@@ -192,6 +250,7 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build_ui()
 	_scan_presets()
+	_scan_maps()
 	_load_category()
 
 
@@ -218,6 +277,12 @@ func _build_ui() -> void:
 	preset_pick = OptionButton.new()
 	preset_pick.item_selected.connect(_on_preset_selected)
 	top.add_child(preset_pick)
+
+	top.add_child(_mk_label("Карта:"))
+	map_pick = OptionButton.new()
+	map_pick.tooltip_text = "Какой файл из maps/ редактируют категории «Карта: …»"
+	map_pick.item_selected.connect(_on_map_selected)
+	top.add_child(map_pick)
 
 	new_preset_edit = LineEdit.new()
 	new_preset_edit.placeholder_text = "id нового пресета…"
@@ -270,6 +335,11 @@ func _build_ui() -> void:
 	left.add_child(cat_list)
 
 	left.add_child(_mk_label("Записи"))
+	search_edit = LineEdit.new()
+	search_edit.placeholder_text = "🔎 поиск по записям…"
+	search_edit.clear_button_enabled = true
+	search_edit.text_changed.connect(func(_t): _refresh_records(_selected_index()))
+	left.add_child(search_edit)
 	rec_list = ItemList.new()
 	rec_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rec_list.item_selected.connect(_on_record_selected)
@@ -305,17 +375,25 @@ func _set_status(text: String, ok := true) -> void:
 # ── Пресеты ───────────────────────────────────────────────────────────────────
 
 func _preset_root() -> String:
-	return "res://presets/%s" % preset_id
+	# как content.rs::preset_base — сначала встроенные, затем user:// (моды)
+	var res := "res://presets/%s" % preset_id
+	if FileAccess.file_exists("%s/preset.json" % res):
+		return res
+	var user := "user://presets/%s" % preset_id
+	if FileAccess.file_exists("%s/preset.json" % user):
+		return user
+	return res
 
 
 func _scan_presets() -> void:
 	preset_pick.clear()
 	var found: Array[String] = []
-	var dir := DirAccess.open("res://presets")
-	if dir:
-		for d in dir.get_directories():
-			if not d.begins_with("."):
-				found.append(d)
+	for root in ["res://presets", "user://presets"]:
+		var dir := DirAccess.open(root)
+		if dir:
+			for d in dir.get_directories():
+				if not d.begins_with(".") and not found.has(d):
+					found.append(d)
 	found.sort()
 	for i in found.size():
 		preset_pick.add_item(found[i])
@@ -326,11 +404,39 @@ func _scan_presets() -> void:
 		preset_pick.select(0)
 
 
+## Файлы карт текущего пресета (maps/*.json) → выпадающий список.
+func _scan_maps() -> void:
+	map_pick.clear()
+	var found: Array[String] = []
+	var dir := DirAccess.open("%s/maps" % _preset_root())
+	if dir:
+		for f in dir.get_files():
+			if f.ends_with(".json"):
+				found.append(f)
+	found.sort()
+	for i in found.size():
+		map_pick.add_item(found[i])
+		if found[i] == current_map:
+			map_pick.select(i)
+	if not found.has(current_map):
+		current_map = found[0] if found.size() > 0 else "hub.json"
+		if found.size() > 0:
+			map_pick.select(0)
+
+
+func _on_map_selected(idx: int) -> void:
+	current_map = map_pick.get_item_text(idx)
+	if category.begins_with("Карта"):
+		_refresh_records(0)
+	_set_status("Карта: %s" % current_map)
+
+
 func _on_preset_selected(idx: int) -> void:
 	if dirty:
 		_save_all()
 	preset_id = preset_pick.get_item_text(idx)
 	file_cache.clear()
+	_scan_maps()
 	_load_category()
 	_set_status("Пресет: %s" % preset_id)
 
@@ -392,20 +498,39 @@ func _schema() -> Dictionary:
 	return SCHEMAS[category]
 
 
-## Массив записей текущей категории (внутри общего файла — по root-пути).
-func _records() -> Array:
-	var rel: String = _schema()["file"]
+## Файл схемы с подстановкой выбранной карты ("maps/*" → maps/<current_map>).
+func _schema_file(schema: Dictionary = {}) -> String:
+	var f: String = (schema if not schema.is_empty() else _schema())["file"]
+	return "maps/%s" % current_map if f == "maps/*" else f
+
+
+## Содержимое файла пресета через общий кэш (несохранённые правки видны всем).
+func _cached_file(rel: String, default_root):
 	if not file_cache.has(rel):
 		var parsed = _read_json("%s/%s" % [_preset_root(), rel])
 		if parsed == null:
-			parsed = [] if (_schema()["root"] as Array).is_empty() else {}
+			parsed = default_root
 		file_cache[rel] = parsed
-	var node = file_cache[rel]
-	for key in _schema()["root"]:
-		if typeof(node) == TYPE_DICTIONARY and node.has(key):
-			node = node[key]
-		else:
+	return file_cache[rel]
+
+
+## Массив записей текущей категории (внутри общего файла — по root-пути).
+## Для single-схем (preset.json) возвращает [сам словарь].
+func _records() -> Array:
+	var schema := _schema()
+	var rel := _schema_file()
+	var is_single: bool = schema.get("single", false)
+	var node = _cached_file(rel, {} if (is_single or not (schema["root"] as Array).is_empty()) else [])
+	if is_single:
+		return [node] if typeof(node) == TYPE_DICTIONARY else []
+	var root: Array = schema["root"]
+	for i in root.size():
+		if typeof(node) != TYPE_DICTIONARY:
 			return []
+		# недостающую секцию создаём в кэше — иначе «Добавить» пишет в пустоту
+		if not node.has(root[i]):
+			node[root[i]] = [] if i == root.size() - 1 else {}
+		node = node[root[i]]
 	return node if typeof(node) == TYPE_ARRAY else []
 
 
@@ -424,17 +549,26 @@ func _load_category() -> void:
 	_refresh_records(0)
 
 
+## select_idx — индекс ЗАПИСИ (не строки списка); учитывает фильтр поиска.
 func _refresh_records(select_idx: int) -> void:
 	rec_list.clear()
+	rec_map.clear()
 	var recs := _records()
-	for r in recs:
-		rec_list.add_item(_record_title(r))
-	if recs.size() > 0:
-		select_idx = clampi(select_idx, 0, recs.size() - 1)
-		rec_list.select(select_idx)
-		_build_form(select_idx)
-	else:
+	var filter := search_edit.text.strip_edges().to_lower() if search_edit else ""
+	for i in recs.size():
+		var title := _record_title(recs[i])
+		if filter.is_empty() or filter in title.to_lower():
+			rec_list.add_item(title)
+			rec_map.append(i)
+	if rec_map.is_empty():
 		_clear_form()
+		return
+	select_idx = clampi(select_idx, 0, recs.size() - 1)
+	var row := rec_map.find(select_idx)
+	if row < 0:
+		row = 0
+	rec_list.select(row)
+	_build_form(rec_map[row])
 
 
 func _record_title(r) -> String:
@@ -445,13 +579,17 @@ func _record_title(r) -> String:
 	return "%s — %s" % [id_part, name_part] if name_part else str(id_part)
 
 
+## Индекс выбранной ЗАПИСИ (через rec_map, т.к. список может быть отфильтрован).
 func _selected_index() -> int:
 	var sel := rec_list.get_selected_items()
-	return sel[0] if sel.size() > 0 else -1
+	if sel.size() == 0 or sel[0] >= rec_map.size():
+		return -1
+	return rec_map[sel[0]]
 
 
-func _on_record_selected(idx: int) -> void:
-	_build_form(idx)
+func _on_record_selected(row: int) -> void:
+	if row >= 0 and row < rec_map.size():
+		_build_form(rec_map[row])
 
 
 func _clear_form() -> void:
@@ -517,15 +655,62 @@ func _make_field_editor(field: Dictionary, rec: Dictionary, rec_idx: int) -> Con
 			e.button_pressed = bool(val) if val != null else false
 			e.toggled.connect(func(on): rec[key] = on; _mark_dirty(rec_idx))
 			return e
-		"enum":
+		"vec2", "vec3":
+			var dims := 2 if t == "vec2" else 3
+			var box := HBoxContainer.new()
+			var arr: Array = val if typeof(val) == TYPE_ARRAY and (val as Array).size() == dims else []
+			var spins: Array = []
+			for d in dims:
+				var sp := SpinBox.new()
+				sp.step = 0.1
+				sp.min_value = -100000.0
+				sp.max_value = 100000.0
+				sp.value = float(arr[d]) if arr.size() == dims else 0.0
+				sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				spins.append(sp)
+				box.add_child(sp)
+			for sp in spins:
+				(sp as SpinBox).value_changed.connect(func(_v):
+					var out := []
+					for s in spins:
+						out.append((s as SpinBox).value)
+					rec[key] = out
+					_mark_dirty(rec_idx)
+				)
+			return box
+		"color":
+			# [r, g, b] (0..1) через палитру
+			var e := ColorPickerButton.new()
+			e.edit_alpha = false
+			e.custom_minimum_size = Vector2(110, 0)
+			if typeof(val) == TYPE_ARRAY and (val as Array).size() >= 3:
+				e.color = Color(float(val[0]), float(val[1]), float(val[2]))
+			e.color_changed.connect(func(col: Color):
+				rec[key] = [col.r, col.g, col.b]
+				_mark_dirty(rec_idx)
+			)
+			return e
+		"enum", "dyn_enum":
 			var e := OptionButton.new()
-			var opts: Array = field["options"]
-			for o in opts:
-				e.add_item(o)
-			var cur := opts.find(val)
+			var values: Array = []
+			if field.get("nullable", false):
+				values.append("")
+			if t == "enum":
+				values.append_array(field["options"])
+			else:
+				values.append_array(_dyn_options(str(field.get("source", ""))))
+			var cur_s := str(val) if val != null else ""
+			if not cur_s.is_empty() and not values.has(cur_s):
+				values.append(cur_s)   # не терять значение, которого нет в источнике
+			for v in values:
+				e.add_item("(нет)" if str(v).is_empty() else str(v))
+			var cur := values.find(cur_s)
 			if cur >= 0:
 				e.select(cur)
-			e.item_selected.connect(func(i): rec[key] = opts[i]; _mark_dirty(rec_idx))
+			e.item_selected.connect(func(i):
+				rec[key] = null if str(values[i]).is_empty() else values[i]
+				_mark_dirty(rec_idx)
+			)
 			return e
 		_:
 			# json: вложенные структуры (массивы, объекты, null)
@@ -546,13 +731,73 @@ func _make_field_editor(field: Dictionary, rec: Dictionary, rec_idx: int) -> Con
 
 func _mark_dirty(rec_idx: int) -> void:
 	dirty = true
-	if rec_idx >= 0 and rec_idx < rec_list.item_count:
-		rec_list.set_item_text(rec_idx, _record_title(_records()[rec_idx]))
+	var row := rec_map.find(rec_idx)
+	if row >= 0 and row < rec_list.item_count:
+		rec_list.set_item_text(row, _record_title(_records()[rec_idx]))
+
+
+# ── Динамические списки значений (из данных пресета) ──────────────────────────
+
+## id всех записей массива (сам массив или словарь с ключом root_key).
+func _ids_of(data, root_key: String) -> Array:
+	var arr = data
+	if not root_key.is_empty() and typeof(data) == TYPE_DICTIONARY:
+		arr = data.get(root_key, [])
+	var out: Array = []
+	if typeof(arr) == TYPE_ARRAY:
+		for r in arr:
+			if typeof(r) == TYPE_DICTIONARY and r.has("id"):
+				out.append(str(r["id"]))
+	return out
+
+
+## Варианты для dyn_enum-полей. Читает через file_cache — несохранённые
+## правки соседних категорий сразу видны в выпадающих списках.
+func _dyn_options(source: String) -> Array:
+	match source:
+		"npcs":
+			return _ids_of(_cached_file("npcs.json", []), "")
+		"enemies":
+			return _ids_of(_cached_file("enemies.json", {}), "enemies")
+		"items":
+			return _ids_of(_cached_file("items.json", {}), "items")
+		"targets":   # цели квестов: враги (kill) + предметы (collect)
+			var out := _dyn_options("enemies")
+			out.append_array(_dyn_options("items"))
+			out.append("heart_1up")
+			return out
+		"quests":
+			return _ids_of(_cached_file("quests.json", []), "")
+		"weapons":
+			return _ids_of(_cached_file("weapons.json", []), "")
+		"scenes":    # "story" (динамика story.rs) + сцены dialogues.json
+			var out: Array = ["story"]
+			out.append_array(_ids_of(_cached_file("dialogues.json", []), ""))
+			return out
+		"enemy_sprites":   # скан листов enemy_*.png — новые спрайты сразу в списке
+			var out: Array = []
+			var dir := DirAccess.open("res://assets/sprites/characters")
+			if dir:
+				for f in dir.get_files():
+					if f.begins_with("enemy_") and f.ends_with(".png"):
+						out.append(f.trim_prefix("enemy_").trim_suffix(".png"))
+			out.sort()
+			return out
+	return []
 
 
 # ── CRUD ─────────────────────────────────────────────────────────────────────
 
+func _single_guard() -> bool:
+	if _schema().get("single", false):
+		_set_status("«%s» — одиночная запись, CRUD не применим" % category, false)
+		return true
+	return false
+
+
 func _on_add() -> void:
+	if _single_guard():
+		return
 	var recs := _records()
 	var blank := {}
 	for field in _schema()["fields"]:
@@ -561,16 +806,26 @@ func _on_add() -> void:
 			"float": blank[field["key"]] = 0.0
 			"int": blank[field["key"]] = 0
 			"bool": blank[field["key"]] = false
-			"enum": blank[field["key"]] = field["options"][0]
+			"enum": blank[field["key"]] = null if field.get("nullable", false) else field["options"][0]
+			"dyn_enum":
+				var opts := _dyn_options(str(field.get("source", "")))
+				blank[field["key"]] = null if field.get("nullable", false) \
+					else (opts[0] if opts.size() > 0 else "")
+			"vec2": blank[field["key"]] = [0.0, 0.0]
+			"vec3": blank[field["key"]] = [0.0, 0.0, 0.0]
+			"color": blank[field["key"]] = [1.0, 1.0, 1.0]
 			_: blank[field["key"]] = null
 	if blank.has("id"):
 		blank["id"] = "new_%d" % (recs.size() + 1)
 	recs.append(blank)
 	dirty = true
+	search_edit.text = ""   # новая запись не должна прятаться за фильтром
 	_refresh_records(recs.size() - 1)
 
 
 func _on_dup() -> void:
+	if _single_guard():
+		return
 	var idx := _selected_index()
 	var recs := _records()
 	if idx < 0 or idx >= recs.size():
@@ -584,6 +839,8 @@ func _on_dup() -> void:
 
 
 func _on_del() -> void:
+	if _single_guard():
+		return
 	var idx := _selected_index()
 	var recs := _records()
 	if idx < 0 or idx >= recs.size():
@@ -601,9 +858,90 @@ func _save_all() -> void:
 		if _write_json("%s/%s" % [_preset_root(), rel], file_cache[rel]):
 			saved += 1
 	dirty = false
-	_set_status("Сохранено файлов: %d (пресет %s)" % [saved, preset_id])
+	var warnings := _validate_preset()
+	if warnings.is_empty():
+		_set_status("Сохранено файлов: %d (пресет %s)" % [saved, preset_id])
+	else:
+		for w in warnings:
+			print("[oh_editor] ⚠ %s" % w)
+		_set_status("Сохранено: %d; ⚠ битых ссылок: %d — список в Output. Первая: %s"
+			% [saved, warnings.size(), warnings[0]], false)
 	# обновить FileSystem-докcy редактора
 	EditorInterface.get_resource_filesystem().scan()
+
+
+## Проверка ссылочной целостности пресета (не блокирует сохранение —
+## предупреждает; зеркалит cargo-тест content.rs::preset_tests).
+func _validate_preset() -> Array:
+	var warnings: Array = []
+	var npc_ids   := _dyn_options("npcs")
+	var enemy_ids := _dyn_options("enemies")
+	var item_ids  := _dyn_options("items")
+	var quest_ids := _dyn_options("quests")
+	var scene_ids := _ids_of(_cached_file("dialogues.json", []), "")
+
+	var quests = _cached_file("quests.json", [])
+	if typeof(quests) == TYPE_ARRAY:
+		for q in quests:
+			if typeof(q) != TYPE_DICTIONARY:
+				continue
+			var qid := str(q.get("id", "?"))
+			if not npc_ids.has(str(q.get("giver", ""))):
+				warnings.append("квест '%s': гивер '%s' не найден в NPC" % [qid, q.get("giver", "")])
+			var target := str(q.get("target", ""))
+			match str(q.get("kind", "")):
+				"kill":
+					if not enemy_ids.has(target):
+						warnings.append("квест '%s': цель kill '%s' не найдена во врагах" % [qid, target])
+				"collect":
+					if not (item_ids.has(target) or target == "heart_1up"):
+						warnings.append("квест '%s': цель collect '%s' не найдена в предметах" % [qid, target])
+
+	var npcs = _cached_file("npcs.json", [])
+	if typeof(npcs) == TYPE_ARRAY:
+		for n in npcs:
+			if typeof(n) != TYPE_DICTIONARY:
+				continue
+			var nq = n.get("quest")
+			if nq != null and not str(nq).is_empty() and not quest_ids.has(str(nq)):
+				warnings.append("NPC '%s': квест '%s' не найден" % [n.get("id", "?"), nq])
+			var ns = n.get("scene")
+			if ns != null and not str(ns).is_empty() and str(ns) != "story" \
+					and not scene_ids.has(str(ns)):
+				warnings.append("NPC '%s': сцены '%s' нет в dialogues.json (ок, если это встроенная story-сцена)"
+					% [n.get("id", "?"), ns])
+
+	for rel in file_cache.keys():
+		if not str(rel).begins_with("maps/"):
+			continue
+		var m = file_cache[rel]
+		if typeof(m) != TYPE_DICTIONARY:
+			continue
+		var spawns = m.get("spawns", {})
+		if typeof(spawns) != TYPE_DICTIONARY:
+			continue
+		for s in spawns.get("spawn_enemies", []):
+			if typeof(s) == TYPE_DICTIONARY and not enemy_ids.has(str(s.get("kind", ""))):
+				warnings.append("%s: спавн врага '%s' — нет во врагах" % [rel, s.get("kind", "")])
+		for s in spawns.get("spawn_items", []):
+			if typeof(s) == TYPE_DICTIONARY:
+				var k := str(s.get("kind", ""))
+				if not (item_ids.has(k) or k == "heart_1up"):
+					warnings.append("%s: спавн предмета '%s' — нет в предметах" % [rel, k])
+
+	var scenes = _cached_file("dialogues.json", [])
+	if typeof(scenes) == TYPE_ARRAY:
+		for sc in scenes:
+			if typeof(sc) != TYPE_DICTIONARY:
+				continue
+			for c in sc.get("choices", []):
+				if typeof(c) != TYPE_DICTIONARY:
+					continue
+				var nx = c.get("next")
+				if nx != null and not str(nx).is_empty() and not scene_ids.has(str(nx)):
+					warnings.append("диалог '%s': next '%s' нет в dialogues.json (ок, если story-сцена)"
+						% [sc.get("id", "?"), nx])
+	return warnings
 
 
 # ── ИИ-генерация текстур ──────────────────────────────────────────────────────

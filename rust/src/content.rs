@@ -178,6 +178,40 @@ mod preset_tests {
                         "{name}/npcs.json: NPC '{}' ссылается на квест '{}' — нет в quests.json", n.id, q);
                 }
             }
+
+            // диалоги: парс + конвертация + разрешимость ссылок next / npc.scene
+            let dialogue_ids: HashSet<String> = match read(&preset, "dialogues.json") {
+                None => HashSet::new(),
+                Some(t) => {
+                    let (scenes, errors) = crate::dialogue::parse_scenes(&t)
+                        .unwrap_or_else(|e| panic!("{name}/dialogues.json: {e}"));
+                    assert!(errors.is_empty(),
+                        "{name}/dialogues.json: битые сцены: {}", errors.join("; "));
+                    let ids: HashSet<String> = scenes.iter().map(|s| s.id.clone()).collect();
+                    let probe = crate::game_state::GameState::new("test");
+                    for s in &scenes {
+                        for c in &s.choices {
+                            if let Some(next) = &c.next {
+                                assert!(ids.contains(next)
+                                        || crate::story::get_scene(next, &probe).is_some(),
+                                    "{name}/dialogues.json: сцена '{}' ссылается на '{}' — нет ни в JSON, ни в story.rs",
+                                    s.id, next);
+                            }
+                        }
+                    }
+                    ids
+                }
+            };
+            let probe = crate::game_state::GameState::new("test");
+            for n in &npcs {
+                if let Some(scene) = &n.scene {
+                    if scene.is_empty() || scene == "story" { continue; }
+                    assert!(dialogue_ids.contains(scene)
+                            || crate::story::get_scene(scene, &probe).is_some(),
+                        "{name}/npcs.json: NPC '{}' ссылается на сцену '{}' — нет ни в dialogues.json, ни в story.rs",
+                        n.id, scene);
+                }
+            }
             let check_spawn = |kind_type: &str, id: &str| match kind_type {
                 "enemy" => assert!(enemy_ids.contains(id),
                     "{name}: спавн врага '{id}' — нет в enemies.json"),

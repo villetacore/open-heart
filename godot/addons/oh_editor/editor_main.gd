@@ -102,8 +102,8 @@ const SCHEMAS := {
 		"file": "dialogues.json", "root": [],
 		"fields": [
 			{"key": "id", "type": "str"},
-			{"key": "lines", "type": "json"},
-			{"key": "choices", "type": "json"},
+			{"key": "lines", "type": "json", "default": []},
+			{"key": "choices", "type": "json", "default": []},
 		],
 	},
 	"Пресет": {
@@ -603,6 +603,8 @@ var preset_id      := "core"
 var category       := "Оружие"
 var current_map    := "hub.json"   # файл в maps/, который правят категории "maps/*" и холст
 var file_cache     := {}
+var synthetic      := {}   # rel → true: файла нет на диске, в кэше — дефолт (не сохранять,
+                           # пока пользователь его не тронул; отсутствие npcs.json — семантика!)
 var dirty          := false
 var preset_pick:   OptionButton
 var map_pick:      OptionButton
@@ -751,7 +753,9 @@ func _build_map_tab(parent: Control) -> void:
 
 	var split := HSplitContainer.new(); split.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(split)
 	map_canvas = MapCanvas.new(); map_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL; map_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	map_canvas.selection_changed.connect(_on_map_sel); map_canvas.data_modified.connect(func(): dirty = true); split.add_child(map_canvas)
+	map_canvas.selection_changed.connect(_on_map_sel)
+	map_canvas.data_modified.connect(func(): dirty = true; _touch("maps/%s" % current_map))
+	split.add_child(map_canvas)
 	var rscroll := ScrollContainer.new(); rscroll.custom_minimum_size.x = 320; rscroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; split.add_child(rscroll)
 	map_prop_box = VBoxContainer.new(); map_prop_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL; rscroll.add_child(map_prop_box)
 	map_prop_box.add_child(_mk_lbl("← Выбери объект на холсте"))
@@ -793,6 +797,7 @@ func _map_add(layer: String) -> void:
 		"spawns_items":   blank = {"kind":"medkit","x":0.0,"z":0.0}
 		_: blank = {}
 	arr.append(blank)
+	dirty = true; _touch("maps/%s" % current_map)
 	map_canvas.sel_layer = layer; map_canvas.sel_idx = arr.size()-1
 	map_canvas.queue_redraw(); _on_map_sel(layer, arr.size()-1); dirty = true
 
@@ -1031,7 +1036,8 @@ func _scan_presets() -> void:
 
 func _on_preset_sel(idx: int) -> void:
 	if dirty: _save_all()
-	preset_id = preset_pick.get_item_text(idx); file_cache.clear(); _map_ref.clear()
+	preset_id = preset_pick.get_item_text(idx)
+	file_cache.clear(); synthetic.clear(); _map_ref.clear()
 	_scan_maps(); _load_category()
 
 func _on_new_preset() -> void:
@@ -1043,7 +1049,7 @@ func _on_new_preset() -> void:
 	var mp := "%s/preset.json" % dst
 	var info = _read_json(mp)
 	if typeof(info)==TYPE_DICTIONARY: info["id"]=nid; info["name_ru"]=nid; _write_json(mp,info)
-	preset_id = nid; file_cache.clear(); _scan_presets(); _load_category()
+	preset_id = nid; file_cache.clear(); synthetic.clear(); _scan_presets(); _load_category()
 
 func _copy_dir(src: String, dst: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dst)
@@ -1070,11 +1076,20 @@ func _schema_file() -> String:
 	return "maps/%s" % current_map if f == "maps/*" else f
 
 ## Содержимое файла пресета через общий кэш (несохранённые правки видны всем).
+## Если файла нет — кэшируем дефолт и помечаем synthetic: _save_all его пропустит,
+## пока запись реально не отредактируют (см. _touch).
 func _cached_file(rel: String, default_root):
 	if not file_cache.has(rel):
 		var parsed = _read_json("%s/%s" % [_preset_root(), rel])
-		file_cache[rel] = parsed if parsed != null else default_root
+		if parsed == null:
+			synthetic[rel] = true
+			parsed = default_root
+		file_cache[rel] = parsed
 	return file_cache[rel]
+
+## Файл rel реально изменён пользователем — можно сохранять на диск.
+func _touch(rel: String) -> void:
+	synthetic.erase(rel)
 
 func _records() -> Array:
 	var schema := _schema()
@@ -1158,8 +1173,9 @@ func _make_field(field: Dictionary, rec: Dictionary, rec_idx: int) -> Control:
 			var e := TextEdit.new(); e.custom_minimum_size.y = 56; e.text = str(val) if val!=null else ""
 			e.text_changed.connect(func(): rec[key]=e.text; if rec_idx>=0: _mark(rec_idx)); return e
 		"float":
-			var e := SpinBox.new(); e.step=0.05; e.min_value=-1e5; e.max_value=1e5; e.value=float(val) if val!=null else 0.0
-			e.value_changed.connect(func(v): rec[key]=v; if rec_idx>=0: _mark(rec_idx)); return e
+			# шаг 0.001: значения вроде px=0.008 не «прилипают» к нулю
+			var e := SpinBox.new(); e.step=0.001; e.min_value=-1e5; e.max_value=1e5; e.value=float(val) if val!=null else 0.0
+			e.value_changed.connect(func(v): rec[key]=snappedf(v, 0.001); if rec_idx>=0: _mark(rec_idx)); return e
 		"int":
 			var e := SpinBox.new(); e.step=1; e.min_value=-1000000; e.max_value=1000000; e.value=int(val) if val!=null else 0
 			e.value_changed.connect(func(v): rec[key]=int(v); if rec_idx>=0: _mark(rec_idx)); return e
@@ -1170,17 +1186,21 @@ func _make_field(field: Dictionary, rec: Dictionary, rec_idx: int) -> Control:
 			var dims := 2 if t == "vec2" else 3
 			var box := HBoxContainer.new()
 			var arr: Array = val if typeof(val)==TYPE_ARRAY and (val as Array).size()==dims else []
-			var spins: Array = []
 			for d in dims:
 				var sp := SpinBox.new()
-				sp.step = 0.1; sp.min_value = -1e5; sp.max_value = 1e5
+				# мелкий шаг + snappedf на записи: без сеточного «прилипания»
+				# и мусорных хвостов вида -17.3000000000029
+				sp.step = 0.001; sp.min_value = -1e5; sp.max_value = 1e5
 				sp.value = float(arr[d]) if arr.size()==dims else 0.0
 				sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				spins.append(sp); box.add_child(sp)
-			for sp in spins:
-				(sp as SpinBox).value_changed.connect(func(_v):
-					var out := []
-					for s in spins: out.append((s as SpinBox).value)
+				box.add_child(sp)
+				sp.value_changed.connect(func(v):
+					# менять только свою компоненту — чужие не перетирать
+					var cur = rec.get(key)
+					var out: Array = cur.duplicate() \
+						if typeof(cur)==TYPE_ARRAY and (cur as Array).size()==dims \
+						else ([0.0, 0.0] if dims==2 else [0.0, 0.0, 0.0])
+					out[d] = snappedf(v, 0.001)
 					rec[key] = out
 					if rec_idx>=0: _mark(rec_idx))
 			return box
@@ -1225,6 +1245,7 @@ func _make_field(field: Dictionary, rec: Dictionary, rec_idx: int) -> Control:
 
 func _mark(idx: int) -> void:
 	dirty = true
+	_touch(_schema_file())
 	var recs := _records()
 	var row := rec_map.find(idx)
 	if row >= 0 and row < rec_list.item_count and idx < recs.size():
@@ -1297,9 +1318,14 @@ func _on_add() -> void:
 			"vec2":  blank[f["key"]] = [0.0, 0.0]
 			"vec3":  blank[f["key"]] = [0.0, 0.0, 0.0]
 			"color": blank[f["key"]] = [1.0, 1.0, 1.0]
-			_:            blank[f["key"]] = null
+			_:
+				# json: схема может задать дефолт (напр. [] у lines/choices —
+				# null у них ломает serde и валидатор); копия, не общая ссылка
+				var dv = f.get("default")
+				blank[f["key"]] = dv.duplicate(true) \
+					if typeof(dv) == TYPE_ARRAY or typeof(dv) == TYPE_DICTIONARY else dv
 	if blank.has("id"): blank["id"] = "new_%d" % (recs.size()+1)
-	recs.append(blank); dirty = true
+	recs.append(blank); dirty = true; _touch(_schema_file())
 	search_edit.text = ""   # новая запись не должна прятаться за фильтром
 	_refresh_recs(recs.size()-1)
 
@@ -1309,19 +1335,21 @@ func _on_dup() -> void:
 	if idx<0 or idx>=recs.size(): return
 	var copy = recs[idx].duplicate(true)
 	if typeof(copy)==TYPE_DICTIONARY and copy.has("id"): copy["id"] = str(copy["id"])+"_copy"
-	recs.insert(idx+1, copy); dirty = true; _refresh_recs(idx+1)
+	recs.insert(idx+1, copy); dirty = true; _touch(_schema_file()); _refresh_recs(idx+1)
 
 func _on_del() -> void:
 	if _single_guard(): return
 	var idx := _sel_idx(); var recs := _records()
 	if idx<0 or idx>=recs.size(): return
-	recs.remove_at(idx); dirty = true; _refresh_recs(idx)
+	recs.remove_at(idx); dirty = true; _touch(_schema_file()); _refresh_recs(idx)
 
 # ──────────────────── СОХРАНЕНИЕ ──────────────────────────────────────────────
 
 func _save_all() -> void:
 	var n := 0
 	for rel in file_cache.keys():
+		if synthetic.has(rel):
+			continue   # файл возник в кэше как дефолт (для списков/валидации) — не создавать
 		if _write_json("%s/%s" % [_preset_root(), rel], file_cache[rel]): n += 1
 	dirty = false
 	var warnings := _validate_preset()
@@ -1378,20 +1406,26 @@ func _validate_preset() -> Array:
 		if typeof(m)!=TYPE_DICTIONARY: continue
 		var spawns = m.get("spawns", {})
 		if typeof(spawns)!=TYPE_DICTIONARY: continue
-		for s in spawns.get("spawn_enemies", []):
-			if typeof(s)==TYPE_DICTIONARY and not enemy_ids.has(str(s.get("kind",""))):
-				warnings.append("%s: спавн врага '%s' — нет во врагах" % [rel, s.get("kind","")])
-		for s in spawns.get("spawn_items", []):
-			if typeof(s)==TYPE_DICTIONARY:
-				var k := str(s.get("kind",""))
-				if not (item_ids.has(k) or k=="heart_1up"):
-					warnings.append("%s: спавн предмета '%s' — нет в предметах" % [rel, k])
+		var sp_e = spawns.get("spawn_enemies", [])
+		if typeof(sp_e)==TYPE_ARRAY:
+			for s in sp_e:
+				if typeof(s)==TYPE_DICTIONARY and not enemy_ids.has(str(s.get("kind",""))):
+					warnings.append("%s: спавн врага '%s' — нет во врагах" % [rel, s.get("kind","")])
+		var sp_i = spawns.get("spawn_items", [])
+		if typeof(sp_i)==TYPE_ARRAY:
+			for s in sp_i:
+				if typeof(s)==TYPE_DICTIONARY:
+					var k := str(s.get("kind",""))
+					if not (item_ids.has(k) or k=="heart_1up"):
+						warnings.append("%s: спавн предмета '%s' — нет в предметах" % [rel, k])
 
 	var scenes = _cached_file("dialogues.json", [])
 	if typeof(scenes)==TYPE_ARRAY:
 		for sc in scenes:
 			if typeof(sc)!=TYPE_DICTIONARY: continue
-			for c in sc.get("choices", []):
+			var chs = sc.get("choices", [])
+			if typeof(chs)!=TYPE_ARRAY: continue   # null/мусор — не валить валидатор
+			for c in chs:
 				if typeof(c)!=TYPE_DICTIONARY: continue
 				var nx = c.get("next")
 				if nx != null and not str(nx).is_empty() and not scene_ids.has(str(nx)):

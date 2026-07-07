@@ -68,8 +68,9 @@ pub struct Scene {
 #[derive(Deserialize)]
 pub struct SceneRaw {
     pub id: String,
-    #[serde(default)] pub lines:   Vec<LineRaw>,
-    #[serde(default)] pub choices: Vec<ChoiceRaw>,
+    // Option: редактор может записать null — считаем это «пусто», не ошибкой
+    #[serde(default)] pub lines:   Option<Vec<LineRaw>>,
+    #[serde(default)] pub choices: Option<Vec<ChoiceRaw>>,
 }
 
 #[derive(Deserialize)]
@@ -83,7 +84,7 @@ pub struct LineRaw {
 pub struct ChoiceRaw {
     pub text: String,
     #[serde(default)] pub requires: Option<ReqRaw>,
-    #[serde(default)] pub effects:  Vec<EffectRaw>,
+    #[serde(default)] pub effects:  Option<Vec<EffectRaw>>,
     #[serde(default)] pub next:     Option<String>,
 }
 
@@ -130,11 +131,12 @@ impl SceneRaw {
     /// Конвертация в рантайм-сцену; ошибка содержит id сцены и причину.
     pub fn into_scene(self) -> Result<Scene, String> {
         let id = self.id;
-        let lines = self.lines.into_iter()
+        let lines = self.lines.unwrap_or_default().into_iter()
             .map(|l| Line { speaker: l.speaker, portrait: l.portrait, text: l.text })
             .collect();
-        let mut choices = Vec::with_capacity(self.choices.len());
-        for c in self.choices {
+        let raw_choices = self.choices.unwrap_or_default();
+        let mut choices = Vec::with_capacity(raw_choices.len());
+        for c in raw_choices {
             let requires = match c.requires {
                 None => None,
                 Some(r) => Some((
@@ -143,8 +145,9 @@ impl SceneRaw {
                     r.min,
                 )),
             };
-            let mut effects = Vec::with_capacity(c.effects.len());
-            for e in c.effects {
+            let raw_effects = c.effects.unwrap_or_default();
+            let mut effects = Vec::with_capacity(raw_effects.len());
+            for e in raw_effects {
                 effects.push(e.into_effect().map_err(|e| format!("сцена '{id}': {e}"))?);
             }
             choices.push(Choice { text: c.text, requires, effects, next: c.next });
@@ -155,14 +158,20 @@ impl SceneRaw {
 
 /// Распарсить dialogues.json (массив сцен). Битые сцены пропускаются с ошибкой
 /// в out-параметре, остальные живут — одна опечатка не валит весь файл.
+/// Каждая сцена парсится отдельно (через Value), поэтому и структурная ошибка
+/// в одной сцене не роняет остальные.
 pub fn parse_scenes(json: &str) -> Result<(Vec<Scene>, Vec<String>), String> {
-    let raws: Vec<SceneRaw> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+    let raws: Vec<serde_json::Value> = serde_json::from_str(json).map_err(|e| e.to_string())?;
     let mut scenes = Vec::with_capacity(raws.len());
     let mut errors = Vec::new();
-    for raw in raws {
-        match raw.into_scene() {
-            Ok(s) => scenes.push(s),
-            Err(e) => errors.push(e),
+    for (i, v) in raws.into_iter().enumerate() {
+        let label = v.get("id").and_then(|x| x.as_str()).unwrap_or("?").to_string();
+        match serde_json::from_value::<SceneRaw>(v) {
+            Ok(raw) => match raw.into_scene() {
+                Ok(s) => scenes.push(s),
+                Err(e) => errors.push(e),
+            },
+            Err(e) => errors.push(format!("сцена #{i} ('{label}'): {e}")),
         }
     }
     Ok((scenes, errors))

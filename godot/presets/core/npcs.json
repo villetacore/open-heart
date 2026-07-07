@@ -1,15 +1,182 @@
 [
-  { "id": "vale",      "name_ru": "Ms. Вейл",   "sprite": "npc_vale",      "pos": [-6, -8],   "color": [1.0, 0.75, 0.85], "scene": "story" },
-  { "id": "victor",    "name_ru": "Виктор",     "sprite": "npc_victor",    "pos": [6, -8],    "color": [0.75, 1.0, 0.8],  "scene": "story" },
-  { "id": "elena",     "name_ru": "Елена",      "sprite": "npc_elena",     "pos": [-11, 3],   "color": [0.75, 0.8, 1.0],  "scene": "story" },
-  { "id": "sofia",     "name_ru": "София",      "sprite": "npc_sofia",     "pos": [11, 3],    "color": [1.0, 0.95, 0.7],  "scene": "story" },
-  { "id": "guard",     "name_ru": "Охранник",   "sprite": "npc_guard",     "pos": [-2.5, -18],"color": [0.85, 0.85, 0.85],"scene": "story" },
-  { "id": "merchant",  "name_ru": "Торговец",   "sprite": "npc_merchant",  "pos": [17.5, -1], "color": [1.0, 0.85, 0.6],  "scene": "story" },
-  { "id": "scientist", "name_ru": "Учёный",     "sprite": "npc_scientist", "pos": [-18, 0],   "color": [0.7, 1.0, 1.0],   "scene": "story" },
-  { "id": "stranger",  "name_ru": "Незнакомец", "sprite": "npc_stranger",  "pos": [5, 16],    "color": [0.8, 0.65, 0.95], "scene": "story" },
-
-  { "id": "hunter",    "name_ru": "Охотница Ба", "sprite": "npc_guard",    "pos": [-8, -34],  "color": [1.0, 0.55, 0.45], "quest": "cull_grunts" },
-  { "id": "collector", "name_ru": "Коллекционер","sprite": "npc_merchant", "pos": [8, -33],   "color": [0.6, 0.9, 1.0],   "quest": "neon_shards" },
-  { "id": "warden",    "name_ru": "Смотритель врат", "sprite": "npc_stranger", "pos": [-12, -58], "color": [0.9, 0.4, 0.9], "quest": "depth_two" },
-  { "id": "medic",     "name_ru": "Полевой медик", "sprite": "npc_scientist", "pos": [-19, 27], "color": [0.5, 1.0, 0.7], "quest": "medkit_run" }
+  {
+    "id": "vale",
+    "name_ru": "Ms. Вейл",
+    "sprite": "npc_vale",
+    "pos": [
+      -6.0,
+      -8.0
+    ],
+    "color": [
+      1.0,
+      0.75,
+      0.85
+    ],
+    "scene": "story"
+  },
+  {
+    "id": "victor",
+    "name_ru": "Виктор",
+    "sprite": "npc_victor",
+    "pos": [
+      6.0,
+      -8.0
+    ],
+    "color": [
+      0.75,
+      1.0,
+      0.8
+    ],
+    "scene": "story"
+  },
+  {
+    "id": "elena",
+    "name_ru": "Елена",
+    "sprite": "npc_elena",
+    "pos": [
+      -11.0,
+      3.0
+    ],
+    "color": [
+      0.75,
+      0.8,
+      1.0
+    ],
+    "scene": "story"
+  },
+  {
+    "id": "sofia",
+    "name_ru": "София",
+    "sprite": "npc_sofia",
+    "pos": [
+      11.0,
+      3.0
+    ],
+    "color": [
+      1.0,
+      0.95,
+      0.7
+    ],
+    "scene": "story"
+  },
+  {
+    "id": "guard",
+    "name_ru": "Охранник",
+    "sprite": "npc_guard",
+    "pos": [
+      -2.5,
+      -18.0
+    ],
+    "color": [
+      0.85,
+      0.85,
+      0.85
+    ],
+    "scene": "story"
+  },
+  {
+    "id": "merchant",
+    "name_ru": "Торговец",
+    "sprite": "npc_merchant",
+    "pos": [
+      17.5,
+      -1.0
+    ],
+    "color": [
+      1.0,
+      0.85,
+      0.6
+    ],
+    "scene": "story"
+  },
+  {
+    "id": "scientist",
+    "name_ru": "Учёный",
+    "sprite": "npc_scientist",
+    "pos": [
+      -18.0,
+      0.0
+    ],
+    "color": [
+      0.7,
+      1.0,
+      1.0
+    ],
+    "scene": "story"
+  },
+  {
+    "id": "stranger",
+    "name_ru": "Незнакомец",
+    "sprite": "npc_stranger",
+    "pos": [
+      5.0,
+      16.0
+    ],
+    "color": [
+      0.8,
+      0.65,
+      0.95
+    ],
+    "scene": "story"
+  },
+  {
+    "id": "hunter",
+    "name_ru": "Охотница Ба",
+    "sprite": "npc_guard",
+    "pos": [
+      -8.0,
+      -34.0
+    ],
+    "color": [
+      1.0,
+      0.55,
+      0.45
+    ],
+    "quest": "cull_grunts"
+  },
+  {
+    "id": "collector",
+    "name_ru": "Коллекционер",
+    "sprite": "npc_merchant",
+    "pos": [
+      8.0,
+      -33.0
+    ],
+    "color": [
+      0.6,
+      0.9,
+      1.0
+    ],
+    "quest": "neon_shards"
+  },
+  {
+    "id": "warden",
+    "name_ru": "Смотритель врат",
+    "sprite": "npc_stranger",
+    "pos": [
+      -12.0,
+      -58.0
+    ],
+    "color": [
+      0.9,
+      0.4,
+      0.9
+    ],
+    "quest": "depth_two"
+  },
+  {
+    "id": "medic",
+    "name_ru": "Полевой медик",
+    "sprite": "npc_scientist",
+    "pos": [
+      -19.0,
+      27.0
+    ],
+    "color": [
+      0.5,
+      1.0,
+      0.7
+    ],
+    "quest": "medkit_run"
+  }
 ]

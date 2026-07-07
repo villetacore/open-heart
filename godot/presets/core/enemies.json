@@ -90,7 +90,8 @@
       "xp": 25.0,
       "resist": {
         "energy": 0.25
-      }
+      },
+      "sprite": "sniper"
     },
     {
       "id": "cultist",
@@ -109,7 +110,8 @@
       "resist": {
         "fire": 0.3,
         "void": -0.3
-      }
+      },
+      "sprite": "cultist"
     },
     {
       "id": "pyro_cultist",
@@ -191,7 +193,7 @@
       "resist": {
         "physical": 0.25
       },
-      "sprite": "grunt",
+      "sprite": "heavy",
       "scale": 1.1
     },
     {

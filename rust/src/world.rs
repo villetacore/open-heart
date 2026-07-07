@@ -88,7 +88,7 @@ pub fn build_world(cache: &mut TexCache) -> WorldPlan {
             root.add_child(&sp);
         }
         let l_off = match rot {
-            r if r == 0.0 => Vector3::new(0.0, 0.0, 1.2),
+            0.0 => Vector3::new(0.0, 0.0, 1.2),
             r if r == std::f32::consts::PI => Vector3::new(0.0, 0.0, -1.2),
             r if r > 0.0 => Vector3::new(1.2, 0.0, 0.0),
             _ => Vector3::new(-1.2, 0.0, 0.0),

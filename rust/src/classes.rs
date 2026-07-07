@@ -45,7 +45,7 @@ struct SpecRaw {
 }
 
 #[derive(Deserialize)]
-struct AmmoStartRaw { #[serde(rename = "type")] ty: String, amount: u32 }
+struct AmmoStartRaw { #[serde(rename = "type")] ty: String, amount: f64 }
 
 #[derive(Deserialize)]
 struct ClassRaw {
@@ -83,7 +83,7 @@ impl ClassRaw {
         for a in &self.start_ammo {
             let t = AmmoType::from_id(&a.ty)
                 .ok_or_else(|| format!("class '{}': unknown ammo '{}'", self.id, a.ty))?;
-            ammo.push((t, a.amount));
+            ammo.push((t, a.amount as u32));
         }
         let mut specs = Vec::new();
         for s in self.specs {

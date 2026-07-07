@@ -31,6 +31,7 @@ use crate::world;
 
 // ── NPC ───────────────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 struct NpcCfg {
     id:       &'static str,
     name:     &'static str,
@@ -87,6 +88,7 @@ enum Mode { ClassSelect, SpecSelect, Explore, Dialogue, Dead, Inventory, Perks, 
 #[derive(PartialEq, Clone, Copy)]
 enum Loc { World, Dungeon }
 
+#[allow(dead_code)]
 enum Payload {
     Consumable { heal: f32 },
     Gold(i32),
@@ -126,6 +128,7 @@ struct Projectile {
 }
 
 #[derive(PartialEq, Clone, Copy)]
+#[allow(clippy::enum_variant_names)]
 enum PortalKind { EnterDungeon, ExitDungeon, DeeperDungeon }
 
 // ── Анимация FP-оружия ────────────────────────────────────────────────────────
@@ -671,7 +674,7 @@ impl Game3D {
         };
         let name = if self.settings.lang == "en" { icfg.name_en.clone() } else { icfg.name_ru.clone() };
         let payload = if icfg.category == "currency" {
-            Payload::Gold(icfg.value)
+            Payload::Gold(icfg.value as i32)
         } else if icfg.category == "key" {
             Payload::KeyItem
         } else {
@@ -2144,6 +2147,7 @@ impl Game3D {
         Some((pos, enemy))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn spawn_projectile(&mut self, pos: Vector3, vel: Vector3, dmg: f32, dmg_type: DmgType,
                         splash: f32, ttl: f32, weapon: WeaponId) {
         let mut node = Node3D::new_alloc();
@@ -2423,7 +2427,7 @@ impl Game3D {
             }
         }
         if total_dmg > 0.0 {
-            let maybe_player = self.player.as_ref().map(|p| p.clone());
+            let maybe_player = self.player.clone();
             if let Some(p_gd) = maybe_player {
                 if let Ok(mut player) = p_gd.try_cast::<Player>() {
                     player.bind_mut().take_damage(total_dmg);
@@ -2882,7 +2886,7 @@ impl Game3D {
             let scene = match self.scene.as_ref() { Some(s) => s, None => return };
             let state = match self.state.as_ref() { Some(s) => s, None => return };
             let avail: Vec<_> = scene.choices.iter()
-                .filter(|c| c.requires.as_ref().map_or(true, |(st, mn)| state.stat(st) >= *mn))
+                .filter(|c| c.requires.as_ref().is_none_or(|(st, mn)| state.stat(st) >= *mn))
                 .collect();
             if idx >= avail.len() { return; }
             (avail[idx].effects.clone(), avail[idx].next.clone())
@@ -2928,7 +2932,7 @@ impl Game3D {
             let line = &scene.lines[self.line_idx.min(scene.lines.len().saturating_sub(1))];
             let ct: Vec<String> = if self.at_choices {
                 scene.choices.iter()
-                    .filter(|c| c.requires.as_ref().map_or(true, |(st, mn)| state.stat(st) >= *mn))
+                    .filter(|c| c.requires.as_ref().is_none_or(|(st, mn)| state.stat(st) >= *mn))
                     .enumerate()
                     .map(|(i, c)| format!("{}. {}", i + 1, c.text))
                     .collect()

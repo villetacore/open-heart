@@ -1,58 +1,174 @@
 [
   {
-    "id": "berserk", "name_ru": "БЕРСЕРК", "role_ru": "Мили",
+    "id": "berserk",
+    "name_ru": "БЕРСЕРК",
+    "role_ru": "Мили",
     "desc_ru": "Пила и клинок. Живёт в гуще боя, лечится чужой болью.",
-    "base_hp": 150.0, "speed": 5.8, "dmg_mult": 1.0,
-    "start_weapons": ["sword", "chainsaw"],
-    "start_ammo": [{ "type": "shells", "amount": 8 }],
+    "base_hp": 150.0,
+    "speed": 5.8,
+    "dmg_mult": 1.0,
+    "start_weapons": [
+      "sword",
+      "chainsaw"
+    ],
+    "start_ammo": [
+      {
+        "type": "shells",
+        "amount": 8.0
+      }
+    ],
     "specs": [
-      { "id": "bloodreaper", "name_ru": "Кровожнец",
+      {
+        "id": "bloodreaper",
+        "name_ru": "Кровожнец",
         "desc_ru": "25% урона в ближнем бою возвращается здоровьем.",
-        "hp_bonus": 0.0, "speed_mult": 1.0, "dmg_mult": 1.0, "cd_mult": 1.0, "lifesteal": 0.25, "ammo_mult": 1.0 },
-      { "id": "juggernaut", "name_ru": "Таран",
+        "hp_bonus": 0.0,
+        "speed_mult": 1.0,
+        "dmg_mult": 1.0,
+        "cd_mult": 1.0,
+        "lifesteal": 0.25,
+        "ammo_mult": 1.0
+      },
+      {
+        "id": "juggernaut",
+        "name_ru": "Таран",
         "desc_ru": "+60 к здоровью. Медленнее, но почти неубиваем.",
-        "hp_bonus": 60.0, "speed_mult": 0.92, "dmg_mult": 1.0, "cd_mult": 1.0, "lifesteal": 0.0, "ammo_mult": 1.0 },
-      { "id": "whirlwind", "name_ru": "Вихрь",
+        "hp_bonus": 60.0,
+        "speed_mult": 0.92,
+        "dmg_mult": 1.0,
+        "cd_mult": 1.0,
+        "lifesteal": 0.0,
+        "ammo_mult": 1.0
+      },
+      {
+        "id": "whirlwind",
+        "name_ru": "Вихрь",
         "desc_ru": "+20% скорость бега, удары на 25% быстрее.",
-        "hp_bonus": -20.0, "speed_mult": 1.2, "dmg_mult": 1.0, "cd_mult": 0.75, "lifesteal": 0.0, "ammo_mult": 1.0 }
+        "hp_bonus": -20.0,
+        "speed_mult": 1.2,
+        "dmg_mult": 1.0,
+        "cd_mult": 0.75,
+        "lifesteal": 0.0,
+        "ammo_mult": 1.0
+      }
     ]
   },
   {
-    "id": "vanguard", "name_ru": "ШТУРМОВИК", "role_ru": "Клоус-рэнж",
+    "id": "vanguard",
+    "name_ru": "ШТУРМОВИК",
+    "role_ru": "Клоус-рэнж",
     "desc_ru": "Пистолет и дробовик. Врывается, стреляет в упор, уходит.",
-    "base_hp": 115.0, "speed": 5.3, "dmg_mult": 1.0,
-    "start_weapons": ["pistol", "shotgun"],
-    "start_ammo": [{ "type": "bullets", "amount": 60 }, { "type": "shells", "amount": 20 }],
+    "base_hp": 115.0,
+    "speed": 5.3,
+    "dmg_mult": 1.0,
+    "start_weapons": [
+      "pistol",
+      "shotgun"
+    ],
+    "start_ammo": [
+      {
+        "type": "bullets",
+        "amount": 60.0
+      },
+      {
+        "type": "shells",
+        "amount": 20.0
+      }
+    ],
     "specs": [
-      { "id": "executioner", "name_ru": "Экзекутор",
+      {
+        "id": "executioner",
+        "name_ru": "Экзекутор",
         "desc_ru": "+20% урона всем оружием.",
-        "hp_bonus": 0.0, "speed_mult": 1.0, "dmg_mult": 1.2, "cd_mult": 1.0, "lifesteal": 0.0, "ammo_mult": 1.0 },
-      { "id": "bastion", "name_ru": "Бастион",
+        "hp_bonus": 0.0,
+        "speed_mult": 1.0,
+        "dmg_mult": 1.2,
+        "cd_mult": 1.0,
+        "lifesteal": 0.0,
+        "ammo_mult": 1.0
+      },
+      {
+        "id": "bastion",
+        "name_ru": "Бастион",
         "desc_ru": "+45 к здоровью — щит на передовой.",
-        "hp_bonus": 45.0, "speed_mult": 0.96, "dmg_mult": 1.0, "cd_mult": 1.0, "lifesteal": 0.0, "ammo_mult": 1.0 },
-      { "id": "duelist", "name_ru": "Дуэлянт",
+        "hp_bonus": 45.0,
+        "speed_mult": 0.96,
+        "dmg_mult": 1.0,
+        "cd_mult": 1.0,
+        "lifesteal": 0.0,
+        "ammo_mult": 1.0
+      },
+      {
+        "id": "duelist",
+        "name_ru": "Дуэлянт",
         "desc_ru": "Перезарядка на 20% быстрее, +10% скорость.",
-        "hp_bonus": 0.0, "speed_mult": 1.1, "dmg_mult": 1.0, "cd_mult": 0.8, "lifesteal": 0.0, "ammo_mult": 1.0 }
+        "hp_bonus": 0.0,
+        "speed_mult": 1.1,
+        "dmg_mult": 1.0,
+        "cd_mult": 0.8,
+        "lifesteal": 0.0,
+        "ammo_mult": 1.0
+      }
     ]
   },
   {
-    "id": "operator", "name_ru": "ОПЕРАТОР", "role_ru": "Мид-рэнж",
+    "id": "operator",
+    "name_ru": "ОПЕРАТОР",
+    "role_ru": "Мид-рэнж",
     "desc_ru": "Автомат и плазма. Контролирует дистанцию и толпу.",
-    "base_hp": 100.0, "speed": 5.0, "dmg_mult": 1.0,
-    "start_weapons": ["rifle", "plasma"],
-    "start_ammo": [{ "type": "bullets", "amount": 120 }, { "type": "cells", "amount": 60 }],
+    "base_hp": 100.0,
+    "speed": 5.0,
+    "dmg_mult": 1.0,
+    "start_weapons": [
+      "rifle",
+      "plasma"
+    ],
+    "start_ammo": [
+      {
+        "type": "bullets",
+        "amount": 120.0
+      },
+      {
+        "type": "cells",
+        "amount": 60.0
+      }
+    ],
     "specs": [
-      { "id": "sniper", "name_ru": "Снайпер",
+      {
+        "id": "sniper",
+        "name_ru": "Снайпер",
         "desc_ru": "+30% урона, стартовый гвоздемёт.",
-        "hp_bonus": -10.0, "speed_mult": 1.0, "dmg_mult": 1.3, "cd_mult": 1.0, "lifesteal": 0.0, "ammo_mult": 1.0,
-        "extra_weapon": "nailgun" },
-      { "id": "demolition", "name_ru": "Подрывник",
+        "hp_bonus": -10.0,
+        "speed_mult": 1.0,
+        "dmg_mult": 1.3,
+        "cd_mult": 1.0,
+        "lifesteal": 0.0,
+        "ammo_mult": 1.0,
+        "extra_weapon": "nailgun"
+      },
+      {
+        "id": "demolition",
+        "name_ru": "Подрывник",
         "desc_ru": "Стартовая ракетница и 8 ракет.",
-        "hp_bonus": 0.0, "speed_mult": 1.0, "dmg_mult": 1.0, "cd_mult": 1.0, "lifesteal": 0.0, "ammo_mult": 1.0,
-        "extra_weapon": "rocket" },
-      { "id": "technician", "name_ru": "Техник",
+        "hp_bonus": 0.0,
+        "speed_mult": 1.0,
+        "dmg_mult": 1.0,
+        "cd_mult": 1.0,
+        "lifesteal": 0.0,
+        "ammo_mult": 1.0,
+        "extra_weapon": "rocket"
+      },
+      {
+        "id": "technician",
+        "name_ru": "Техник",
         "desc_ru": "+50% максимум боезапаса, перезарядка -10%.",
-        "hp_bonus": 0.0, "speed_mult": 1.0, "dmg_mult": 1.0, "cd_mult": 0.9, "lifesteal": 0.0, "ammo_mult": 1.5 }
+        "hp_bonus": 0.0,
+        "speed_mult": 1.0,
+        "dmg_mult": 1.0,
+        "cd_mult": 0.9,
+        "lifesteal": 0.0,
+        "ammo_mult": 1.5
+      }
     ]
   }
 ]

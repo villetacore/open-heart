@@ -41,7 +41,7 @@ pub struct BlockDef {
     #[serde(default)] pub from:   Option<[f32; 3]>,   // ramp/stairs
     #[serde(default)] pub to:     Option<[f32; 3]>,
     #[serde(default)] pub width:  f32,                // ramp/stairs
-    #[serde(default)] pub steps:  u32,                // stairs
+    #[serde(default, deserialize_with = "crate::config::de_u32")] pub steps: u32, // stairs
     #[serde(default)] pub radius: f32,                // cylinder
     #[serde(default)] pub height: f32,                // cylinder
     #[serde(default)] pub tex:    Option<String>,

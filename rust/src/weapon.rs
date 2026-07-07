@@ -159,7 +159,7 @@ pub const FRAME_W: f32 = 84.0;
 #[derive(Deserialize)]
 struct FireRaw {
     kind: String,
-    #[serde(default)] pellets: u32,
+    #[serde(default)] pellets: f64,
     #[serde(default)] spread:  f32,
     #[serde(default)] speed:   f32,
     #[serde(default)] splash:  f32,
@@ -168,7 +168,7 @@ struct FireRaw {
 #[derive(Deserialize)]
 struct AmmoRaw {
     #[serde(rename = "type")] ty: String,
-    per_shot: u32,
+    per_shot: f64,
 }
 
 #[derive(Deserialize)]
@@ -184,16 +184,17 @@ struct WeaponRaw {
     auto:        bool,
     sheet:       String,
     frame_h:     f32,
-    idle_frames: Vec<usize>,
-    fire_frames: Vec<usize>,
+    idle_frames: Vec<f64>,
+    fire_frames: Vec<f64>,
     fire_fps:    f32,
 }
 
 impl WeaponRaw {
     fn into_def(self, id: WeaponId) -> Result<WeaponDef, String> {
+        let pellets = (self.fire.pellets as u32).max(1);
         let kind = match self.fire.kind.as_str() {
             "melee"      => FireKind::Melee,
-            "hitscan"    => FireKind::Hitscan { pellets: self.fire.pellets.max(1), spread: self.fire.spread },
+            "hitscan"    => FireKind::Hitscan { pellets, spread: self.fire.spread },
             "projectile" => FireKind::Projectile { speed: self.fire.speed, splash: self.fire.splash },
             other        => return Err(format!("weapon '{}': unknown fire kind '{}'", self.id, other)),
         };
@@ -202,7 +203,7 @@ impl WeaponRaw {
             Some(a) => {
                 let t = AmmoType::from_id(&a.ty)
                     .ok_or_else(|| format!("weapon '{}': unknown ammo '{}'", self.id, a.ty))?;
-                Some((t, a.per_shot))
+                Some((t, a.per_shot as u32))
             }
         };
         let dmg_type = match self.dmg_type.as_deref() {
@@ -213,8 +214,10 @@ impl WeaponRaw {
         Ok(WeaponDef {
             id, name_ru: self.name_ru, damage: self.damage, dmg_type, cooldown: self.cooldown,
             range: self.range, kind, ammo, auto: self.auto, sheet: self.sheet,
-            frame_h: self.frame_h, idle_frames: self.idle_frames,
-            fire_frames: self.fire_frames, fire_fps: self.fire_fps,
+            frame_h: self.frame_h,
+            idle_frames: self.idle_frames.into_iter().map(|f| f as usize).collect(),
+            fire_frames: self.fire_frames.into_iter().map(|f| f as usize).collect(),
+            fire_fps: self.fire_fps,
         })
     }
 }
@@ -274,6 +277,10 @@ pub struct Arsenal {
     pub owned:   [bool; 8],
     pub ammo:    [u32; 4],
     pub current: WeaponId,
+}
+
+impl Default for Arsenal {
+    fn default() -> Self { Self::new() }
 }
 
 impl Arsenal {

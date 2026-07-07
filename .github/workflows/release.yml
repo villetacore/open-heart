@@ -1,0 +1,424 @@
+name: Build & Release
+
+# Запускается при пуше тега v*.*.* или вручную через Actions → Run workflow
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Версия (например v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+
+permissions:
+  contents: write   # нужно для создания GitHub Release
+
+env:
+  GODOT_VER: 4.7-stable
+  GODOT_SEMVER: 4.7.0
+
+# ══════════════════════════════════════════════════════════════════════════════
+jobs:
+
+# ── Windows (x86_64) ──────────────────────────────────────────────────────────
+  build-windows:
+    name: "Windows x64"
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: Build Rust DLL
+        run: cargo build --release
+        working-directory: rust
+
+      - name: Copy DLL to bin/
+        run: Copy-Item rust\target\release\openheart.dll godot\bin\openheart.dll -Force
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        shell: pwsh
+        run: |
+          $base = "https://github.com/godotengine/godot/releases/download/$env:GODOT_VER"
+          Invoke-WebRequest "$base/Godot_v$($env:GODOT_VER)_win64.exe.zip" -OutFile godot.zip
+          Expand-Archive godot.zip -DestinationPath C:\Godot -Force
+          Rename-Item "C:\Godot\Godot_v$($env:GODOT_VER)_win64.exe" "C:\Godot\godot.exe" -ErrorAction SilentlyContinue
+
+          Invoke-WebRequest "$base/Godot_v$($env:GODOT_VER)_export_templates.tpz" -OutFile tpl.zip
+          $tplDir = "$env:APPDATA\Godot\export_templates\$($env:GODOT_SEMVER).stable"
+          New-Item -ItemType Directory -Force $tplDir | Out-Null
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [IO.Compression.ZipFile]::ExtractToDirectory("$PWD\tpl.zip", "$tplDir\_raw")
+          Move-Item "$tplDir\_raw\templates\*" $tplDir -Force
+          Remove-Item "$tplDir\_raw" -Recurse -Force
+
+      - name: Godot export (Windows)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist\windows | Out-Null
+          C:\Godot\godot.exe --headless --export-release "Windows Desktop" dist\windows\OpenHeart.exe 2>&1
+        working-directory: godot
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-windows
+          path: godot/dist/windows/
+          retention-days: 1
+
+# ── Linux (x86_64) ────────────────────────────────────────────────────────────
+  build-linux:
+    name: "Linux x64"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: Build Rust .so
+        run: cargo build --release
+        working-directory: rust
+
+      - name: Copy .so to bin/
+        run: cp rust/target/release/libopenheart.so godot/bin/
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
+          wget -q "$BASE/Godot_v${GODOT_VER}_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+          wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
+          TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
+          mkdir -p "$TPL"
+          unzip -q tpl.zip -d /tmp/gtpl
+          mv /tmp/gtpl/templates/* "$TPL/"
+
+      - name: Godot export (Linux)
+        run: |
+          mkdir -p dist/linux
+          godot --headless --export-release "Linux/X11" dist/linux/OpenHeart.x86_64
+        working-directory: godot
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-linux
+          path: godot/dist/linux/
+          retention-days: 1
+
+# ── macOS (Universal: x86_64 + arm64) ────────────────────────────────────────
+  build-macos:
+    name: "macOS Universal"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: Build Rust (fat binary)
+        run: |
+          cargo build --release --target x86_64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin
+          lipo -create \
+            target/x86_64-apple-darwin/release/libopenheart.dylib \
+            target/aarch64-apple-darwin/release/libopenheart.dylib \
+            -output ../godot/bin/libopenheart.dylib
+        working-directory: rust
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
+          wget -q "$BASE/Godot_v${GODOT_VER}_macos.universal.zip" -O godot.zip
+          unzip -q godot.zip -d /tmp/godot_app
+          sudo cp -r "/tmp/godot_app/Godot.app" /Applications/
+
+          wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
+          TPL="$HOME/Library/Application Support/Godot/export_templates/${GODOT_SEMVER}.stable"
+          mkdir -p "$TPL"
+          unzip -q tpl.zip -d /tmp/gtpl
+          mv /tmp/gtpl/templates/* "$TPL/"
+
+      - name: Godot export (macOS)
+        run: |
+          mkdir -p dist/macos
+          /Applications/Godot.app/Contents/MacOS/Godot --headless \
+            --export-release "macOS" dist/macos/OpenHeart.zip
+        working-directory: godot
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-macos
+          path: godot/dist/macos/
+          retention-days: 1
+
+# ── Android (arm64 + armeabi-v7a) ────────────────────────────────────────────
+  build-android:
+    name: "Android"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK + NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK r23c
+        run: sdkmanager "ndk;23.2.8568313"
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      - name: Build Rust (Android arm64 + armv7)
+        run: |
+          mkdir -p ../godot/bin/android
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/23.2.8568313"
+          cargo ndk \
+            -t arm64-v8a \
+            -t armeabi-v7a \
+            -o ../godot/bin/android \
+            build --release
+        working-directory: rust
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
+          wget -q "$BASE/Godot_v${GODOT_VER}_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+          wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
+          TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
+          mkdir -p "$TPL"
+          unzip -q tpl.zip -d /tmp/gtpl
+          mv /tmp/gtpl/templates/* "$TPL/"
+
+          # Укажем Godot где Android SDK
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.tres <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
+          EOF
+
+      - name: Godot export (Android APK)
+        run: |
+          mkdir -p dist/android
+          godot --headless --export-release "Android" dist/android/OpenHeart.apk
+        working-directory: godot
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-android
+          path: godot/dist/android/
+          retention-days: 1
+
+# ── Web / HTML5 (WASM + Emscripten) ──────────────────────────────────────────
+  build-web:
+    name: "Web (HTML5)"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Emscripten 3.1.39
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.39
+          actions-cache-folder: emsdk-cache
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-unknown-emscripten
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: Build Rust WASM
+        run: |
+          mkdir -p ../godot/bin/web
+          cargo build -Z build-std=std,panic_abort \
+            --release \
+            --target wasm32-unknown-emscripten
+          cp target/wasm32-unknown-emscripten/release/libopenheart.so \
+             ../godot/bin/web/libopenheart.wasm
+        working-directory: rust
+        env:
+          EMCC_CFLAGS: "-sSIDE_MODULE=2 -O2"
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
+          wget -q "$BASE/Godot_v${GODOT_VER}_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+          wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
+          TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
+          mkdir -p "$TPL"
+          unzip -q tpl.zip -d /tmp/gtpl
+          mv /tmp/gtpl/templates/* "$TPL/"
+
+      - name: Godot export (Web)
+        run: |
+          mkdir -p dist/web
+          godot --headless --export-release "Web" dist/web/index.html
+        working-directory: godot
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-web
+          path: godot/dist/web/
+          retention-days: 1
+
+# ── GitHub Release + itch.io ──────────────────────────────────────────────────
+  publish:
+    name: "Publish Release"
+    needs: [build-windows, build-linux, build-macos, build-android, build-web]
+    runs-on: ubuntu-24.04
+    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Определяем версию
+        id: ver
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [ -z "$TAG" ] || [ "$TAG" = "refs/heads/main" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Упаковываем артефакты
+        run: |
+          cd artifacts
+          # Windows — zip
+          zip -r ../OpenHeart-windows-x64.zip build-windows/ 2>/dev/null || true
+          # Linux — tar.gz
+          tar -czf ../OpenHeart-linux-x64.tar.gz build-linux/ 2>/dev/null || true
+          # macOS — уже zip внутри (Godot выдаёт .app.zip), просто переименуем
+          mv build-macos/OpenHeart.zip ../OpenHeart-macos-universal.zip 2>/dev/null || true
+          # Android — APK
+          cp build-android/OpenHeart.apk ../OpenHeart-android.apk 2>/dev/null || true
+          # Web — zip для itch.io
+          zip -r ../OpenHeart-web.zip build-web/ 2>/dev/null || true
+
+      - name: Создаём GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: "OpenHeart ${{ steps.ver.outputs.tag }}"
+          draft: false
+          prerelease: ${{ contains(steps.ver.outputs.tag, 'alpha') || contains(steps.ver.outputs.tag, 'beta') || contains(steps.ver.outputs.tag, 'rc') }}
+          generate_release_notes: true
+          files: |
+            OpenHeart-windows-x64.zip
+            OpenHeart-linux-x64.tar.gz
+            OpenHeart-macos-universal.zip
+            OpenHeart-android.apk
+            OpenHeart-web.zip
+
+      # ── itch.io (нужен секрет ITCH_IO_API_KEY и ITCH_IO_USER в Settings → Secrets) ──
+      - name: itch.io → Windows
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+        uses: KikimoraGames/itch-publish@v0.0.3
+        with:
+          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
+          gameData: artifacts/build-windows/
+          itchUsername: ${{ secrets.ITCH_IO_USER }}
+          itchGameId: openheart
+          buildChannel: windows
+          buildNumber: ${{ steps.ver.outputs.tag }}
+        env:
+          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
+          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}
+
+      - name: itch.io → Linux
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+        uses: KikimoraGames/itch-publish@v0.0.3
+        with:
+          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
+          gameData: artifacts/build-linux/
+          itchUsername: ${{ secrets.ITCH_IO_USER }}
+          itchGameId: openheart
+          buildChannel: linux
+          buildNumber: ${{ steps.ver.outputs.tag }}
+        env:
+          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
+          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}
+
+      - name: itch.io → macOS
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+        uses: KikimoraGames/itch-publish@v0.0.3
+        with:
+          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
+          gameData: artifacts/build-macos/
+          itchUsername: ${{ secrets.ITCH_IO_USER }}
+          itchGameId: openheart
+          buildChannel: macos
+          buildNumber: ${{ steps.ver.outputs.tag }}
+        env:
+          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
+          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}
+
+      - name: itch.io → Web (HTML5)
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+        uses: KikimoraGames/itch-publish@v0.0.3
+        with:
+          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
+          gameData: artifacts/build-web/
+          itchUsername: ${{ secrets.ITCH_IO_USER }}
+          itchGameId: openheart
+          buildChannel: html5
+          buildNumber: ${{ steps.ver.outputs.tag }}
+        env:
+          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
+          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}
+
+      - name: itch.io → Android
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+        uses: KikimoraGames/itch-publish@v0.0.3
+        with:
+          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
+          gameData: OpenHeart-android.apk
+          itchUsername: ${{ secrets.ITCH_IO_USER }}
+          itchGameId: openheart
+          buildChannel: android
+          buildNumber: ${{ steps.ver.outputs.tag }}
+        env:
+          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
+          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}

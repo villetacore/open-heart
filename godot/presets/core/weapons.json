@@ -14,15 +14,15 @@
     "sheet": "res://assets/sprites/weapons_fp/wf_sword.png",
     "frame_h": 59.0,
     "idle_frames": [
-      0
+      0.0
     ],
     "fire_frames": [
-      1,
-      2,
-      3,
-      4,
-      5,
-      6
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0
     ],
     "fire_fps": 16.0
   },
@@ -41,14 +41,14 @@
     "sheet": "res://assets/sprites/weapons_fp/wf_chainsaw.png",
     "frame_h": 70.0,
     "idle_frames": [
-      0,
-      1
+      0.0,
+      1.0
     ],
     "fire_frames": [
-      4,
-      5,
-      6,
-      7
+      4.0,
+      5.0,
+      6.0,
+      7.0
     ],
     "fire_fps": 14.0
   },
@@ -61,23 +61,23 @@
     "range": 32.0,
     "fire": {
       "kind": "hitscan",
-      "pellets": 1,
+      "pellets": 1.0,
       "spread": 0.012
     },
     "ammo": {
       "type": "bullets",
-      "per_shot": 1
+      "per_shot": 1.0
     },
     "auto": false,
     "sheet": "res://assets/sprites/weapons_fp/wf_pistol.png",
     "frame_h": 86.0,
     "idle_frames": [
-      0
+      0.0
     ],
     "fire_frames": [
-      6,
-      7,
-      2
+      6.0,
+      7.0,
+      2.0
     ],
     "fire_fps": 14.0
   },
@@ -90,24 +90,24 @@
     "range": 16.0,
     "fire": {
       "kind": "hitscan",
-      "pellets": 7,
+      "pellets": 7.0,
       "spread": 0.09
     },
     "ammo": {
       "type": "shells",
-      "per_shot": 1
+      "per_shot": 1.0
     },
     "auto": false,
     "sheet": "res://assets/sprites/weapons_fp/wf_shotgun.png",
     "frame_h": 95.0,
     "idle_frames": [
-      0
+      0.0
     ],
     "fire_frames": [
-      6,
-      7,
-      3,
-      4
+      6.0,
+      7.0,
+      3.0,
+      4.0
     ],
     "fire_fps": 10.0
   },
@@ -120,22 +120,22 @@
     "range": 38.0,
     "fire": {
       "kind": "hitscan",
-      "pellets": 1,
+      "pellets": 1.0,
       "spread": 0.03
     },
     "ammo": {
       "type": "bullets",
-      "per_shot": 1
+      "per_shot": 1.0
     },
     "auto": true,
     "sheet": "res://assets/sprites/weapons_fp/wf_rifle.png",
     "frame_h": 91.0,
     "idle_frames": [
-      0
+      0.0
     ],
     "fire_frames": [
-      6,
-      7
+      6.0,
+      7.0
     ],
     "fire_fps": 18.0
   },
@@ -148,22 +148,22 @@
     "range": 30.0,
     "fire": {
       "kind": "hitscan",
-      "pellets": 1,
+      "pellets": 1.0,
       "spread": 0.006
     },
     "ammo": {
       "type": "bullets",
-      "per_shot": 2
+      "per_shot": 2.0
     },
     "auto": true,
     "sheet": "res://assets/sprites/weapons_fp/wf_nailgun.png",
     "frame_h": 80.0,
     "idle_frames": [
-      0
+      0.0
     ],
     "fire_frames": [
-      6,
-      7
+      6.0,
+      7.0
     ],
     "fire_fps": 12.0
   },
@@ -181,18 +181,18 @@
     },
     "ammo": {
       "type": "cells",
-      "per_shot": 1
+      "per_shot": 1.0
     },
     "auto": true,
     "sheet": "res://assets/sprites/weapons_fp/wf_plasma.png",
     "frame_h": 65.0,
     "idle_frames": [
-      0
+      0.0
     ],
     "fire_frames": [
-      5,
-      6,
-      7
+      5.0,
+      6.0,
+      7.0
     ],
     "fire_fps": 16.0
   },
@@ -210,17 +210,17 @@
     },
     "ammo": {
       "type": "rockets",
-      "per_shot": 1
+      "per_shot": 1.0
     },
     "auto": false,
     "sheet": "res://assets/sprites/weapons_fp/wf_rocket.png",
     "frame_h": 82.0,
     "idle_frames": [
-      0
+      0.0
     ],
     "fire_frames": [
-      6,
-      7
+      6.0,
+      7.0
     ],
     "fire_fps": 10.0
   }

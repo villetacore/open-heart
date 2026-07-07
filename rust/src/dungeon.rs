@@ -105,6 +105,7 @@ fn cell_at(i: i32, j: i32, y: f32) -> Vector3 {
 
 // ── Вспомогательные функции carve ────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)]
 fn carve_cell(floor: &mut [bool], fh: &mut [f32], cwh: &mut [f32],
               is_room: &[bool], i: i32, j: i32, h: f32, wh: f32) {
     if i < 1 || j < 1 || i >= GRID as i32 - 1 || j >= GRID as i32 - 1 { return; }
@@ -466,20 +467,37 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache) -> DungeonPlan {
             continue;
         }
 
-        let n = 1 + rng.range(0, 1 + (depth.min(5) as i32) / 2);
-        for _ in 0..n {
+        // Враги: 2–5 на комнату (растёт с глубиной)
+        let n = 2 + rng.range(0, 2 + (depth.min(6) as i32));
+        for idx in 0..n {
             let kind = if depth >= 2 { *rng.pick(&pool_late) } else { *rng.pick(&pool_early) };
-            let px = r.x + 1 + rng.range(0, (r.w - 2).max(0));
-            let pz = r.z + 1 + rng.range(0, (r.h - 2).max(0));
-            enemies.push(EnemySpawn { kind: kind.into(), pos: cell_at(px, pz, fy), mult, is_boss: false });
+            let px = r.x + 1 + rng.range(0, (r.w - 2).max(1));
+            let pz = r.z + 1 + rng.range(0, (r.h - 2).max(1));
+            // Небольшой разброс по комнате чтобы не стояли в кучке
+            let ox = if idx % 2 == 0 { 0 } else { rng.range(-1, 1) };
+            let oz = if idx % 3 == 0 { 0 } else { rng.range(-1, 1) };
+            enemies.push(EnemySpawn {
+                kind: kind.into(),
+                pos: cell_at((px + ox).clamp(r.x + 1, r.x + r.w - 2),
+                             (pz + oz).clamp(r.z + 1, r.z + r.h - 2), fy),
+                mult, is_boss: false,
+            });
         }
-        if rng.chance(0.55) {
+        // Патроны: почти гарантированно в каждой комнате
+        if rng.chance(0.85) {
             let t = AmmoType::from_idx(rng.below(4) as usize);
             ammo.push((t, t.pack_size(), cell_at(r.x + 1, r.z + r.h - 2, fy)));
         }
-        if rng.chance(0.4) { items.push(("medkit".into(), cell_at(r.x + r.w - 2, r.z + 1, fy))); }
-        if rng.chance(0.25) { items.push(("gold_coin".into(), cell_at(cx, cz + 1, fy))); }
-        if rng.chance(0.12) { items.push(("potion".into(), cell_at(cx - 1, cz, fy))); }
+        // Второй вид патронов иногда
+        if rng.chance(0.40) {
+            let t = AmmoType::from_idx(rng.below(4) as usize);
+            ammo.push((t, t.pack_size(), cell_at(r.x + r.w - 2, r.z + 1, fy)));
+        }
+        if rng.chance(0.65) { items.push(("medkit".into(),    cell_at(r.x + r.w - 2, r.z + 1, fy))); }
+        if rng.chance(0.50) { items.push(("gold_coin".into(), cell_at(cx, cz + 1, fy))); }
+        if rng.chance(0.30) { items.push(("gold_coin".into(), cell_at(cx - 1, cz - 1, fy))); }
+        if rng.chance(0.25) { items.push(("potion".into(),    cell_at(cx - 1, cz, fy))); }
+        if rng.chance(0.15) { items.push(("heart_1up".into(), cell_at(cx + 1, cz - 1, fy))); }
     }
 
     // Оружейный тайник

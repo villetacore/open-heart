@@ -16,6 +16,7 @@ fn cn(tx: &str, eff: Vec<Effect>, next: &str) -> Choice {
 fn cr(tx: &str, st: crate::character::StatKind, min: i32, eff: Vec<Effect>) -> Choice {
     Choice::req(tx, st, min, eff)
 }
+#[allow(dead_code)]
 fn crn(tx: &str, st: crate::character::StatKind, min: i32, eff: Vec<Effect>, next: &str) -> Choice {
     let mut ch = Choice::req(tx, st, min, eff);
     ch.next = Some(next.to_string());

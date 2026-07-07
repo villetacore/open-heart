@@ -237,7 +237,7 @@ mod preset_tests {
 pub fn discover_presets() -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for root in ["res://presets", "user://presets"] {
-        if let Some(mut dir) = DirAccess::open(root) {
+        if let Some(dir) = DirAccess::open(root) {
             let dirs = dir.get_directories();
             for i in 0..dirs.len() {
                 let name = dirs.get(i).map(|s| s.to_string()).unwrap_or_default();

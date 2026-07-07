@@ -179,6 +179,68 @@ mod preset_tests {
                 }
             }
 
+            // генерация данжей: парс + ссылки на врагов/предметы/оружие + текстуры тем
+            if let Some(t) = read(&preset, "dungeon.json") {
+                let d: crate::config::DungeonCfg = serde_json::from_str(&t)
+                    .unwrap_or_else(|e| panic!("{name}/dungeon.json: {e}"));
+                let assets = Path::new(env!("CARGO_MANIFEST_DIR")).join("../godot");
+                for th in &d.themes {
+                    for tex in [&th.wall, &th.accent, &th.floor, &th.ceil, &th.lava] {
+                        let res = if tex.starts_with("res://") { tex.clone() }
+                                  else { crate::map::tex_path(tex) };
+                        let fs = assets.join(res.trim_start_matches("res://"));
+                        assert!(fs.exists(),
+                            "{name}/dungeon.json: тема '{}' — текстуры {} нет ({})",
+                            th.name_ru, tex, fs.display());
+                    }
+                }
+                for p in &d.pools {
+                    for e in &p.enemies {
+                        assert!(enemy_ids.contains(e.as_str()),
+                            "{name}/dungeon.json: пул min_depth={} — враг '{e}' не найден", p.min_depth);
+                    }
+                }
+                assert!(enemy_ids.contains(d.settings.boss.as_str()),
+                    "{name}/dungeon.json: босс '{}' не найден во врагах", d.settings.boss);
+                for g in &d.settings.boss_guards {
+                    assert!(enemy_ids.contains(g.as_str()),
+                        "{name}/dungeon.json: страж босса '{g}' не найден");
+                }
+                for it in &d.settings.boss_items {
+                    assert!(item_ids.contains(it.as_str()) || special_items.contains(it.as_str()),
+                        "{name}/dungeon.json: награда босса '{it}' не найдена в предметах");
+                }
+                for w in &d.settings.weapon_cache {
+                    assert!(crate::weapon::WeaponId::from_id(w).is_some(),
+                        "{name}/dungeon.json: неизвестное оружие '{w}' в weapon_cache");
+                }
+            }
+
+            // лут: парс + ссылки + сумма шансов дропа
+            if let Some(t) = read(&preset, "loot.json") {
+                let l: crate::config::LootCfg = serde_json::from_str(&t)
+                    .unwrap_or_else(|e| panic!("{name}/loot.json: {e}"));
+                for e in &l.room_items {
+                    assert!(item_ids.contains(e.id.as_str()) || special_items.contains(e.id.as_str()),
+                        "{name}/loot.json: room_items '{}' не найден в предметах", e.id);
+                }
+                let mut sum = 0.0f32;
+                for d in &l.kill_drops {
+                    sum += d.chance;
+                    match d.kind.as_str() {
+                        "ammo" => {}
+                        "item" => {
+                            let id = d.id.as_deref().unwrap_or("");
+                            assert!(item_ids.contains(id) || special_items.contains(id),
+                                "{name}/loot.json: kill_drops item '{id}' не найден");
+                        }
+                        other => panic!("{name}/loot.json: kill_drops неизвестный kind '{other}'"),
+                    }
+                }
+                assert!(sum <= 1.0 + f32::EPSILON,
+                    "{name}/loot.json: сумма chance у kill_drops {sum} > 1.0");
+            }
+
             // диалоги: парс + конвертация + разрешимость ссылок next / npc.scene
             let dialogue_ids: HashSet<String> = match read(&preset, "dialogues.json") {
                 None => HashSet::new(),

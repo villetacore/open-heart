@@ -1,0 +1,17 @@
+{
+  "room_items": [
+    { "id": "medkit",    "chance": 0.65 },
+    { "id": "gold_coin", "chance": 0.50 },
+    { "id": "gold_coin", "chance": 0.30 },
+    { "id": "potion",    "chance": 0.25 },
+    { "id": "heart_1up", "chance": 0.15 }
+  ],
+  "kill_drops": [
+    { "kind": "ammo",                     "chance": 0.30 },
+    { "kind": "item", "id": "medkit",    "chance": 0.14 },
+    { "kind": "item", "id": "heart_1up", "chance": 0.03 }
+  ],
+  "settings": {
+    "room_ammo_chances": [0.85, 0.40]
+  }
+}

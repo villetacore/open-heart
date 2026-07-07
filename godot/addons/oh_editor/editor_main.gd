@@ -114,6 +114,55 @@ const SCHEMAS := {
 			{"key": "version", "type": "int"},
 		],
 	},
+	"Данж: темы": {
+		"file": "dungeon.json", "root": ["themes"],
+		"fields": [
+			{"key": "name_ru", "type": "str"},
+			{"key": "wall", "type": "str"}, {"key": "accent", "type": "str"},
+			{"key": "floor", "type": "str"}, {"key": "ceil", "type": "str"},
+			{"key": "lava", "type": "str"},
+			{"key": "light", "type": "color"},
+		],
+	},
+	"Данж: пулы врагов": {
+		"file": "dungeon.json", "root": ["pools"],
+		"fields": [
+			{"key": "min_depth", "type": "int"},
+			{"key": "enemies", "type": "json", "default": []},
+		],
+	},
+	"Данж: настройки": {
+		"file": "dungeon.json", "root": ["settings"], "single": true,
+		"fields": [
+			{"key": "boss", "type": "dyn_enum", "source": "enemies"},
+			{"key": "boss_mult", "type": "float"},
+			{"key": "boss_guards", "type": "json", "default": []},
+			{"key": "boss_items", "type": "json", "default": []},
+			{"key": "mult_per_depth", "type": "float"},
+			{"key": "weapon_cache", "type": "json", "default": []},
+		],
+	},
+	"Лут: в комнатах": {
+		"file": "loot.json", "root": ["room_items"],
+		"fields": [
+			{"key": "id", "type": "dyn_enum", "source": "loot_items"},
+			{"key": "chance", "type": "float"},
+		],
+	},
+	"Лут: дроп с врагов": {
+		"file": "loot.json", "root": ["kill_drops"],
+		"fields": [
+			{"key": "kind", "type": "enum", "options": ["ammo", "item"]},
+			{"key": "id", "type": "dyn_enum", "source": "loot_items", "nullable": true},
+			{"key": "chance", "type": "float"},
+		],
+	},
+	"Лут: настройки": {
+		"file": "loot.json", "root": ["settings"], "single": true,
+		"fields": [
+			{"key": "room_ammo_chances", "type": "json", "default": []},
+		],
+	},
 	"Карта: блоки": {
 		"file": "maps/*", "root": ["blocks"],
 		"fields": [
@@ -1082,8 +1131,14 @@ func _cached_file(rel: String, default_root):
 	if not file_cache.has(rel):
 		var parsed = _read_json("%s/%s" % [_preset_root(), rel])
 		if parsed == null:
+			# У dungeon/loot «нет файла» = встроенные core-настройки: стартуем
+			# от ПОЛНОЙ core-копии, чтобы правка одной секции не сохранила
+			# усечённый файл (пустые kill_drops = «дропа нет вообще»).
+			if rel == "dungeon.json" or rel == "loot.json":
+				parsed = _read_json("res://presets/core/%s" % rel)
 			synthetic[rel] = true
-			parsed = default_root
+			if parsed == null:
+				parsed = default_root
 		file_cache[rel] = parsed
 	return file_cache[rel]
 
@@ -1096,9 +1151,13 @@ func _records() -> Array:
 	var is_single: bool = schema.get("single", false)
 	var node = _cached_file(_schema_file(),
 		{} if (is_single or not (schema["root"] as Array).is_empty()) else [])
-	if is_single:   # preset.json — одна запись-словарь
-		return [node] if typeof(node) == TYPE_DICTIONARY else []
 	var root: Array = schema["root"]
+	if is_single:   # одна запись-словарь (preset.json, dungeon.settings, …)
+		for k in root:
+			if typeof(node) != TYPE_DICTIONARY: return []
+			if not node.has(k): node[k] = {}
+			node = node[k]
+		return [node] if typeof(node) == TYPE_DICTIONARY else []
 	for i in root.size():
 		if typeof(node) != TYPE_DICTIONARY: return []
 		# недостающую секцию создаём в кэше — иначе «Добавить» пишет в пустоту
@@ -1278,6 +1337,10 @@ func _dyn_options(source: String) -> Array:
 			return out
 		"quests":  return _ids_of(_cached_file("quests.json", []), "")
 		"weapons": return _ids_of(_cached_file("weapons.json", []), "")
+		"loot_items":   # предметы + спец-пикапы для таблиц лута
+			var out := _dyn_options("items")
+			out.append("heart_1up")
+			return out
 		"scenes":    # "story" (динамика story.rs) + сцены dialogues.json
 			var out: Array = ["story"]
 			out.append_array(_ids_of(_cached_file("dialogues.json", []), ""))
@@ -1324,7 +1387,16 @@ func _on_add() -> void:
 				var dv = f.get("default")
 				blank[f["key"]] = dv.duplicate(true) \
 					if typeof(dv) == TYPE_ARRAY or typeof(dv) == TYPE_DICTIONARY else dv
-	if blank.has("id"): blank["id"] = "new_%d" % (recs.size()+1)
+	# id-«уникализатор» только для свободных id; dyn_enum-id (ссылки на
+	# существующие сущности, напр. лут) не затирать значением "new_N"
+	if blank.has("id"):
+		var id_is_ref := false
+		for f2 in _schema()["fields"]:
+			if f2["key"] == "id" and f2["type"] == "dyn_enum":
+				id_is_ref = true
+				break
+		if not id_is_ref:
+			blank["id"] = "new_%d" % (recs.size()+1)
 	recs.append(blank); dirty = true; _touch(_schema_file())
 	search_edit.text = ""   # новая запись не должна прятаться за фильтром
 	_refresh_recs(recs.size()-1)
@@ -1386,6 +1458,40 @@ func _validate_preset() -> Array:
 				"collect":
 					if not (item_ids.has(target) or target=="heart_1up"):
 						warnings.append("квест '%s': цель collect '%s' не найдена в предметах" % [qid, target])
+
+	var dcfg = _cached_file("dungeon.json", {})
+	if typeof(dcfg)==TYPE_DICTIONARY:
+		var pools = dcfg.get("pools", [])
+		if typeof(pools)==TYPE_ARRAY:
+			for p in pools:
+				if typeof(p)!=TYPE_DICTIONARY: continue
+				var ens = p.get("enemies", [])
+				if typeof(ens)!=TYPE_ARRAY: continue
+				for en in ens:
+					if not enemy_ids.has(str(en)):
+						warnings.append("dungeon.json: в пуле враг '%s' не найден" % en)
+		var ds = dcfg.get("settings", {})
+		if typeof(ds)==TYPE_DICTIONARY:
+			var boss := str(ds.get("boss", ""))
+			if not boss.is_empty() and not enemy_ids.has(boss):
+				warnings.append("dungeon.json: босс '%s' не найден во врагах" % boss)
+
+	var lcfg = _cached_file("loot.json", {})
+	if typeof(lcfg)==TYPE_DICTIONARY:
+		var ri = lcfg.get("room_items", [])
+		if typeof(ri)==TYPE_ARRAY:
+			for e in ri:
+				if typeof(e)==TYPE_DICTIONARY:
+					var iid := str(e.get("id", ""))
+					if not (item_ids.has(iid) or iid=="heart_1up"):
+						warnings.append("loot.json: room_items '%s' не найден в предметах" % iid)
+		var kd = lcfg.get("kill_drops", [])
+		if typeof(kd)==TYPE_ARRAY:
+			for e in kd:
+				if typeof(e)==TYPE_DICTIONARY and str(e.get("kind",""))=="item":
+					var did = e.get("id")
+					if did != null and not (item_ids.has(str(did)) or str(did)=="heart_1up"):
+						warnings.append("loot.json: kill_drops '%s' не найден в предметах" % did)
 
 	var npcs = _cached_file("npcs.json", [])
 	if typeof(npcs)==TYPE_ARRAY:

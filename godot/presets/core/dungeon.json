@@ -1,0 +1,34 @@
+{
+  "themes": [
+    {
+      "name_ru": "Катакомбы Сердец",
+      "wall": "dtile_00", "accent": "dtile_06", "floor": "dtile_02",
+      "ceil": "dtile_65", "lava": "dtile_74",
+      "light": [1.0, 0.45, 0.72]
+    },
+    {
+      "name_ru": "Неоновый Подвал",
+      "wall": "dtile_05", "accent": "dtile_33", "floor": "dtile_19",
+      "ceil": "dtile_72", "lava": "dtile_21",
+      "light": [0.62, 0.38, 0.95]
+    },
+    {
+      "name_ru": "Алтарь Боли",
+      "wall": "dtile_30", "accent": "dtile_63", "floor": "dtile_58",
+      "ceil": "dtile_68", "lava": "liquid_red",
+      "light": [0.95, 0.18, 0.22]
+    }
+  ],
+  "pools": [
+    { "min_depth": 1, "enemies": ["grunt", "fast", "cultist"] },
+    { "min_depth": 2, "enemies": ["grunt", "fast", "cultist", "heavy", "sniper"] }
+  ],
+  "settings": {
+    "boss": "brute",
+    "boss_mult": 1.25,
+    "boss_guards": ["cultist", "cultist"],
+    "boss_items": ["ancient_ruby", "gold_stack", "heart_1up"],
+    "mult_per_depth": 0.18,
+    "weapon_cache": ["shotgun", "rifle", "nailgun", "plasma", "rocket"]
+  }
+}

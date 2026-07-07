@@ -56,6 +56,8 @@ OpenHeart редактируется не правкой движка, а соб
 | NPC / Квесты | `npcs.json` / `quests.json` | там же |
 | Диалоги | `dialogues.json` | [dialogues](DATA_FORMATS.md#dialoguesjson--сцены-диалогов-массив) |
 | Пресет (манифест) | `preset.json` | [preset](DATA_FORMATS.md#presetjson--манифест-пресета) |
+| Данж: темы / пулы врагов / настройки | `dungeon.json` | [dungeon](DATA_FORMATS.md#dungeonjson--генерация-данжей) |
+| Лут: в комнатах / дроп с врагов / настройки | `loot.json` | [loot](DATA_FORMATS.md#lootjson--таблицы-лута) |
 | Карта: блоки/здания/свет/пропсы/флэты/глоу-каналы/спавны ×4 | `maps/<выбранная>` (соотв. секции) | [maps](DATA_FORMATS.md#mapsjson--карты-мира) |
 
 ## Пресеты: сделать «свою игру»

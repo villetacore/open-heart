@@ -142,7 +142,7 @@ pub fn load_map(preset_base: &str, id: &str) -> Option<MapDef> {
 // ── Утилиты текстур ───────────────────────────────────────────────────────────
 
 /// Текстуры карты ищутся по короткому имени в стандартных папках.
-fn tex_path(name: &str) -> String {
+pub(crate) fn tex_path(name: &str) -> String {
     if name.contains('/') {
         return format!("res://assets/{name}.png");
     }

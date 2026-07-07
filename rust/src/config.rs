@@ -134,6 +134,91 @@ pub struct QuestCfg {
     #[serde(default, deserialize_with = "de_i32")] pub reward_gold: i32,
 }
 
+// ── Данж (dungeon.json): темы, пулы врагов, настройки ────────────────────────
+
+/// Тема данжа. Текстуры — короткими именами (dtile_* → textures/dungeon,
+/// см. map::tex_path) или полными res://-путями.
+#[derive(Debug, Deserialize, Clone)]
+pub struct ThemeCfg {
+    pub name_ru: String,
+    pub wall:    String,
+    pub accent:  String,
+    pub floor:   String,
+    pub ceil:    String,
+    pub lava:    String,
+    pub light:   [f32; 3],
+}
+
+/// Пул врагов: действует с глубины min_depth (берётся самый глубокий из подходящих).
+#[derive(Debug, Deserialize, Clone)]
+pub struct PoolCfg {
+    #[serde(deserialize_with = "de_u32")]
+    pub min_depth: u32,
+    pub enemies:   Vec<String>,
+}
+
+fn d_boss()       -> String { "brute".into() }
+fn d_boss_mult()  -> f32 { 1.25 }
+fn d_mult_depth() -> f32 { 0.18 }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct DungeonSettings {
+    /// id босса (enemies.json)
+    #[serde(default = "d_boss")]       pub boss:           String,
+    #[serde(default = "d_boss_mult")]  pub boss_mult:      f32,
+    /// свита босса (спавнится по бокам алтаря)
+    #[serde(default)]                  pub boss_guards:    Vec<String>,
+    /// награда в боссовой комнате (id предметов)
+    #[serde(default)]                  pub boss_items:     Vec<String>,
+    /// прирост множителя hp/урона/XP за глубину
+    #[serde(default = "d_mult_depth")] pub mult_per_depth: f32,
+    /// пул оружейного тайника (id оружия)
+    #[serde(default)]                  pub weapon_cache:   Vec<String>,
+}
+
+impl Default for DungeonSettings {
+    fn default() -> Self {
+        serde_json::from_str("{}").expect("DungeonSettings defaults")
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct DungeonCfg {
+    #[serde(default)] pub themes:   Vec<ThemeCfg>,
+    #[serde(default)] pub pools:    Vec<PoolCfg>,
+    #[serde(default)] pub settings: DungeonSettings,
+}
+
+// ── Лут (loot.json) ───────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct LootEntry {
+    pub id:     String,
+    pub chance: f32,
+}
+
+/// Дроп с убитого врага. Записи проверяются по порядку ОДНИМ броском
+/// (кумулятивно): сумма chance ≤ 1.0, остаток — «ничего».
+#[derive(Debug, Deserialize, Clone)]
+pub struct KillDrop {
+    pub kind:   String,           // "ammo" (случайный тип) | "item"
+    #[serde(default)] pub id: Option<String>,   // id предмета для kind=item
+    pub chance: f32,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct LootSettings {
+    /// Шансы точек патронов в комнате данжа (каждая — своя позиция).
+    #[serde(default)] pub room_ammo_chances: Vec<f32>,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct LootCfg {
+    #[serde(default)] pub room_items: Vec<LootEntry>,
+    #[serde(default)] pub kill_drops: Vec<KillDrop>,
+    #[serde(default)] pub settings:   LootSettings,
+}
+
 #[derive(Deserialize, Default)] pub(crate) struct EnemiesFile { pub(crate) enemies: Vec<EnemyCfg> }
 #[derive(Deserialize, Default)] pub(crate) struct ItemsFile   { pub(crate) items:   Vec<ItemCfg>  }
 
@@ -147,6 +232,10 @@ pub struct GameConfig {
     pub quests:  Vec<QuestCfg>,
     /// Data-driven сцены диалогов (dialogues.json); приоритетнее story.rs.
     pub dialogues: Vec<crate::dialogue::Scene>,
+    /// Генерация данжей (dungeon.json); нет файла → встроенные настройки core.
+    pub dungeon: DungeonCfg,
+    /// Таблицы лута (loot.json); нет файла → встроенные настройки core.
+    pub loot:    LootCfg,
     /// npcs.json существует (пустой список ≠ отсутствие файла: пустой — это
     /// осознанное «в этом пресете NPC нет», отсутствие — legacy-фолбэк).
     pub npcs_file_present: bool,
@@ -164,6 +253,8 @@ const EMBEDDED_ITEMS:   &str = include_str!("../../godot/presets/core/items.json
 const EMBEDDED_LEVEL:   &str = include_str!("../../godot/presets/core/level.json");
 const EMBEDDED_NPCS:    &str = include_str!("../../godot/presets/core/npcs.json");
 const EMBEDDED_QUESTS:  &str = include_str!("../../godot/presets/core/quests.json");
+const EMBEDDED_DUNGEON: &str = include_str!("../../godot/presets/core/dungeon.json");
+const EMBEDDED_LOOT:    &str = include_str!("../../godot/presets/core/loot.json");
 
 /// Распарсить текст конфига; при ошибке — громкое предупреждение и встроенная копия.
 fn parse_loud<T: serde::de::DeserializeOwned + Default>(text: &str, file: &str, embedded: &str) -> T {
@@ -187,6 +278,9 @@ pub(crate) fn embedded_configs_parse_for_test() {
     serde_json::from_str::<LevelCfg>(EMBEDDED_LEVEL).expect("embedded level.json");
     serde_json::from_str::<Vec<NpcCfg>>(EMBEDDED_NPCS).expect("embedded npcs.json");
     serde_json::from_str::<Vec<QuestCfg>>(EMBEDDED_QUESTS).expect("embedded quests.json");
+    let d = serde_json::from_str::<DungeonCfg>(EMBEDDED_DUNGEON).expect("embedded dungeon.json");
+    assert!(!d.themes.is_empty() && !d.pools.is_empty(), "embedded dungeon.json: пустые themes/pools");
+    serde_json::from_str::<LootCfg>(EMBEDDED_LOOT).expect("embedded loot.json");
 }
 
 impl GameConfig {
@@ -233,6 +327,24 @@ impl GameConfig {
             None => Vec::new(),
         };
 
+        // генерация данжей и лут: нет файла — молча встроенные core-настройки
+        // (данжи должны работать в любом пресете); битый файл — предупреждение.
+        let mut dungeon = match read(&format!("{base}/dungeon.json")) {
+            Some(t) => parse_loud::<DungeonCfg>(&t, "dungeon.json", EMBEDDED_DUNGEON),
+            None => serde_json::from_str(EMBEDDED_DUNGEON).unwrap_or_default(),
+        };
+        // семантические минимумы: без тем/пулов генератор не сможет работать
+        if dungeon.themes.is_empty() || dungeon.pools.is_empty() {
+            godot_warn!("[preset] dungeon.json: пустые themes/pools — использую встроенные core");
+            let emb: DungeonCfg = serde_json::from_str(EMBEDDED_DUNGEON).unwrap_or_default();
+            if dungeon.themes.is_empty() { dungeon.themes = emb.themes; }
+            if dungeon.pools.is_empty()  { dungeon.pools  = emb.pools; }
+        }
+        let loot = match read(&format!("{base}/loot.json")) {
+            Some(t) => parse_loud::<LootCfg>(&t, "loot.json", EMBEDDED_LOOT),
+            None => serde_json::from_str(EMBEDDED_LOOT).unwrap_or_default(),
+        };
+
         // диалоги: отсутствие файла — норма (story.rs остаётся встроенным контентом)
         let dialogues = match read(&format!("{base}/dialogues.json")) {
             None => Vec::new(),
@@ -250,7 +362,7 @@ impl GameConfig {
             },
         };
 
-        Self { enemies, items, level, npcs, quests, dialogues, npcs_file_present }
+        Self { enemies, items, level, npcs, quests, dialogues, dungeon, loot, npcs_file_present }
     }
 
     /// JSON-сцена диалога по id (приоритетнее story.rs — см. game.rs).

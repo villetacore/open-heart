@@ -6,6 +6,7 @@
 use godot::prelude::*;
 use godot::classes::Node3D;
 
+use crate::config::GameConfig;
 use crate::gfx::{make_box, make_glow_slab, make_light, make_billboard, Rng, TexCache};
 use crate::weapon::{AmmoType, WeaponId};
 
@@ -13,47 +14,37 @@ pub const CELL: f32   = 3.0;
 pub const WALL_H: f32 = 3.4;   // высота стен по умолчанию
 pub const GRID: usize = 44;
 
-// ── Тема данжа ────────────────────────────────────────────────────────────────
+// ── Тема данжа (разрешённая из dungeon.json пресета) ─────────────────────────
 
 struct Theme {
-    name:    &'static str,
-    wall:    &'static str,
-    accent:  &'static str,
-    floor:   &'static str,
-    ceil:    &'static str,
-    lava:    &'static str,
+    name:    String,
+    wall:    String,
+    accent:  String,
+    floor:   String,
+    ceil:    String,
+    lava:    String,
     light:   Color,
 }
 
-const THEMES: [Theme; 3] = [
-    Theme {
-        name: "Катакомбы Сердец",
-        wall:   "res://assets/textures/dungeon/dtile_00.png",
-        accent: "res://assets/textures/dungeon/dtile_06.png",
-        floor:  "res://assets/textures/dungeon/dtile_02.png",
-        ceil:   "res://assets/textures/dungeon/dtile_65.png",
-        lava:   "res://assets/textures/dungeon/dtile_74.png",
-        light:  Color::from_rgba(1.0, 0.45, 0.72, 1.0),
-    },
-    Theme {
-        name: "Неоновый Подвал",
-        wall:   "res://assets/textures/dungeon/dtile_05.png",
-        accent: "res://assets/textures/dungeon/dtile_33.png",
-        floor:  "res://assets/textures/dungeon/dtile_19.png",
-        ceil:   "res://assets/textures/dungeon/dtile_72.png",
-        lava:   "res://assets/textures/dungeon/dtile_21.png",
-        light:  Color::from_rgba(0.62, 0.38, 0.95, 1.0),
-    },
-    Theme {
-        name: "Алтарь Боли",
-        wall:   "res://assets/textures/dungeon/dtile_30.png",
-        accent: "res://assets/textures/dungeon/dtile_63.png",
-        floor:  "res://assets/textures/dungeon/dtile_58.png",
-        ceil:   "res://assets/textures/dungeon/dtile_68.png",
-        lava:   "res://assets/textures/dungeon/liquid_red.png",
-        light:  Color::from_rgba(0.95, 0.18, 0.22, 1.0),
-    },
-];
+/// Короткое имя текстуры → путь (dtile_* → textures/dungeon и т.д.);
+/// полные res://-пути пропускаются как есть.
+fn resolve_tex(name: &str) -> String {
+    if name.starts_with("res://") { name.to_string() } else { crate::map::tex_path(name) }
+}
+
+impl Theme {
+    fn from_cfg(c: &crate::config::ThemeCfg) -> Self {
+        Self {
+            name:   c.name_ru.clone(),
+            wall:   resolve_tex(&c.wall),
+            accent: resolve_tex(&c.accent),
+            floor:  resolve_tex(&c.floor),
+            ceil:   resolve_tex(&c.ceil),
+            lava:   resolve_tex(&c.lava),
+            light:  Color::from_rgba(c.light[0], c.light[1], c.light[2], 1.0),
+        }
+    }
+}
 
 // ── Результат генерации ───────────────────────────────────────────────────────
 
@@ -66,7 +57,7 @@ pub struct EnemySpawn {
 
 pub struct DungeonPlan {
     pub depth:        u32,
-    pub theme_name:   &'static str,
+    pub theme_name:   String,
     pub root:         Gd<Node3D>,
     pub player_spawn: Vector3,
     pub exit_portal:  Vector3,
@@ -119,9 +110,11 @@ fn carve_cell(floor: &mut [bool], fh: &mut [f32], cwh: &mut [f32],
 
 // ── Генерация ─────────────────────────────────────────────────────────────────
 
-pub fn generate(depth: u32, seed: u64, cache: &mut TexCache) -> DungeonPlan {
+pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -> DungeonPlan {
     let mut rng = Rng::new(seed ^ (depth as u64).wrapping_mul(0x9E3779B97F4A7C15));
-    let theme = &THEMES[((depth - 1) % 3) as usize];
+    // темы/пулы/настройки — из dungeon.json пресета (config гарантирует непустоту)
+    let dc = &cfg.dungeon;
+    let theme = Theme::from_cfg(&dc.themes[((depth - 1) as usize) % dc.themes.len()]);
 
     // Возможные высоты пола: сильный перевес в пользу 0.0
     const FLOOR_LEVELS: [f32; 7] = [0.0, 0.0, 0.0, 0.8, 0.8, 1.6, 0.0];
@@ -225,11 +218,11 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache) -> DungeonPlan {
 
     // 3. Геометрия
     let mut root = Node3D::new_alloc();
-    let t_wall   = cache.get(theme.wall);
-    let t_accent = cache.get(theme.accent);
-    let t_floor  = cache.get(theme.floor);
-    let t_ceil   = cache.get(theme.ceil);
-    let t_lava   = cache.get(theme.lava);
+    let t_wall   = cache.get(&theme.wall);
+    let t_accent = cache.get(&theme.accent);
+    let t_floor  = cache.get(&theme.floor);
+    let t_ceil   = cache.get(&theme.ceil);
+    let t_lava   = cache.get(&theme.lava);
     let c_dark = Color::from_rgba(0.07, 0.04, 0.07, 1.0);
     const T: f32 = 0.3;
 
@@ -445,9 +438,15 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache) -> DungeonPlan {
     let mut ammo:    Vec<(AmmoType, u32, Vector3)> = Vec::new();
     let mut weapons: Vec<(WeaponId, Vector3)> = Vec::new();
 
-    let mult = 1.0 + (depth - 1) as f32 * 0.18;
-    let pool_early: [&str; 3] = ["grunt", "fast", "cultist"];
-    let pool_late:  [&str; 5] = ["grunt", "fast", "cultist", "heavy", "sniper"];
+    let st = &dc.settings;
+    let mult = 1.0 + (depth - 1) as f32 * st.mult_per_depth;
+    // Пул врагов: самый глубокий из подходящих по min_depth
+    let pool: &[String] = dc.pools.iter()
+        .filter(|p| p.min_depth <= depth)
+        .max_by_key(|p| p.min_depth)
+        .or_else(|| dc.pools.first())
+        .map(|p| p.enemies.as_slice())
+        .unwrap_or(&[]);
 
     for (k, r) in rooms.iter().enumerate() {
         if k == 0 { continue; }
@@ -456,58 +455,70 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache) -> DungeonPlan {
         let is_boss_room = k == boss_idx;
 
         if is_boss_room {
-            enemies.push(EnemySpawn { kind: "brute".into(), pos: boss_center, mult: mult * 1.25, is_boss: true });
-            for d in [-2i32, 2] {
-                enemies.push(EnemySpawn { kind: "cultist".into(),
+            enemies.push(EnemySpawn { kind: st.boss.clone(), pos: boss_center,
+                                      mult: mult * st.boss_mult, is_boss: true });
+            // свита по бокам алтаря
+            for (gi, guard) in st.boss_guards.iter().enumerate() {
+                let d = if gi % 2 == 0 { -2 - (gi as i32 / 2) } else { 2 + (gi as i32 / 2) };
+                enemies.push(EnemySpawn { kind: guard.clone(),
                     pos: cell_at(cx + d, cz, fy), mult, is_boss: false });
             }
-            items.push(("ancient_ruby".into(), cell_at(cx, cz + 1, fy)));
-            items.push(("gold_stack".into(),   cell_at(cx - 1, cz + 1, fy)));
-            items.push(("heart_1up".into(),    cell_at(cx + 1, cz + 1, fy)));
+            // награда рядком за алтарём: центр, слева, справа, дальше наружу
+            for (ii, item) in st.boss_items.iter().enumerate() {
+                let k = (ii as i32 + 1) / 2;
+                let dx = if ii % 2 == 0 { k } else { -k };
+                items.push((item.clone(), cell_at(cx + dx, cz + 1, fy)));
+            }
             continue;
         }
 
         // Враги: 2–5 на комнату (растёт с глубиной)
         let n = 2 + rng.range(0, 2 + (depth.min(6) as i32));
         for idx in 0..n {
-            let kind = if depth >= 2 { *rng.pick(&pool_late) } else { *rng.pick(&pool_early) };
+            let Some(kind) = (!pool.is_empty()).then(|| rng.pick(pool)) else { break };
             let px = r.x + 1 + rng.range(0, (r.w - 2).max(1));
             let pz = r.z + 1 + rng.range(0, (r.h - 2).max(1));
             // Небольшой разброс по комнате чтобы не стояли в кучке
             let ox = if idx % 2 == 0 { 0 } else { rng.range(-1, 1) };
             let oz = if idx % 3 == 0 { 0 } else { rng.range(-1, 1) };
             enemies.push(EnemySpawn {
-                kind: kind.into(),
+                kind: kind.clone(),
                 pos: cell_at((px + ox).clamp(r.x + 1, r.x + r.w - 2),
                              (pz + oz).clamp(r.z + 1, r.z + r.h - 2), fy),
                 mult, is_boss: false,
             });
         }
-        // Патроны: почти гарантированно в каждой комнате
-        if rng.chance(0.85) {
-            let t = AmmoType::from_idx(rng.below(4) as usize);
-            ammo.push((t, t.pack_size(), cell_at(r.x + 1, r.z + r.h - 2, fy)));
+        // Патроны: точки комнаты по шансам из loot.json (позиции чередуются)
+        let ammo_spots = [(r.x + 1, r.z + r.h - 2), (r.x + r.w - 2, r.z + 1)];
+        for (ai, chance) in cfg.loot.settings.room_ammo_chances.iter().enumerate() {
+            if rng.chance(*chance) {
+                let t = AmmoType::from_idx(rng.below(4) as usize);
+                let (sx, sz) = ammo_spots[ai % ammo_spots.len()];
+                ammo.push((t, t.pack_size(), cell_at(sx, sz, fy)));
+            }
         }
-        // Второй вид патронов иногда
-        if rng.chance(0.40) {
-            let t = AmmoType::from_idx(rng.below(4) as usize);
-            ammo.push((t, t.pack_size(), cell_at(r.x + r.w - 2, r.z + 1, fy)));
+        // Предметы комнаты — таблица room_items из loot.json
+        let item_spots = [
+            (r.x + r.w - 2, r.z + 1), (cx, cz + 1), (cx - 1, cz - 1),
+            (cx - 1, cz),             (cx + 1, cz - 1),
+        ];
+        for (li, entry) in cfg.loot.room_items.iter().enumerate() {
+            if rng.chance(entry.chance) {
+                let (sx, sz) = item_spots[li % item_spots.len()];
+                items.push((entry.id.clone(), cell_at(sx, sz, fy)));
+            }
         }
-        if rng.chance(0.65) { items.push(("medkit".into(),    cell_at(r.x + r.w - 2, r.z + 1, fy))); }
-        if rng.chance(0.50) { items.push(("gold_coin".into(), cell_at(cx, cz + 1, fy))); }
-        if rng.chance(0.30) { items.push(("gold_coin".into(), cell_at(cx - 1, cz - 1, fy))); }
-        if rng.chance(0.25) { items.push(("potion".into(),    cell_at(cx - 1, cz, fy))); }
-        if rng.chance(0.15) { items.push(("heart_1up".into(), cell_at(cx + 1, cz - 1, fy))); }
     }
 
-    // Оружейный тайник
-    if rooms.len() > 2 {
+    // Оружейный тайник (пул из dungeon.json; неизвестные id пропускаются)
+    let cache_pool: Vec<WeaponId> = st.weapon_cache.iter()
+        .filter_map(|s| WeaponId::from_id(s))
+        .collect();
+    if rooms.len() > 2 && !cache_pool.is_empty() {
         let wk = 1 + rng.below((rooms.len() - 1) as u32) as usize;
         let (cx, cz) = rooms[wk].center();
         let fy = rooms[wk].floor_y;
-        let pool: [WeaponId; 5] = [WeaponId::Shotgun, WeaponId::Rifle, WeaponId::Nailgun,
-                                   WeaponId::Plasma, WeaponId::Rocket];
-        let w = *rng.pick(&pool);
+        let w = *rng.pick(&cache_pool);
         weapons.push((w, cell_at(cx, cz.max(1), fy)));
         if let Some((t, _)) = crate::weapon::weapon_def(w).ammo {
             ammo.push((t, t.pack_size(), cell_at(cx + 1, cz, fy)));

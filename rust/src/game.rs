@@ -170,7 +170,7 @@ pub struct Game3D {
     // данж
     dungeon_root:   Option<Gd<Node3D>>,
     dungeon_depth:  u32,
-    dungeon_name:   &'static str,
+    dungeon_name:   String,
     exit_portal:    Vector3,
     next_portal:    Vector3,
     boss_alive:     bool,
@@ -294,7 +294,7 @@ impl INode3D for Game3D {
             arsenal: Arsenal::new(),
             loadout: compute_loadout(0, 0, 1),
             mode: Mode::Explore, loc: Loc::World,
-            dungeon_root: None, dungeon_depth: 0, dungeon_name: "",
+            dungeon_root: None, dungeon_depth: 0, dungeon_name: String::new(),
             exit_portal: Vector3::ZERO, next_portal: Vector3::ZERO,
             boss_alive: false,
             scene: None, line_idx: 0, at_choices: false,
@@ -736,6 +736,9 @@ fn weapon_by_name(s: &str) -> Option<WeaponId> {
 
 impl Game3D {
     fn enter_dungeon(&mut self, depth: u32) {
+        // cfg берём ДО разрушительных шагов: ранний выход не должен оставить
+        // игрока в пустоте с уже снесённым данжем
+        let Some(cfg) = self.cfg.take() else { return };
         self.clear_dungeon();
 
         let seed = {
@@ -743,29 +746,30 @@ impl Game3D {
             st.dungeon_seed = st.dungeon_seed.wrapping_add(1);
             st.dungeon_seed
         };
-        let plan: DungeonPlan = dungeon::generate(depth, seed, &mut self.cache);
+        // Дроп с убийств тоже зависит от сида — забег полностью воспроизводим
+        // (раньше сессионный Rng стартовал с константы).
+        self.rng = Rng::new(seed ^ 0x00D1_CED0);
+
+        let plan: DungeonPlan = dungeon::generate(depth, seed, &mut self.cache, &cfg);
 
         let mut root = plan.root.clone();
         root.set_position(DUNGEON_OFFSET);
         self.base_mut().add_child(&root);
         self.dungeon_root = Some(root);
         self.dungeon_depth = depth;
-        self.dungeon_name = plan.theme_name;
+        self.dungeon_name = plan.theme_name.clone();
         self.minimap_floor = plan.floor_map.clone();
         self.exit_portal = DUNGEON_OFFSET + plan.exit_portal;
         self.next_portal = DUNGEON_OFFSET + plan.next_portal;
         self.boss_alive = plan.enemies.iter().any(|e| e.is_boss);
 
-        let cfg = self.cfg.take();
-        if let Some(ref cfg) = cfg {
-            for es in &plan.enemies {
-                self.spawn_enemy(cfg, &es.kind, DUNGEON_OFFSET + es.pos, es.mult, es.is_boss, true);
-            }
-            for (kind, pos) in &plan.items {
-                self.spawn_item(cfg, kind, DUNGEON_OFFSET + *pos, true);
-            }
+        for es in &plan.enemies {
+            self.spawn_enemy(&cfg, &es.kind, DUNGEON_OFFSET + es.pos, es.mult, es.is_boss, true);
         }
-        self.cfg = cfg;
+        for (kind, pos) in &plan.items {
+            self.spawn_item(&cfg, kind, DUNGEON_OFFSET + *pos, true);
+        }
+        self.cfg = Some(cfg);
         for (t, n, pos) in &plan.ammo {
             self.spawn_ammo_pickup(*t, *n, DUNGEON_OFFSET + *pos, true);
         }
@@ -2297,18 +2301,33 @@ impl Game3D {
 
             // дроп
             let in_dungeon = self.loc == Loc::Dungeon;
+            // Дроп по таблице kill_drops (loot.json): один бросок, записи
+            // кумулятивны по chance, остаток вероятности — «ничего».
+            let drops = self.cfg.as_ref().map(|c| c.loot.kill_drops.clone()).unwrap_or_default();
             let roll = self.rng.f32();
-            if roll < 0.30 {
-                let t = AmmoType::from_idx(self.rng.below(4) as usize);
-                self.spawn_ammo_pickup(t, t.pack_size() / 2 + 1, pos, in_dungeon);
-            } else if roll < 0.44 {
-                let cfg = self.cfg.take();
-                if let Some(ref cfg) = cfg {
-                    self.spawn_item(cfg, "medkit", pos, in_dungeon);
+            let mut acc = 0.0f32;
+            for d in &drops {
+                acc += d.chance;
+                if roll >= acc { continue; }
+                match d.kind.as_str() {
+                    "ammo" => {
+                        let t = AmmoType::from_idx(self.rng.below(4) as usize);
+                        self.spawn_ammo_pickup(t, t.pack_size() / 2 + 1, pos, in_dungeon);
+                    }
+                    _ => {
+                        let id = d.id.as_deref().unwrap_or("");
+                        if id == "heart_1up" {
+                            self.spawn_item_heart(pos, in_dungeon);
+                        } else if !id.is_empty() {
+                            let cfg = self.cfg.take();
+                            if let Some(ref cfg) = cfg {
+                                self.spawn_item(cfg, id, pos, in_dungeon);
+                            }
+                            self.cfg = cfg;
+                        }
+                    }
                 }
-                self.cfg = cfg;
-            } else if roll < 0.47 {
-                self.spawn_item_heart(pos, in_dungeon);
+                break;
             }
 
             if is_boss {

@@ -1,0 +1,92 @@
+name: Auto Tag
+
+# Запускается автоматически после успешного CI на main.
+# Вручную — Actions → Auto Tag → Run workflow (можно выбрать тип бампа).
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Тип версии (patch / minor / major)'
+        required: true
+        default: patch
+        type: choice
+        options: [patch, minor, major]
+
+permissions:
+  contents: write
+
+jobs:
+  auto-tag:
+    name: "Bump & Tag"
+    runs-on: ubuntu-24.04
+    # Для workflow_run — только если CI прошёл; для ручного запуска — всегда
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # При workflow_run — коммит того пуша, который запустил CI
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Compute next version
+        id: next
+        run: |
+          # Если на HEAD уже есть тег — пропускаем
+          if git describe --exact-match HEAD 2>/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::HEAD already tagged, skipping"
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+          # Последний тег (фолбэк v0.0.0)
+          LAST=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "prev_tag=$LAST" >> "$GITHUB_OUTPUT"
+
+          # ── Тип бампа ──────────────────────────────────────────────────────
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BUMP="${{ inputs.bump }}"
+          else
+            # Анализируем коммиты с последнего тега
+            COMMITS=$(git log "$LAST..HEAD" --format="%s %b" 2>/dev/null || true)
+            if echo "$COMMITS" | grep -qiE 'BREAKING[[:space:]]CHANGE|\[major\]'; then
+              BUMP=major
+            elif echo "$COMMITS" | grep -qiE '^\s*feat(\([^)]*\))?:|\[minor\]|^feature:'; then
+              BUMP=minor
+            else
+              BUMP=patch
+            fi
+          fi
+
+          # ── Вычисляем новый тег ────────────────────────────────────────────
+          VERSION="${LAST#v}"
+          MA=$(echo "$VERSION" | cut -d. -f1 | tr -dc '0-9'); MA=${MA:-0}
+          MI=$(echo "$VERSION" | cut -d. -f2 | tr -dc '0-9'); MI=${MI:-0}
+          PA=$(echo "$VERSION" | cut -d. -f3 | tr -dc '0-9'); PA=${PA:-0}
+
+          case "$BUMP" in
+            major) MA=$((MA+1)); MI=0; PA=0 ;;
+            minor) MI=$((MI+1)); PA=0 ;;
+            *)     PA=$((PA+1)) ;;
+          esac
+
+          NEW="v${MA}.${MI}.${PA}"
+          echo "new_tag=$NEW"   >> "$GITHUB_OUTPUT"
+          echo "bump=$BUMP"     >> "$GITHUB_OUTPUT"
+          echo "::notice title=Version bump::$LAST → $NEW  ($BUMP bump)"
+
+      - name: Create & push tag
+        if: steps.next.outputs.skip != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.next.outputs.new_tag }}" HEAD
+          git push origin "${{ steps.next.outputs.new_tag }}"
+          echo "✓ Tagged and pushed: ${{ steps.next.outputs.new_tag }}"

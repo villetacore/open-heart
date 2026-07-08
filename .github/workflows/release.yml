@@ -1,30 +1,36 @@
 name: Build & Release
 
-# Запускается при пуше тега v*.*.* или вручную через Actions → Run workflow
+# Запускается при пуше тега (авто-тег из auto-tag.yml) или вручную.
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+*']
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Версия (например v0.1.0)'
+        description: 'Тег релиза (например v1.2.3)'
         required: true
         default: 'v0.1.0'
 
 permissions:
-  contents: write   # нужно для создания GitHub Release
+  contents: write
 
 env:
-  GODOT_VER: 4.7-stable
-  GODOT_SEMVER: 4.7.0
+  GODOT_VER:    "4.7-stable"
+  GODOT_SEMVER: "4.7.0"
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Политика сбоев: каждая платформа — continue-on-error: true.
+# Publish запускается при любом исходе (if: always()) и загружает
+# только те артефакты, которые реально собрались.
+# ══════════════════════════════════════════════════════════════════════════════
+
 jobs:
 
-# ── Windows (x86_64) ──────────────────────────────────────────────────────────
+# ── Windows x64 ───────────────────────────────────────────────────────────────
   build-windows:
     name: "Windows x64"
     runs-on: windows-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -40,7 +46,7 @@ jobs:
         run: cargo build --release
         working-directory: rust
 
-      - name: Copy DLL to bin/
+      - name: Copy DLL → godot/bin/
         run: Copy-Item rust\target\release\openheart.dll godot\bin\openheart.dll -Force
 
       - name: Install Godot ${{ env.GODOT_VER }}
@@ -49,8 +55,12 @@ jobs:
           $base = "https://github.com/godotengine/godot/releases/download/$env:GODOT_VER"
           Invoke-WebRequest "$base/Godot_v$($env:GODOT_VER)_win64.exe.zip" -OutFile godot.zip
           Expand-Archive godot.zip -DestinationPath C:\Godot -Force
-          Rename-Item "C:\Godot\Godot_v$($env:GODOT_VER)_win64.exe" "C:\Godot\godot.exe" -ErrorAction SilentlyContinue
-
+          # Rename to a predictable name
+          $exe = Get-ChildItem C:\Godot\*.exe | Select-Object -First 1
+          if ($exe -and $exe.Name -ne "godot.exe") {
+            Rename-Item $exe.FullName C:\Godot\godot.exe
+          }
+          # Export templates
           Invoke-WebRequest "$base/Godot_v$($env:GODOT_VER)_export_templates.tpz" -OutFile tpl.zip
           $tplDir = "$env:APPDATA\Godot\export_templates\$($env:GODOT_SEMVER).stable"
           New-Item -ItemType Directory -Force $tplDir | Out-Null
@@ -70,12 +80,14 @@ jobs:
         with:
           name: build-windows
           path: godot/dist/windows/
+          if-no-files-found: warn
           retention-days: 1
 
-# ── Linux (x86_64) ────────────────────────────────────────────────────────────
+# ── Linux x64 ─────────────────────────────────────────────────────────────────
   build-linux:
     name: "Linux x64"
     runs-on: ubuntu-24.04
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -89,8 +101,8 @@ jobs:
         run: cargo build --release
         working-directory: rust
 
-      - name: Copy .so to bin/
-        run: cp rust/target/release/libopenheart.so godot/bin/
+      - name: Copy .so → godot/bin/
+        run: cp rust/target/release/libopenheart.so godot/bin/libopenheart.so
 
       - name: Install Godot ${{ env.GODOT_VER }}
         run: |
@@ -99,7 +111,7 @@ jobs:
           unzip -q godot.zip
           sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
-
+          # Export templates
           wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
           TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
           mkdir -p "$TPL"
@@ -116,12 +128,14 @@ jobs:
         with:
           name: build-linux
           path: godot/dist/linux/
+          if-no-files-found: warn
           retention-days: 1
 
-# ── macOS (Universal: x86_64 + arm64) ────────────────────────────────────────
+# ── macOS Universal ───────────────────────────────────────────────────────────
   build-macos:
     name: "macOS Universal"
     runs-on: macos-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -133,7 +147,7 @@ jobs:
         with:
           workspaces: rust -> rust/target
 
-      - name: Build Rust (fat binary)
+      - name: Build Rust fat dylib
         run: |
           cargo build --release --target x86_64-apple-darwin
           cargo build --release --target aarch64-apple-darwin
@@ -148,8 +162,8 @@ jobs:
           BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
           wget -q "$BASE/Godot_v${GODOT_VER}_macos.universal.zip" -O godot.zip
           unzip -q godot.zip -d /tmp/godot_app
-          sudo cp -r "/tmp/godot_app/Godot.app" /Applications/
-
+          sudo cp -r /tmp/godot_app/Godot.app /Applications/
+          # Export templates
           wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
           TPL="$HOME/Library/Application Support/Godot/export_templates/${GODOT_SEMVER}.stable"
           mkdir -p "$TPL"
@@ -167,31 +181,31 @@ jobs:
         with:
           name: build-macos
           path: godot/dist/macos/
+          if-no-files-found: warn
           retention-days: 1
 
-# ── Android (arm64 + armeabi-v7a) ────────────────────────────────────────────
+# ── Android (arm64 + armeabi-v7a) ─────────────────────────────────────────────
   build-android:
     name: "Android"
     runs-on: ubuntu-24.04
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+          targets: aarch64-linux-android,armv7-linux-androideabi
 
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: rust -> rust/target
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Android SDK + NDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
       - name: Install Android NDK r23c
         run: sdkmanager "ndk;23.2.8568313"
@@ -199,7 +213,7 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
 
-      - name: Build Rust (Android arm64 + armv7)
+      - name: Build Rust (arm64 + armeabi-v7a)
         run: |
           mkdir -p ../godot/bin/android
           export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/23.2.8568313"
@@ -217,14 +231,13 @@ jobs:
           unzip -q godot.zip
           sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
-
+          # Export templates
           wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
           TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
           mkdir -p "$TPL"
           unzip -q tpl.zip -d /tmp/gtpl
           mv /tmp/gtpl/templates/* "$TPL/"
-
-          # Укажем Godot где Android SDK
+          # Android SDK path для Godot
           mkdir -p ~/.config/godot
           cat > ~/.config/godot/editor_settings-4.tres <<EOF
           [gd_resource type="EditorSettings" format=3]
@@ -242,12 +255,14 @@ jobs:
         with:
           name: build-android
           path: godot/dist/android/
+          if-no-files-found: warn
           retention-days: 1
 
-# ── Web / HTML5 (WASM + Emscripten) ──────────────────────────────────────────
+# ── Web / HTML5 ───────────────────────────────────────────────────────────────
   build-web:
     name: "Web (HTML5)"
     runs-on: ubuntu-24.04
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -284,7 +299,7 @@ jobs:
           unzip -q godot.zip
           sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
-
+          # Export templates
           wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
           TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
           mkdir -p "$TPL"
@@ -301,124 +316,179 @@ jobs:
         with:
           name: build-web
           path: godot/dist/web/
+          if-no-files-found: warn
           retention-days: 1
 
-# ── GitHub Release + itch.io ──────────────────────────────────────────────────
+# ── Publish: GitHub Release ───────────────────────────────────────────────────
+# Запускается при ЛЮБОМ исходе билдов (if: always()).
+# Каждый download-artifact — continue-on-error: true.
+# Упаковываем только те файлы, которые реально скачались.
+# softprops/action-gh-release загружает по glob — отсутствующие файлы не ломают релиз.
   publish:
     name: "Publish Release"
     needs: [build-windows, build-linux, build-macos, build-android, build-web]
     runs-on: ubuntu-24.04
-    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts/
+    if: always()
 
-      - name: Определяем версию
+    env:
+      ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
+      ITCH_IO_USER:    ${{ secrets.ITCH_IO_USER }}
+
+    steps:
+      # ── Определяем тег ──────────────────────────────────────────────────────
+      - name: Resolve tag
         id: ver
         run: |
-          TAG="${{ github.ref_name }}"
-          if [ -z "$TAG" ] || [ "$TAG" = "refs/heads/main" ]; then
-            TAG="${{ github.event.inputs.tag }}"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="${{ inputs.tag }}"
           fi
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Tag: $TAG"
 
-      - name: Упаковываем артефакты
+      # ── Скачиваем артефакты (continue-on-error на каждом) ───────────────────
+      - name: Download Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: build-windows
+          path: artifacts/build-windows
+        continue-on-error: true
+
+      - name: Download Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: build-linux
+          path: artifacts/build-linux
+        continue-on-error: true
+
+      - name: Download macOS
+        uses: actions/download-artifact@v4
+        with:
+          name: build-macos
+          path: artifacts/build-macos
+        continue-on-error: true
+
+      - name: Download Android
+        uses: actions/download-artifact@v4
+        with:
+          name: build-android
+          path: artifacts/build-android
+        continue-on-error: true
+
+      - name: Download Web
+        uses: actions/download-artifact@v4
+        with:
+          name: build-web
+          path: artifacts/build-web
+        continue-on-error: true
+
+      # ── Упаковываем только то, что скачалось ────────────────────────────────
+      - name: Package artifacts
         run: |
-          cd artifacts
-          # Windows — zip
-          zip -r ../OpenHeart-windows-x64.zip build-windows/ 2>/dev/null || true
-          # Linux — tar.gz
-          tar -czf ../OpenHeart-linux-x64.tar.gz build-linux/ 2>/dev/null || true
-          # macOS — уже zip внутри (Godot выдаёт .app.zip), просто переименуем
-          mv build-macos/OpenHeart.zip ../OpenHeart-macos-universal.zip 2>/dev/null || true
-          # Android — APK
-          cp build-android/OpenHeart.apk ../OpenHeart-android.apk 2>/dev/null || true
-          # Web — zip для itch.io
-          zip -r ../OpenHeart-web.zip build-web/ 2>/dev/null || true
+          echo "=== Downloaded artifacts ==="
+          ls artifacts/ 2>/dev/null || echo "(none)"
 
-      - name: Создаём GitHub Release
+          cd artifacts
+
+          if [ -d build-windows ] && [ "$(ls -A build-windows 2>/dev/null)" ]; then
+            zip -r ../OpenHeart-windows-x64.zip build-windows/
+            echo "✓ windows"
+          else echo "✗ windows (skipped)"; fi
+
+          if [ -d build-linux ] && [ "$(ls -A build-linux 2>/dev/null)" ]; then
+            tar -czf ../OpenHeart-linux-x64.tar.gz build-linux/
+            echo "✓ linux"
+          else echo "✗ linux (skipped)"; fi
+
+          if [ -f build-macos/OpenHeart.zip ]; then
+            cp build-macos/OpenHeart.zip ../OpenHeart-macos-universal.zip
+            echo "✓ macos"
+          elif [ -d build-macos ] && [ "$(ls -A build-macos 2>/dev/null)" ]; then
+            zip -r ../OpenHeart-macos-universal.zip build-macos/
+            echo "✓ macos (zipped)"
+          else echo "✗ macos (skipped)"; fi
+
+          if [ -f build-android/OpenHeart.apk ]; then
+            cp build-android/OpenHeart.apk ../OpenHeart-android.apk
+            echo "✓ android"
+          else echo "✗ android (skipped)"; fi
+
+          if [ -d build-web ] && [ "$(ls -A build-web 2>/dev/null)" ]; then
+            zip -r ../OpenHeart-web.zip build-web/
+            echo "✓ web"
+          else echo "✗ web (skipped)"; fi
+
+          echo "=== Packaged files ==="
+          ls -lh ../*.zip ../*.tar.gz ../*.apk 2>/dev/null || echo "(no files packaged)"
+
+      # ── GitHub Release ───────────────────────────────────────────────────────
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.ver.outputs.tag }}
-          name: "OpenHeart ${{ steps.ver.outputs.tag }}"
-          draft: false
-          prerelease: ${{ contains(steps.ver.outputs.tag, 'alpha') || contains(steps.ver.outputs.tag, 'beta') || contains(steps.ver.outputs.tag, 'rc') }}
+          tag_name:              ${{ steps.ver.outputs.tag }}
+          name:                  "OpenHeart ${{ steps.ver.outputs.tag }}"
+          draft:                 false
+          prerelease:            ${{ contains(steps.ver.outputs.tag, 'alpha') || contains(steps.ver.outputs.tag, 'beta') || contains(steps.ver.outputs.tag, 'rc') }}
           generate_release_notes: true
+          fail_on_unmatched_files: false
           files: |
-            OpenHeart-windows-x64.zip
-            OpenHeart-linux-x64.tar.gz
-            OpenHeart-macos-universal.zip
-            OpenHeart-android.apk
-            OpenHeart-web.zip
+            OpenHeart-*.zip
+            OpenHeart-*.tar.gz
+            OpenHeart-*.apk
 
-      # ── itch.io (нужен секрет ITCH_IO_API_KEY и ITCH_IO_USER в Settings → Secrets) ──
+      # ── itch.io (только если секреты настроены и артефакт существует) ────────
       - name: itch.io → Windows
-        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != '' && hashFiles('artifacts/build-windows/**') != ''
         uses: KikimoraGames/itch-publish@v0.0.3
         with:
-          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
-          gameData: artifacts/build-windows/
-          itchUsername: ${{ secrets.ITCH_IO_USER }}
-          itchGameId: openheart
-          buildChannel: windows
-          buildNumber: ${{ steps.ver.outputs.tag }}
-        env:
-          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
-          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}
+          butlerApiKey:  ${{ secrets.ITCH_IO_API_KEY }}
+          gameData:      artifacts/build-windows/
+          itchUsername:  ${{ secrets.ITCH_IO_USER }}
+          itchGameId:    openheart
+          buildChannel:  windows
+          buildNumber:   ${{ steps.ver.outputs.tag }}
 
       - name: itch.io → Linux
-        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != '' && hashFiles('artifacts/build-linux/**') != ''
         uses: KikimoraGames/itch-publish@v0.0.3
         with:
-          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
-          gameData: artifacts/build-linux/
-          itchUsername: ${{ secrets.ITCH_IO_USER }}
-          itchGameId: openheart
-          buildChannel: linux
-          buildNumber: ${{ steps.ver.outputs.tag }}
-        env:
-          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
-          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}
+          butlerApiKey:  ${{ secrets.ITCH_IO_API_KEY }}
+          gameData:      artifacts/build-linux/
+          itchUsername:  ${{ secrets.ITCH_IO_USER }}
+          itchGameId:    openheart
+          buildChannel:  linux
+          buildNumber:   ${{ steps.ver.outputs.tag }}
 
       - name: itch.io → macOS
-        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != '' && hashFiles('artifacts/build-macos/**') != ''
         uses: KikimoraGames/itch-publish@v0.0.3
         with:
-          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
-          gameData: artifacts/build-macos/
-          itchUsername: ${{ secrets.ITCH_IO_USER }}
-          itchGameId: openheart
-          buildChannel: macos
-          buildNumber: ${{ steps.ver.outputs.tag }}
-        env:
-          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
-          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}
+          butlerApiKey:  ${{ secrets.ITCH_IO_API_KEY }}
+          gameData:      artifacts/build-macos/
+          itchUsername:  ${{ secrets.ITCH_IO_USER }}
+          itchGameId:    openheart
+          buildChannel:  macos
+          buildNumber:   ${{ steps.ver.outputs.tag }}
 
-      - name: itch.io → Web (HTML5)
-        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+      - name: itch.io → Web
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != '' && hashFiles('artifacts/build-web/**') != ''
         uses: KikimoraGames/itch-publish@v0.0.3
         with:
-          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
-          gameData: artifacts/build-web/
-          itchUsername: ${{ secrets.ITCH_IO_USER }}
-          itchGameId: openheart
-          buildChannel: html5
-          buildNumber: ${{ steps.ver.outputs.tag }}
-        env:
-          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
-          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}
+          butlerApiKey:  ${{ secrets.ITCH_IO_API_KEY }}
+          gameData:      artifacts/build-web/
+          itchUsername:  ${{ secrets.ITCH_IO_USER }}
+          itchGameId:    openheart
+          buildChannel:  html5
+          buildNumber:   ${{ steps.ver.outputs.tag }}
 
       - name: itch.io → Android
-        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != ''
+        if: env.ITCH_IO_API_KEY != '' && env.ITCH_IO_USER != '' && hashFiles('OpenHeart-android.apk') != ''
         uses: KikimoraGames/itch-publish@v0.0.3
         with:
-          butlerApiKey: ${{ secrets.ITCH_IO_API_KEY }}
-          gameData: OpenHeart-android.apk
-          itchUsername: ${{ secrets.ITCH_IO_USER }}
-          itchGameId: openheart
-          buildChannel: android
-          buildNumber: ${{ steps.ver.outputs.tag }}
-        env:
-          ITCH_IO_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
-          ITCH_IO_USER: ${{ secrets.ITCH_IO_USER }}
+          butlerApiKey:  ${{ secrets.ITCH_IO_API_KEY }}
+          gameData:      OpenHeart-android.apk
+          itchUsername:  ${{ secrets.ITCH_IO_USER }}
+          itchGameId:    openheart
+          buildChannel:  android
+          buildNumber:   ${{ steps.ver.outputs.tag }}

@@ -129,6 +129,11 @@ struct Projectile {
     status:   Option<(String, f32)>,   // статус оружия при попадании
 }
 
+/// Прямое попадание снаряда: (враг, урон, тип, точка, статус оружия).
+type DirectHit = (Gd<Enemy>, f32, DmgType, Vector3, Option<(String, f32)>);
+/// Убитый враг для пост-обработки: (позиция, XP, босс?, id, посмертный взрыв).
+type KillInfo = (Vector3, f32, bool, String, Option<(f32, f32)>);
+
 /// Снаряд врага (abilities.json: projectile_burst) — летит в игрока, можно увернуться.
 struct EnemyProjectile {
     node: Gd<Node3D>,
@@ -648,6 +653,7 @@ impl Game3D {
         self.cfg = Some(cfg);
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn spawn_enemy(&mut self, cfg: &GameConfig, kind: &str, pos: Vector3, mult: f32,
                    is_boss: bool, in_dungeon: bool, affixes: &[String]) {
         let Some(ecfg) = cfg.enemy(kind) else {
@@ -2449,7 +2455,7 @@ impl Game3D {
 
     fn tick_projectiles(&mut self, dt: f32) {
         let mut exploded: Vec<(Vector3, f32, DmgType, f32)> = Vec::new(); // pos, dmg, type, splash
-        let mut direct_hits: Vec<(Gd<Enemy>, f32, DmgType, Vector3, Option<(String, f32)>)> = Vec::new();
+        let mut direct_hits: Vec<DirectHit> = Vec::new();
 
         let mut i = 0;
         while i < self.projectiles.len() {
@@ -2536,7 +2542,7 @@ impl Game3D {
 
     /// Обработка убитых врагов: XP, дроп, эффекты, квест босса.
     fn process_kills(&mut self) {
-        let mut kills: Vec<(Vector3, f32, bool, String, Option<(f32, f32)>)> = Vec::new();
+        let mut kills: Vec<KillInfo> = Vec::new();
         let mut i = 0;
         while i < self.enemies.len() {
             let alive = self.enemies[i].bind().alive;

@@ -56,45 +56,45 @@ jobs:
         shell: pwsh
         run: |
           $base = "https://github.com/godotengine/godot/releases/download/$env:GODOT_VER"
-          Invoke-WebRequest "$base/Godot_v$($env:GODOT_VER)_win64.exe.zip" -OutFile godot.zip
+          # curl.exe more reliable than Invoke-WebRequest for large files in CI
+          curl.exe -fsSL --retry 3 -o godot.zip "$base/Godot_v$($env:GODOT_VER)_win64.exe.zip"
           Expand-Archive godot.zip -DestinationPath C:\Godot -Force
-          $exe = Get-ChildItem C:\Godot\*.exe | Select-Object -First 1
-          if ($exe -and $exe.Name -ne "godot.exe") {
-            Rename-Item $exe.FullName C:\Godot\godot.exe
-          }
-          # Auto-detect template version from the binary (4.7-stable → "4.7.stable", not "4.7.0.stable")
-          $verStr = (& C:\Godot\godot.exe --version 2>&1) -join ''
-          Write-Host "Godot version output: $verStr"
-          if ($verStr -match '(\d+\.\d+(?:\.\d+)?\.stable)') {
-            $tplVer = $matches[1]
-          } else {
-            $tplVer = "$($env:GODOT_SEMVER).stable"
-          }
-          Write-Host "Using template dir: $tplVer"
-          # Export templates
-          Invoke-WebRequest "$base/Godot_v$($env:GODOT_VER)_export_templates.tpz" -OutFile tpl.zip
-          $tplDir = "$env:APPDATA\Godot\export_templates\$tplVer"
+          # Search recursively in case the archive has a subdirectory
+          $exe = Get-ChildItem C:\Godot -Recurse -Filter "*.exe" | Select-Object -First 1
+          if ($null -eq $exe) { throw "Godot exe not found in downloaded archive" }
+          Copy-Item $exe.FullName C:\Godot\godot.exe -Force
+          Write-Host "Godot binary: $($exe.FullName)"
+          # Export templates — use GODOT_SEMVER directly (Linux CI confirmed "4.7.stable" is correct)
+          curl.exe -fsSL --retry 3 -o tpl.zip "$base/Godot_v$($env:GODOT_VER)_export_templates.tpz"
+          $tplDir = "$env:APPDATA\Godot\export_templates\$($env:GODOT_SEMVER).stable"
+          $tplTmp = "$env:TEMP\godot_tpl"
           New-Item -ItemType Directory -Force $tplDir | Out-Null
+          New-Item -ItemType Directory -Force $tplTmp  | Out-Null
           Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [IO.Compression.ZipFile]::ExtractToDirectory("$PWD\tpl.zip", "$tplDir\_raw")
-          Move-Item "$tplDir\_raw\templates\*" $tplDir -Force
-          Remove-Item "$tplDir\_raw" -Recurse -Force
-          Write-Host "Templates installed: $((Get-ChildItem $tplDir).Count) files"
+          [IO.Compression.ZipFile]::ExtractToDirectory((Resolve-Path tpl.zip).Path, $tplTmp)
+          Move-Item "$tplTmp\templates\*" $tplDir -Force
+          Remove-Item $tplTmp -Recurse -Force
+          Write-Host "Templates installed: $((Get-ChildItem $tplDir -File).Count) files"
 
       - name: Import assets (Windows)
         shell: pwsh
         working-directory: godot
         run: |
           Write-Host "=== Importing project assets ==="
-          & C:\Godot\godot.exe --headless --import 2>&1 | Write-Host
+          $p = Start-Process C:\Godot\godot.exe -ArgumentList "--headless","--import" -Wait -PassThru -NoNewWindow
+          Write-Host "Import exit code: $($p.ExitCode)"
           Write-Host "=== Import complete ==="
 
       - name: Godot export (Windows)
         shell: pwsh
+        working-directory: godot
         run: |
           New-Item -ItemType Directory -Force dist\windows | Out-Null
-          C:\Godot\godot.exe --headless --export-release "Windows Desktop" dist\windows\OpenHeart.exe 2>&1
-        working-directory: godot
+          $p = Start-Process C:\Godot\godot.exe `
+            -ArgumentList "--headless","--export-release","Windows Desktop","dist\windows\OpenHeart.exe" `
+            -Wait -PassThru -NoNewWindow
+          Write-Host "Export exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { Write-Warning "Export returned non-zero: $($p.ExitCode)" }
 
       - uses: actions/upload-artifact@v4
         with:
@@ -197,6 +197,9 @@ jobs:
           wget -q "$BASE/Godot_v${GODOT_VER}_macos.universal.zip" -O godot.zip
           unzip -q godot.zip -d /tmp/godot_app
           sudo cp -r /tmp/godot_app/Godot.app /Applications/
+          # Remove quarantine so macOS Gatekeeper doesn't block headless execution
+          sudo xattr -dr com.apple.quarantine /Applications/Godot.app 2>/dev/null || true
+          sudo chmod +x /Applications/Godot.app/Contents/MacOS/Godot
           GODOT=/Applications/Godot.app/Contents/MacOS/Godot
           # Auto-detect template version
           GODOT_VER_STR=$("$GODOT" --version 2>&1 | head -1)
@@ -293,12 +296,23 @@ jobs:
           unzip -q tpl.zip -d /tmp/gtpl
           mv /tmp/gtpl/templates/* "$TPL/"
           echo "Templates installed: $(ls "$TPL" | wc -l) files"
-          # Android SDK path для Godot
+          # Debug keystore — Godot needs it even for unsigned APKs
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore \
+            -storepass android -alias androiddebugkey -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+          # Editor settings: SDK, JDK, keystore paths
           mkdir -p ~/.config/godot
           cat > ~/.config/godot/editor_settings-4.tres <<EOF
           [gd_resource type="EditorSettings" format=3]
+
           [resource]
           export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
           EOF
 
       - name: Import assets (Android)
@@ -338,6 +352,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           targets: wasm32-unknown-emscripten
+          components: rust-src
 
       - uses: Swatinem/rust-cache@v2
         with:

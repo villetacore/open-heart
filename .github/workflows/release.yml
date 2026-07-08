@@ -16,7 +16,10 @@ permissions:
 
 env:
   GODOT_VER:    "4.7-stable"
-  GODOT_SEMVER: "4.7.0"
+  # GODOT_SEMVER is a fallback; CI auto-detects the exact template dir from `godot --version`.
+  # For Godot 4.x initial releases (patch == 0), the template dir is "major.minor.stable"
+  # (NOT "major.minor.0.stable"). Example: 4.7-stable → template dir "4.7.stable".
+  GODOT_SEMVER: "4.7"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Политика сбоев: каждая платформа — continue-on-error: true.
@@ -55,19 +58,36 @@ jobs:
           $base = "https://github.com/godotengine/godot/releases/download/$env:GODOT_VER"
           Invoke-WebRequest "$base/Godot_v$($env:GODOT_VER)_win64.exe.zip" -OutFile godot.zip
           Expand-Archive godot.zip -DestinationPath C:\Godot -Force
-          # Rename to a predictable name
           $exe = Get-ChildItem C:\Godot\*.exe | Select-Object -First 1
           if ($exe -and $exe.Name -ne "godot.exe") {
             Rename-Item $exe.FullName C:\Godot\godot.exe
           }
+          # Auto-detect template version from the binary (4.7-stable → "4.7.stable", not "4.7.0.stable")
+          $verStr = (& C:\Godot\godot.exe --version 2>&1) -join ''
+          Write-Host "Godot version output: $verStr"
+          if ($verStr -match '(\d+\.\d+(?:\.\d+)?\.stable)') {
+            $tplVer = $matches[1]
+          } else {
+            $tplVer = "$($env:GODOT_SEMVER).stable"
+          }
+          Write-Host "Using template dir: $tplVer"
           # Export templates
           Invoke-WebRequest "$base/Godot_v$($env:GODOT_VER)_export_templates.tpz" -OutFile tpl.zip
-          $tplDir = "$env:APPDATA\Godot\export_templates\$($env:GODOT_SEMVER).stable"
+          $tplDir = "$env:APPDATA\Godot\export_templates\$tplVer"
           New-Item -ItemType Directory -Force $tplDir | Out-Null
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           [IO.Compression.ZipFile]::ExtractToDirectory("$PWD\tpl.zip", "$tplDir\_raw")
           Move-Item "$tplDir\_raw\templates\*" $tplDir -Force
           Remove-Item "$tplDir\_raw" -Recurse -Force
+          Write-Host "Templates installed: $((Get-ChildItem $tplDir).Count) files"
+
+      - name: Import assets (Windows)
+        shell: pwsh
+        working-directory: godot
+        run: |
+          Write-Host "=== Importing project assets ==="
+          & C:\Godot\godot.exe --headless --import 2>&1 | Write-Host
+          Write-Host "=== Import complete ==="
 
       - name: Godot export (Windows)
         shell: pwsh
@@ -111,12 +131,26 @@ jobs:
           unzip -q godot.zip
           sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
+          # Auto-detect template version (4.7-stable → "4.7.stable", not "4.7.0.stable")
+          GODOT_VER_STR=$(godot --version 2>&1 | head -1)
+          echo "Godot version: $GODOT_VER_STR"
+          TPL_VER=$(echo "$GODOT_VER_STR" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?\.stable' | head -1)
+          TPL_VER="${TPL_VER:-${GODOT_SEMVER}.stable}"
+          echo "Using template dir: $TPL_VER"
           # Export templates
           wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
-          TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
+          TPL="$HOME/.local/share/godot/export_templates/${TPL_VER}"
           mkdir -p "$TPL"
           unzip -q tpl.zip -d /tmp/gtpl
           mv /tmp/gtpl/templates/* "$TPL/"
+          echo "Templates installed: $(ls "$TPL" | wc -l) files"
+
+      - name: Import assets (Linux)
+        working-directory: godot
+        run: |
+          echo "=== Importing project assets ==="
+          godot --headless --import 2>&1 || true
+          echo "=== Import complete ==="
 
       - name: Godot export (Linux)
         run: |
@@ -163,12 +197,27 @@ jobs:
           wget -q "$BASE/Godot_v${GODOT_VER}_macos.universal.zip" -O godot.zip
           unzip -q godot.zip -d /tmp/godot_app
           sudo cp -r /tmp/godot_app/Godot.app /Applications/
+          GODOT=/Applications/Godot.app/Contents/MacOS/Godot
+          # Auto-detect template version
+          GODOT_VER_STR=$("$GODOT" --version 2>&1 | head -1)
+          echo "Godot version: $GODOT_VER_STR"
+          TPL_VER=$(echo "$GODOT_VER_STR" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?\.stable' | head -1)
+          TPL_VER="${TPL_VER:-${GODOT_SEMVER}.stable}"
+          echo "Using template dir: $TPL_VER"
           # Export templates
           wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
-          TPL="$HOME/Library/Application Support/Godot/export_templates/${GODOT_SEMVER}.stable"
+          TPL="$HOME/Library/Application Support/Godot/export_templates/${TPL_VER}"
           mkdir -p "$TPL"
           unzip -q tpl.zip -d /tmp/gtpl
           mv /tmp/gtpl/templates/* "$TPL/"
+          echo "Templates installed: $(ls "$TPL" | wc -l) files"
+
+      - name: Import assets (macOS)
+        working-directory: godot
+        run: |
+          echo "=== Importing project assets ==="
+          /Applications/Godot.app/Contents/MacOS/Godot --headless --import 2>&1 || true
+          echo "=== Import complete ==="
 
       - name: Godot export (macOS)
         run: |
@@ -231,12 +280,19 @@ jobs:
           unzip -q godot.zip
           sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
+          # Auto-detect template version
+          GODOT_VER_STR=$(godot --version 2>&1 | head -1)
+          echo "Godot version: $GODOT_VER_STR"
+          TPL_VER=$(echo "$GODOT_VER_STR" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?\.stable' | head -1)
+          TPL_VER="${TPL_VER:-${GODOT_SEMVER}.stable}"
+          echo "Using template dir: $TPL_VER"
           # Export templates
           wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
-          TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
+          TPL="$HOME/.local/share/godot/export_templates/${TPL_VER}"
           mkdir -p "$TPL"
           unzip -q tpl.zip -d /tmp/gtpl
           mv /tmp/gtpl/templates/* "$TPL/"
+          echo "Templates installed: $(ls "$TPL" | wc -l) files"
           # Android SDK path для Godot
           mkdir -p ~/.config/godot
           cat > ~/.config/godot/editor_settings-4.tres <<EOF
@@ -244,6 +300,13 @@ jobs:
           [resource]
           export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
           EOF
+
+      - name: Import assets (Android)
+        working-directory: godot
+        run: |
+          echo "=== Importing project assets ==="
+          godot --headless --import 2>&1 || true
+          echo "=== Import complete ==="
 
       - name: Godot export (Android APK)
         run: |
@@ -299,12 +362,26 @@ jobs:
           unzip -q godot.zip
           sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
+          # Auto-detect template version
+          GODOT_VER_STR=$(godot --version 2>&1 | head -1)
+          echo "Godot version: $GODOT_VER_STR"
+          TPL_VER=$(echo "$GODOT_VER_STR" | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?\.stable' | head -1)
+          TPL_VER="${TPL_VER:-${GODOT_SEMVER}.stable}"
+          echo "Using template dir: $TPL_VER"
           # Export templates
           wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
-          TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
+          TPL="$HOME/.local/share/godot/export_templates/${TPL_VER}"
           mkdir -p "$TPL"
           unzip -q tpl.zip -d /tmp/gtpl
           mv /tmp/gtpl/templates/* "$TPL/"
+          echo "Templates installed: $(ls "$TPL" | wc -l) files"
+
+      - name: Import assets (Web)
+        working-directory: godot
+        run: |
+          echo "=== Importing project assets ==="
+          godot --headless --import 2>&1 || true
+          echo "=== Import complete ==="
 
       - name: Godot export (Web)
         run: |

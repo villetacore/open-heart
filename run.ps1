@@ -1,9 +1,11 @@
-# run.ps1 - build Rust and launch Redot/Godot
-# Usage: .\run.ps1
-#   or:  .\run.ps1 -Engine "C:\path\to\redot.exe"
+# run.ps1 - build Rust and launch the Redot/Godot EDITOR (for content editing)
+# Usage: .\run.ps1                     # build DLL and open the EDITOR (OpenHeart tab; F5 to play)
+#   or:  .\run.ps1 -Game               # launch the GAME directly, without the editor
+#   or:  .\run.ps1 -Engine "C:\path\to\godot.exe"
 
 param(
-    [string]$Engine = ""
+    [string]$Engine = "",
+    [switch]$Game        # -Game launches the game directly (default opens the editor)
 )
 
 Set-Location $PSScriptRoot
@@ -19,7 +21,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 Pop-Location
 
-# DLL живёт внутри проекта (godot/bin) — так её видит экспорт игры
+# DLL lives inside the project (godot/bin) so the game export can bundle it
 New-Item -ItemType Directory -Force -Path "$PSScriptRoot\godot\bin" | Out-Null
 Copy-Item "$PSScriptRoot\rust\target\debug\openheart.dll" "$PSScriptRoot\godot\bin\openheart.dll" -Force
 Write-Host "[OK] openheart.dll ready (godot\bin)" -ForegroundColor Green
@@ -69,8 +71,14 @@ if (-not $found) {
     exit 0
 }
 
-# 3. Launch
-Write-Host "[2/2] Launching: $found" -ForegroundColor Cyan
+# 3. Launch - editor by default (-e flag), or the game with -Game
 $projectDir = "$PSScriptRoot\godot"
-Start-Process -FilePath $found -ArgumentList "--path `"$projectDir`""
-Write-Host "[OK] Editor launched. Press F5 to play." -ForegroundColor Green
+if ($Game) {
+    Write-Host "[2/2] Launching GAME: $found" -ForegroundColor Cyan
+    Start-Process -FilePath $found -ArgumentList "--path `"$projectDir`""
+    Write-Host "[OK] Game launched." -ForegroundColor Green
+} else {
+    Write-Host "[2/2] Launching EDITOR: $found" -ForegroundColor Cyan
+    Start-Process -FilePath $found -ArgumentList "-e --path `"$projectDir`""
+    Write-Host "[OK] Editor launched. Open the OpenHeart tab at the top; press F5 to play." -ForegroundColor Green
+}

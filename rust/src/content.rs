@@ -110,7 +110,7 @@ mod preset_tests {
 
             // форматы: любой битый файл валит тест с именем пресета и ошибкой serde
             let _info: super::PresetInfo = parse(&preset, "preset.json");
-            crate::weapon::parse(&must_read(&preset, "weapons.json"))
+            let weapons_parsed = crate::weapon::parse(&must_read(&preset, "weapons.json"))
                 .unwrap_or_else(|e| panic!("{name}/weapons.json: {e}"));
             crate::classes::parse(&must_read(&preset, "classes.json"))
                 .unwrap_or_else(|e| panic!("{name}/classes.json: {e}"));
@@ -186,6 +186,35 @@ mod preset_tests {
                 }
             }
 
+            // статусы: парс + виды (нет файла — рантайм берёт core)
+            let status_src = read(&preset, "statuses.json")
+                .or_else(|| std::fs::read_to_string(
+                    presets_root().join("core/statuses.json")).ok());
+            let mut status_ids: HashSet<String> = HashSet::new();
+            if let Some(t) = status_src {
+                let ss: Vec<crate::config::StatusCfg> = serde_json::from_str(&t)
+                    .unwrap_or_else(|e| panic!("{name}/statuses.json: {e}"));
+                for s in &ss {
+                    assert!(matches!(s.kind.as_str(),
+                            "dot" | "slow" | "stun" | "vulnerable"),
+                        "{name}/statuses.json: '{}' — неизвестный kind '{}'", s.id, s.kind);
+                    status_ids.insert(s.id.clone());
+                }
+            }
+            // ссылки на статусы: enemies.attack_status + weapons.status
+            for e in &enemies.enemies {
+                if let Some(s) = &e.attack_status {
+                    assert!(status_ids.contains(&s.id),
+                        "{name}/enemies.json: враг '{}' — статус '{}' не найден", e.id, s.id);
+                }
+            }
+            for w in &weapons_parsed {
+                if let Some((id, _)) = &w.status {
+                    assert!(status_ids.contains(id),
+                        "{name}/weapons.json: оружие '{}' — статус '{id}' не найден", w.name_ru);
+                }
+            }
+
             // способности: парс + виды + ссылки (нет файла — рантайм берёт core)
             let ability_src = read(&preset, "abilities.json")
                 .or_else(|| std::fs::read_to_string(
@@ -202,6 +231,10 @@ mod preset_tests {
                         let m = a.minion.as_deref().unwrap_or("");
                         assert!(enemy_ids.contains(m),
                             "{name}/abilities.json: '{}' — миньон '{m}' не найден во врагах", a.id);
+                    }
+                    if let Some(s) = &a.status {
+                        assert!(status_ids.contains(&s.id),
+                            "{name}/abilities.json: '{}' — статус '{}' не найден", a.id, s.id);
                     }
                     ability_ids.insert(a.id.clone());
                 }

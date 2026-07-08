@@ -46,6 +46,7 @@ API, каждый файл данных, ассеты и инструменты.
 | `perk.rs` | 172 | `PerkDef`, `SynergyDef`, `PerkMods`, `load()`, `perks()`, `synergies()`, `mods_for`, `available`, `reqs_met` | Дерево перков и синергии из JSON; агрегация модификаторов |
 | `config.rs` | 173 | `GameConfig::load_from(base)`, `EnemyCfg`, `ItemCfg`, `NpcCfg`, `QuestCfg`, `LevelCfg`, `Resist` | Загрузка enemies/items/npcs/quests/level пресета (per-run, без глобального стейта) |
 | `nav.rs` | ~110 | `NavGrid` (A* 4-dir по floor_map данжа), `cell_of`/`center_of` | Навигация врагов в данже |
+| `status.rs` | ~150 | `StatusSet`/`StatusKind` (dot/slow/stun/vulnerable), apply/tick/slow_mult/vuln_mult | Статусы урона (враг+игрок) |
 | `map.rs` | 393 | `MapDef` (+`BlockDef`/`BuildingDef`/`PropDef`/`FlatDef`/`LightDef`/`GlowDef`/`GroundDef`), `load_map`, `build_map` → `BuiltMap` | Карты из JSON: геометрия (box/**ramp**/stairs/cylinder), здания+вывески, glow-каналы, спавны, врата, env |
 
 ### 2.3 Игровые сущности (Godot-ноды)
@@ -111,6 +112,7 @@ API, каждый файл данных, ассеты и инструменты.
 | `dialogues.json` | 2 демо-сцены (data-driven диалоги, приоритет над story.rs) | — |
 | `abilities.json` | 5 способностей врагов (веера снарядов, рывок, призыв, лечение) | — (встроенный core-фолбэк) |
 | `affixes.json` | 5 элитных аффиксов (Быстрый/Бронированный/Вампирический/Взрывной/Свирепый) | — (встроенный core-фолбэк) |
+| `statuses.json` | 5 статусов (горение/кровь/замедление/оглушение/уязвимость) | — (встроенный core-фолбэк) |
 | `dungeon.json` | темы/пулы/босс генератора данжей | — (встроенный core-фолбэк) |
 | `loot.json` | лут комнат и дроп с врагов | — (встроенный core-фолбэк) |
 | `level.json` | legacy-спавны (фолбэк) | пусто |

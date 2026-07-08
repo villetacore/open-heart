@@ -31,6 +31,8 @@ pub struct ShotReq {
     pub count:    u32,
     pub spread:   f32,
     pub color:    Color,
+    /// Статус на игрока при попадании снаряда (id способности).
+    pub status:   Option<String>,
 }
 
 /// Запрос призыва миньонов (kind × count рядом с кастером, mult кастера).
@@ -155,6 +157,12 @@ pub struct Enemy {
     /// Мир «на паузе» (игрок в меню/диалоге): AI не двигается и не атакует.
     pub frozen:       bool,
     pub pending_dmg:  f32,
+    /// Статус, который враг наложит на игрока при попадании (мили/рывок).
+    pub pending_status: Option<String>,
+    attack_status:    Option<(String, f32)>,   // (id, шанс) — из enemies.json
+
+    // статусы урона (горение/кровь/замедление/оглушение/уязвимость)
+    statuses:         crate::status::StatusSet,
 
     // визуал
     pending_color:    Color,
@@ -249,10 +257,47 @@ impl Enemy {
         }).collect();
     }
 
-    /// Урон с учётом типа и резиста. Возвращает фактически нанесённый урон.
+    /// Статус на игрока при атаке (из enemies.json).
+    pub fn set_attack_status(&mut self, status: Option<(String, f32)>) {
+        self.attack_status = status;
+    }
+
+    /// Наложить статус (из оружия/способности/самого себя).
+    pub fn apply_status(&mut self, cfg: &crate::config::StatusCfg) {
+        self.statuses.apply(cfg);
+    }
+
+    /// Ролл статуса на игрока при попадании атакой; ставит pending_status,
+    /// который Game3D снимет вместе с pending_dmg.
+    fn roll_attack_status(&mut self) {
+        if let Some((id, chance)) = self.attack_status.clone() {
+            if self.rng.f32() < chance {
+                self.pending_status = Some(id);
+            }
+        }
+    }
+
+    /// Урон-по-тику (DoT): резист и уязвимость учитываются (как у take_damage —
+    /// «ослабь, потом подожги» работает), но без pain-стаггера/пробуждения —
+    /// иначе горящий враг был бы вечно оглушён.
+    fn take_dot(&mut self, amount: f32, dmg_type: DmgType) {
+        if !self.alive { return; }
+        let dealt = (amount * (1.0 - self.resist[dmg_type.idx()])).max(0.0)
+            * self.statuses.vuln_mult();
+        self.hp -= dealt;
+        if self.hp <= 0.0 {
+            self.hp    = 0.0;
+            self.state = EState::Dead;
+            self.alive = false;
+        }
+    }
+
+    /// Урон с учётом типа, резиста и уязвимости. Возвращает фактически нанесённый.
     pub fn take_damage(&mut self, amount: f32, dmg_type: DmgType) -> f32 {
         if !self.alive { return 0.0; }
-        let dealt = (amount * (1.0 - self.resist[dmg_type.idx()])).max(0.0);
+        // уязвимость (weakened) усиливает входящий урон после резиста
+        let dealt = (amount * (1.0 - self.resist[dmg_type.idx()])).max(0.0)
+            * self.statuses.vuln_mult();
         self.hp -= dealt;
         self.hurt_flash = 0.15;
         // проснуться при уроне (и не отпускать поводок, даже если игрок далеко)
@@ -363,6 +408,10 @@ impl Enemy {
             "projectile_burst" => {
                 let origin = my_pos + Vector3::new(0.0, 1.15 * self.vis_scale, 0.0) + dir * 0.6;
                 let aim = (player_pos + Vector3::new(0.0, 1.0, 0.0) - origin).normalized();
+                // статус способности накладывается по шансу при попадании
+                let status = cfg.status.as_ref()
+                    .filter(|s| self.rng.f32() < s.chance)
+                    .map(|s| s.id.clone());
                 self.shot_reqs.push(ShotReq {
                     origin,
                     dir: aim,
@@ -371,6 +420,7 @@ impl Enemy {
                     count:  cfg.count.max(1),
                     spread: cfg.spread,
                     color,
+                    status,
                 });
             }
             "charge" => {
@@ -415,6 +465,16 @@ impl Enemy {
         if self.alive {
             self.hp = (self.hp + amount).min(self.max_hp);
         }
+    }
+
+    /// Строка статусов для HUD (иконки).
+    pub fn status_summary(&self) -> String {
+        self.statuses.summary()
+    }
+
+    /// Забрать статус, который враг наложит на игрока (сбрасывает).
+    pub fn take_pending_status(&mut self) -> Option<String> {
+        self.pending_status.take()
     }
 
     /// Есть ли прямая видимость до игрока (для дальнобойных атак).
@@ -487,6 +547,9 @@ impl ICharacterBody3D for Enemy {
             alive: true,
             frozen: false,
             pending_dmg: 0.0,
+            pending_status: None,
+            attack_status: None,
+            statuses: crate::status::StatusSet::new(),
             pending_color: Color::from_rgba(1.0, 1.0, 1.0, 1.0),
             tex_path: ENEMY_TEX_FALLBACK.to_string(),
             sprite: None,
@@ -542,14 +605,26 @@ impl ICharacterBody3D for Enemy {
         if !self.alive || self.frozen || self.state == EState::Dead { return; }
         let dt = delta as f32;
 
-        // флэш урона
+        // Статусы: DoT-урон, истечение таймеров. Тикают до всего остального,
+        // чтобы горение/кровь добивали даже стоящего/оглушённого врага.
+        for (dot, dtype) in self.statuses.tick(dt) {
+            self.take_dot(dot, dtype);
+        }
+        if !self.alive || self.state == EState::Dead { return; }
+        let status_tint = self.statuses.tint();   // после тика — истёкшие не подсвечивают
+
+        // флэш урона поверх тинта; вне флэша — тинт активного статуса или базовый цвет
+        // (сбрасываем каждый кадр, чтобы тинт снимался по истечении статуса).
         if self.hurt_flash > 0.0 {
             self.hurt_flash -= dt;
             let c = if self.hurt_flash > 0.0 {
                 Color::from_rgba(1.0, 0.25, 0.25, 1.0)
             } else {
-                self.pending_color
+                status_tint.unwrap_or(self.pending_color)
             };
+            if let Some(ref mut sp) = self.sprite { sp.set_modulate(c); }
+        } else {
+            let c = status_tint.unwrap_or(self.pending_color);
             if let Some(ref mut sp) = self.sprite { sp.set_modulate(c); }
         }
 
@@ -577,9 +652,11 @@ impl ICharacterBody3D for Enemy {
         // кулдауны способностей тикают всегда
         for a in self.abilities.iter_mut() { a.cd -= dt; }
 
-        // Стаггер (pain): оглушён — стоит, каст/рывок уже сброшены в take_damage
-        if self.stagger > 0.0 {
-            self.stagger -= dt;
+        // Стаггер (pain) ИЛИ оглушение (stun-статус): стоит без действий
+        if self.stagger > 0.0 || self.statuses.stunned() {
+            if self.stagger > 0.0 { self.stagger -= dt; }
+            self.cast = None;          // оглушение прерывает телеграф
+            self.charge_timer = 0.0;   // и рывок
             self.apply_velocity(Vector3::ZERO);
             return;
         }
@@ -592,6 +669,7 @@ impl ICharacterBody3D for Enemy {
                 if self.lifesteal > 0.0 {
                     self.hp = (self.hp + self.charge_damage * self.lifesteal).min(self.max_hp);
                 }
+                self.roll_attack_status();
                 self.charge_hit = true;
                 self.charge_timer = 0.0;
             }
@@ -657,6 +735,9 @@ impl ICharacterBody3D for Enemy {
             }
         }
 
+        // Замедление (slow-статус) масштабирует всю скорость передвижения
+        let eff_speed = self.speed * self.statuses.slow_mult();
+
         let mut vel = Vector3::ZERO;
         match self.state {
             EState::Patrol => {
@@ -679,7 +760,7 @@ impl ICharacterBody3D for Enemy {
                         );
                         self.patrol_counter += 1;
                     } else {
-                        vel = flat.normalized() * self.speed * 0.55;
+                        vel = flat.normalized() * eff_speed * 0.55;
                     }
                 }
             }
@@ -694,7 +775,7 @@ impl ICharacterBody3D for Enemy {
                     // не видит: A* по данжу до игрока
                     self.chase_dir(my_pos, player_pos).unwrap_or(to_player)
                 };
-                vel = dir * self.speed;
+                vel = dir * eff_speed;
             }
             EState::Attack => {
                 self.atk_timer -= dt;
@@ -707,11 +788,13 @@ impl ICharacterBody3D for Enemy {
                         if self.lifesteal > 0.0 {
                             self.hp = (self.hp + self.atk_damage * self.lifesteal).min(self.max_hp);
                         }
+                        // статус на игрока по шансу (пиро жжёт, голем замедляет…)
+                        self.roll_attack_status();
                     }
                 }
                 // melee дожимает вплотную; ranged отходит, если игрок налез
                 vel = if self.behavior == Behavior::Ranged && dist < self.atk_range * 0.45 {
-                    -to_player * self.speed * 0.6
+                    -to_player * eff_speed * 0.6
                 } else {
                     to_player * 0.15
                 };
@@ -723,9 +806,9 @@ impl ICharacterBody3D for Enemy {
         if self.state == EState::Chase || self.state == EState::Attack {
             let push = self.separation(my_pos);
             if push.length_squared() > 0.001 {
-                vel += push * self.speed * 0.45;
+                vel += push * eff_speed * 0.45;
                 let l = vel.length();
-                if l > self.speed { vel = vel / l * self.speed; }
+                if l > eff_speed { vel = vel / l * eff_speed; }
             }
         }
 

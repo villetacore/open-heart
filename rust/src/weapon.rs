@@ -150,6 +150,8 @@ pub struct WeaponDef {
     pub idle_frames: Vec<usize>,
     pub fire_frames: Vec<usize>,
     pub fire_fps:    f32,
+    /// Статус, накладываемый на врага при попадании: (id, шанс).
+    pub status:      Option<(String, f32)>,
 }
 
 pub const FRAME_W: f32 = 84.0;
@@ -187,7 +189,16 @@ struct WeaponRaw {
     idle_frames: Vec<f64>,
     fire_frames: Vec<f64>,
     fire_fps:    f32,
+    #[serde(default)] status: Option<StatusRaw>,
 }
+
+#[derive(Deserialize)]
+struct StatusRaw {
+    id: String,
+    #[serde(default = "one_f32")] chance: f32,
+}
+
+fn one_f32() -> f32 { 1.0 }
 
 impl WeaponRaw {
     fn into_def(self, id: WeaponId) -> Result<WeaponDef, String> {
@@ -218,6 +229,7 @@ impl WeaponRaw {
             idle_frames: self.idle_frames.into_iter().map(|f| f as usize).collect(),
             fire_frames: self.fire_frames.into_iter().map(|f| f as usize).collect(),
             fire_fps: self.fire_fps,
+            status: self.status.map(|s| (s.id, s.chance)),
         })
     }
 }

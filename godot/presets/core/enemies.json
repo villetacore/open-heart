@@ -149,7 +149,11 @@
       "abilities": [
         "fire_volley"
       ],
-      "pain_chance": 0.35
+      "pain_chance": 0.35,
+      "attack_status": {
+        "id": "burning",
+        "chance": 0.5
+      }
     },
     {
       "id": "shade",
@@ -174,7 +178,11 @@
       "abilities": [
         "void_bolt"
       ],
-      "pain_chance": 0.25
+      "pain_chance": 0.25,
+      "attack_status": {
+        "id": "weakened",
+        "chance": 0.4
+      }
     },
     {
       "id": "golem",
@@ -196,7 +204,11 @@
       },
       "sprite": "heavy",
       "scale": 1.15,
-      "pain_chance": 0.05
+      "pain_chance": 0.05,
+      "attack_status": {
+        "id": "slow",
+        "chance": 0.5
+      }
     },
     {
       "id": "royal_guard",
@@ -316,7 +328,11 @@
         "void_bolt",
         "dark_mending"
       ],
-      "pain_chance": 0.3
+      "pain_chance": 0.3,
+      "attack_status": {
+        "id": "weakened",
+        "chance": 0.4
+      }
     }
   ]
 }

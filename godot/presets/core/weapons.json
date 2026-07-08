@@ -50,7 +50,11 @@
       6.0,
       7.0
     ],
-    "fire_fps": 14.0
+    "fire_fps": 14.0,
+    "status": {
+      "id": "bleed",
+      "chance": 0.7
+    }
   },
   {
     "id": "pistol",
@@ -165,7 +169,11 @@
       6.0,
       7.0
     ],
-    "fire_fps": 12.0
+    "fire_fps": 12.0,
+    "status": {
+      "id": "bleed",
+      "chance": 0.3
+    }
   },
   {
     "id": "plasma",
@@ -194,7 +202,11 @@
       6.0,
       7.0
     ],
-    "fire_fps": 16.0
+    "fire_fps": 16.0,
+    "status": {
+      "id": "burning",
+      "chance": 0.5
+    }
   },
   {
     "id": "rocket",

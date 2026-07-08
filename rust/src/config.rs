@@ -66,6 +66,9 @@ pub struct EnemyCfg {
     /// Шанс (0..1) прервать врага стаггером при получении урона.
     #[serde(default)]
     pub pain_chance:     f32,
+    /// Статус на игрока при обычной атаке врага (мили/рывок).
+    #[serde(default)]
+    pub attack_status:   Option<StatusHit>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -143,6 +146,35 @@ pub struct QuestCfg {
     #[serde(default, deserialize_with = "de_i32")] pub reward_gold: i32,
 }
 
+// ── Статусы урона (statuses.json) ─────────────────────────────────────────────
+
+fn d_status_tick() -> f32 { 0.5 }
+
+/// Определение статуса. kind: dot (урон по тику), slow (замедление),
+/// stun (оглушение), vulnerable (+входящий урон). Применяется оружием/способностями.
+#[derive(Debug, Deserialize, Clone)]
+pub struct StatusCfg {
+    pub id:      String,
+    pub name_ru: String,
+    pub kind:    String,
+    #[serde(default)] pub duration: f32,
+    // dot
+    #[serde(default)] pub damage:   f32,               // урон за тик
+    #[serde(default)] pub dmg_type: Option<String>,
+    #[serde(default = "d_status_tick")] pub tick: f32, // секунд между тиками
+    // slow / vulnerable
+    #[serde(default)] pub amount:   f32,               // slow: 0.45=−45% скорости; vuln: 0.35=+35%
+    #[serde(default)] pub tint:     Option<[f32; 3]>,
+    #[serde(default)] pub icon:     Option<String>,    // символ для HUD
+}
+
+/// Ссылка на статус при нанесении: id + шанс наложить.
+#[derive(Debug, Deserialize, Clone)]
+pub struct StatusHit {
+    pub id:     String,
+    #[serde(default = "d_one")] pub chance: f32,
+}
+
 // ── Способности врагов (abilities.json) ──────────────────────────────────────
 
 fn d_ab_cd() -> f32 { 4.0 }
@@ -175,6 +207,8 @@ pub struct AbilityCfg {
     // heal_pulse
     #[serde(default)] pub heal:   f32,
     #[serde(default)] pub radius: f32,
+    /// Статус, накладываемый на игрока при попадании (снаряд/рывок).
+    #[serde(default)] pub status: Option<StatusHit>,
 }
 
 // ── Элитные аффиксы (affixes.json) ────────────────────────────────────────────
@@ -310,6 +344,8 @@ pub struct GameConfig {
     pub abilities: Vec<AbilityCfg>,
     /// Элитные аффиксы (affixes.json); нет файла → встроенные core.
     pub affixes:   Vec<AffixCfg>,
+    /// Определения статусов (statuses.json); нет файла → встроенные core.
+    pub statuses:  Vec<StatusCfg>,
     /// Генерация данжей (dungeon.json); нет файла → встроенные настройки core.
     pub dungeon: DungeonCfg,
     /// Таблицы лута (loot.json); нет файла → встроенные настройки core.
@@ -335,6 +371,7 @@ const EMBEDDED_DUNGEON: &str = include_str!("../../godot/presets/core/dungeon.js
 const EMBEDDED_LOOT:    &str = include_str!("../../godot/presets/core/loot.json");
 const EMBEDDED_ABILITIES: &str = include_str!("../../godot/presets/core/abilities.json");
 const EMBEDDED_AFFIXES:   &str = include_str!("../../godot/presets/core/affixes.json");
+const EMBEDDED_STATUSES:  &str = include_str!("../../godot/presets/core/statuses.json");
 
 /// Распарсить текст конфига; при ошибке — громкое предупреждение и встроенная копия.
 fn parse_loud<T: serde::de::DeserializeOwned + Default>(text: &str, file: &str, embedded: &str) -> T {
@@ -363,6 +400,7 @@ pub(crate) fn embedded_configs_parse_for_test() {
     serde_json::from_str::<LootCfg>(EMBEDDED_LOOT).expect("embedded loot.json");
     serde_json::from_str::<Vec<AbilityCfg>>(EMBEDDED_ABILITIES).expect("embedded abilities.json");
     serde_json::from_str::<Vec<AffixCfg>>(EMBEDDED_AFFIXES).expect("embedded affixes.json");
+    serde_json::from_str::<Vec<StatusCfg>>(EMBEDDED_STATUSES).expect("embedded statuses.json");
 }
 
 impl GameConfig {
@@ -439,6 +477,12 @@ impl GameConfig {
             None => serde_json::from_str(EMBEDDED_AFFIXES).unwrap_or_default(),
         };
 
+        // статусы урона: нет файла — молча встроенные core
+        let statuses: Vec<StatusCfg> = match read(&format!("{base}/statuses.json")) {
+            Some(t) => parse_loud(&t, "statuses.json", EMBEDDED_STATUSES),
+            None => serde_json::from_str(EMBEDDED_STATUSES).unwrap_or_default(),
+        };
+
         // диалоги: отсутствие файла — норма (story.rs остаётся встроенным контентом)
         let dialogues = match read(&format!("{base}/dialogues.json")) {
             None => Vec::new(),
@@ -456,7 +500,7 @@ impl GameConfig {
             },
         };
 
-        Self { enemies, items, level, npcs, quests, dialogues, abilities, affixes, dungeon, loot, npcs_file_present }
+        Self { enemies, items, level, npcs, quests, dialogues, abilities, affixes, statuses, dungeon, loot, npcs_file_present }
     }
 
     /// JSON-сцена диалога по id (приоритетнее story.rs — см. game.rs).

@@ -23,6 +23,10 @@ pub struct Player {
     pub hp:      f32,
     pub max_hp:  f32,
     pub speed:   f32,
+    /// Транзитный множитель скорости (замедление-статус); Game3D ставит каждый кадр.
+    pub speed_mult: f32,
+    /// Оглушён статусом (stun): движение остановлено; стрельбу гейтит Game3D.
+    pub stunned: bool,
     pub dead:    bool,
     pub frozen:  bool,   // ввод отключён (меню выбора класса и т.п.)
     pub moving:  bool,   // для покачивания оружия
@@ -32,8 +36,8 @@ pub struct Player {
 impl ICharacterBody3D for Player {
     fn init(base: Base<CharacterBody3D>) -> Self {
         Self { base, cam: None, yaw: 0.0, pitch: 0.0,
-               hp: MAX_HP, max_hp: MAX_HP, speed: 5.0,
-               dead: false, frozen: false, moving: false }
+               hp: MAX_HP, max_hp: MAX_HP, speed: 5.0, speed_mult: 1.0,
+               stunned: false, dead: false, frozen: false, moving: false }
     }
 
     fn ready(&mut self) {
@@ -59,21 +63,24 @@ impl ICharacterBody3D for Player {
         let right = Vector3::new( cos_y, 0.0, -sin_y);
 
         let mut dir = Vector3::ZERO;
-        if input.is_action_pressed("move_forward") { dir += fwd; }
-        if input.is_action_pressed("move_back")    { dir -= fwd; }
-        if input.is_action_pressed("move_right")   { dir += right; }
-        if input.is_action_pressed("move_left")    { dir -= right; }
+        // оглушение: ввод движения/прыжка игнорируется (мышь-обзор остаётся)
+        if !self.stunned {
+            if input.is_action_pressed("move_forward") { dir += fwd; }
+            if input.is_action_pressed("move_back")    { dir -= fwd; }
+            if input.is_action_pressed("move_right")   { dir += right; }
+            if input.is_action_pressed("move_left")    { dir -= right; }
 
-        if input.is_action_just_pressed("jump") && self.base().is_on_floor() {
-            vel.y = JUMP_SPEED;
+            if input.is_action_just_pressed("jump") && self.base().is_on_floor() {
+                vel.y = JUMP_SPEED;
+            }
         }
 
         let sprint = if input.is_action_pressed("sprint") { SPRINT_MULT } else { 1.0 };
 
         if dir.length_squared() > 0.001 { dir = dir.normalized(); }
         self.moving = dir.length_squared() > 0.001;
-        vel.x = dir.x * self.speed * sprint;
-        vel.z = dir.z * self.speed * sprint;
+        vel.x = dir.x * self.speed * sprint * self.speed_mult;
+        vel.z = dir.z * self.speed * sprint * self.speed_mult;
         self.base_mut().set_velocity(vel);
         self.base_mut().move_and_slide();
     }

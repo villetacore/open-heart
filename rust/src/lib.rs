@@ -23,6 +23,7 @@ pub mod player;
 pub mod quest;
 pub mod save;
 pub mod settings;
+pub mod status;
 pub mod story;
 pub mod weapon;
 pub mod world;

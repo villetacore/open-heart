@@ -126,6 +126,7 @@ struct Projectile {
     dmg_type: DmgType,
     splash:   f32,
     ttl:      f32,
+    status:   Option<(String, f32)>,   // статус оружия при попадании
 }
 
 /// Снаряд врага (abilities.json: projectile_burst) — летит в игрока, можно увернуться.
@@ -135,6 +136,7 @@ struct EnemyProjectile {
     vel:  Vector3,
     dmg:  f32,
     ttl:  f32,
+    status: Option<String>,   // статус на игрока при попадании (id)
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -207,8 +209,12 @@ pub struct Game3D {
 
     class_pick:  usize,   // выбранный класс на этапе выбора спека
 
+    // статусы игрока (горение/кровь/замедление/уязвимость от врагов)
+    player_statuses: crate::status::StatusSet,
+
     // HUD
     hint_label:      Option<Gd<Label>>,
+    status_label:    Option<Gd<Label>>,
     hp_bar_fg:       Option<Gd<Panel>>,
     hp_label:        Option<Gd<Label>>,
     xp_bar_fg:       Option<Gd<Panel>>,
@@ -317,7 +323,8 @@ impl INode3D for Game3D {
             weapon_anim: WeaponAnim::Idle, anim_timer: 0.0, idle_frame: 0,
             npc_anim_timer: 0.0, npc_anim_frame: 0,
             class_pick: 0,
-            hint_label: None,
+            player_statuses: crate::status::StatusSet::new(),
+            hint_label: None, status_label: None,
             hp_bar_fg: None, hp_label: None,
             xp_bar_fg: None, xp_label: None,
             ammo_label: None, weapon_label: None, loc_label: None,
@@ -452,6 +459,7 @@ impl INode3D for Game3D {
             self.collect_enemy_requests();
             self.tick_enemy_projectiles(dt);
             self.collect_enemy_damage(dt);
+            self.tick_player_statuses(dt);
         }
         if self.enemies_frozen == in_gameplay {
             let frozen = !in_gameplay;
@@ -462,9 +470,10 @@ impl INode3D for Game3D {
                 // сгорает: иначе он «прилетел бы из паузы» после закрытия.
                 if frozen {
                     b.pending_dmg = 0.0;
-                    // запросы способностей из тика перехода тоже сгорают —
-                    // иначе «залп из паузы» после закрытия меню
+                    // запросы способностей и статус-удар из тика перехода тоже
+                    // сгорают — иначе «залп/поджог из паузы» после закрытия меню
                     let _ = b.drain_requests();
+                    let _ = b.take_pending_status();
                 }
             }
             self.enemies_frozen = frozen;
@@ -678,6 +687,10 @@ impl Game3D {
                 ^ pos.x.to_bits() as u64;
             e.bind_mut().set_combat_extras(abs, ecfg.pain_chance, seed);
         }
+        // статус, который враг накладывает на игрока при атаке
+        if let Some(s) = &ecfg.attack_status {
+            e.bind_mut().set_attack_status(Some((s.id.clone(), s.chance)));
+        }
         // аффиксы элиты (после combat_extras — модифицируют и pain_chance)
         if !affixes.is_empty() {
             let resolved: Vec<crate::config::AffixCfg> = affixes.iter()
@@ -785,6 +798,7 @@ impl Game3D {
             self.base_mut().add_child(&node);
             self.enemy_projectiles.push(EnemyProjectile {
                 node, pos: req.origin, vel: d * req.speed, dmg: req.damage, ttl: 3.5,
+                status: req.status.clone(),
             });
         }
     }
@@ -793,6 +807,7 @@ impl Game3D {
     /// любое другое тело (стена, свой же) гасит снаряд.
     fn tick_enemy_projectiles(&mut self, dt: f32) {
         let mut player_dmg = 0.0f32;
+        let mut player_statuses: Vec<String> = Vec::new();
         let mut wall_fx: Vec<Vector3> = Vec::new();
 
         let mut i = 0;
@@ -820,6 +835,9 @@ impl Game3D {
                         .unwrap_or(false);
                     if is_player {
                         player_dmg += self.enemy_projectiles[i].dmg;
+                        if let Some(s) = self.enemy_projectiles[i].status.clone() {
+                            player_statuses.push(s);
+                        }
                     } else {
                         wall_fx.push(pos);
                     }
@@ -845,12 +863,10 @@ impl Game3D {
             self.spawn_fx("res://assets/effects/effect_bullet.png", pos, 0.005, 0.18);
         }
         if player_dmg > 0.0 {
-            if let Some(ref p) = self.player {
-                if let Ok(mut pl) = p.clone().try_cast::<Player>() {
-                    pl.bind_mut().take_damage(player_dmg);
-                }
-            }
-            self.damage_flash_timer = 0.35;
+            self.damage_player(player_dmg);
+        }
+        for id in player_statuses {
+            self.apply_status_to_player(&id);
         }
     }
 
@@ -1470,6 +1486,15 @@ impl Game3D {
         layer.add_child(&hp_lbl);
         self.hp_label = Some(hp_lbl);
 
+        // статусы игрока (над HP-баром)
+        let mut st_lbl = Label::new_alloc();
+        st_lbl.set_position(Vector2::new(24.0, HUD_H - 112.0));
+        st_lbl.set_size(Vector2::new(360.0, 24.0));
+        st_lbl.add_theme_font_size_override("font_size", 16);
+        st_lbl.add_theme_color_override("font_color", C_CYAN);
+        layer.add_child(&st_lbl);
+        self.status_label = Some(st_lbl);
+
         // XP бар
         let mut xp_bg = Panel::new_alloc();
         xp_bg.set_position(Vector2::new(24.0, HUD_H - 28.0));
@@ -2020,9 +2045,9 @@ impl Game3D {
             }
         }
 
-        // стрельба
+        // стрельба (оглушение блокирует)
         let has_any_weapon = self.arsenal.owned.iter().any(|o| *o);
-        if has_any_weapon {
+        if has_any_weapon && !self.player_stunned() {
             let def = weapon_def(self.arsenal.current);
             let want_fire = if def.auto {
                 input.is_action_pressed("shoot")
@@ -2091,6 +2116,15 @@ impl Game3D {
             st.gold -= lost;
             lost
         };
+        // возрождение снимает дебаффы (горение/замедление/оглушение)
+        self.player_statuses.clear();
+        if let Some(ref p) = self.player {
+            if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                let mut b = pl.bind_mut();
+                b.speed_mult = 1.0;
+                b.stunned = false;
+            }
+        }
         if self.loc == Loc::Dungeon {
             self.clear_dungeon();
             self.loc = Loc::World;
@@ -2327,6 +2361,7 @@ impl Game3D {
         if let Some((idx, _)) = best {
             let epos = self.enemies[idx].get_global_position();
             let dealt = self.enemies[idx].bind_mut().take_damage(dmg, dtype);
+            self.apply_weapon_status_idx(idx);
             self.spawn_fx("res://assets/effects/effect_blood.png",
                           epos + Vector3::new(0.0, 1.1, 0.0), 0.010, 0.28);
             // вампиризм — от фактически нанесённого урона
@@ -2341,12 +2376,26 @@ impl Game3D {
         }
     }
 
+    /// Наложить статус текущего оружия на врага по индексу (после take_damage).
+    fn apply_weapon_status_idx(&mut self, idx: usize) {
+        let wstatus = weapon_def(self.arsenal.current).status.clone();
+        if let Some(sc) = self.rolled_enemy_status(&wstatus) {
+            if let Some(e) = self.enemies.get(idx) {
+                e.clone().bind_mut().apply_status(&sc);
+            }
+        }
+    }
+
     fn fire_ray(&mut self, from: Vector3, dir: Vector3, range: f32, dmg: f32, dtype: DmgType) {
         let to = from + dir * range;
         let hit = self.raycast(from, to);
         match hit {
             Some((pos, Some(mut enemy))) => {
                 enemy.bind_mut().take_damage(dmg, dtype);
+                let wstatus = weapon_def(self.arsenal.current).status.clone();
+                if let Some(sc) = self.rolled_enemy_status(&wstatus) {
+                    enemy.bind_mut().apply_status(&sc);
+                }
                 self.spawn_fx("res://assets/effects/effect_blood.png",
                               pos, 0.008, 0.25);
             }
@@ -2393,12 +2442,14 @@ impl Game3D {
         let l = make_light(Vector3::ZERO, C_PINK, 0.8, 5.0);
         node.add_child(&l);
         self.base_mut().add_child(&node);
-        self.projectiles.push(Projectile { node, pos, vel, dmg, dmg_type, splash, ttl });
+        // статус оружия фиксируется на снаряде в момент выстрела
+        let status = weapon_def(weapon).status.clone();
+        self.projectiles.push(Projectile { node, pos, vel, dmg, dmg_type, splash, ttl, status });
     }
 
     fn tick_projectiles(&mut self, dt: f32) {
         let mut exploded: Vec<(Vector3, f32, DmgType, f32)> = Vec::new(); // pos, dmg, type, splash
-        let mut direct_hits: Vec<(Gd<Enemy>, f32, DmgType, Vector3)> = Vec::new();
+        let mut direct_hits: Vec<(Gd<Enemy>, f32, DmgType, Vector3, Option<(String, f32)>)> = Vec::new();
 
         let mut i = 0;
         while i < self.projectiles.len() {
@@ -2413,7 +2464,7 @@ impl Game3D {
                     if pr.splash > 0.0 {
                         exploded.push((pos, pr.dmg, pr.dmg_type, pr.splash));
                     } else {
-                        direct_hits.push((enemy, pr.dmg, pr.dmg_type, pos));
+                        direct_hits.push((enemy, pr.dmg, pr.dmg_type, pos, pr.status.clone()));
                     }
                     remove = true;
                 }
@@ -2442,9 +2493,12 @@ impl Game3D {
             }
         }
 
-        for (enemy, dmg, dtype, pos) in direct_hits {
+        for (enemy, dmg, dtype, pos, status) in direct_hits {
             let mut e = enemy;
             e.bind_mut().take_damage(dmg, dtype);
+            if let Some(sc) = self.rolled_enemy_status(&status) {
+                e.bind_mut().apply_status(&sc);
+            }
             self.spawn_fx("res://assets/effects/effect_blood.png", pos, 0.008, 0.25);
         }
         for (pos, dmg, dtype, splash) in exploded {
@@ -2697,22 +2751,78 @@ impl Game3D {
 
     fn collect_enemy_damage(&mut self, _dt: f32) {
         let mut total_dmg = 0.0f32;
+        let mut applied_status: Vec<String> = Vec::new();
         for e in self.enemies.iter_mut() {
-            let dmg = e.bind().pending_dmg;
-            if dmg > 0.0 {
-                total_dmg += dmg;
-                e.bind_mut().pending_dmg = 0.0;
-            }
+            let (dmg, status) = {
+                let mut b = e.bind_mut();
+                let d = b.pending_dmg;
+                b.pending_dmg = 0.0;
+                (d, b.take_pending_status())
+            };
+            if dmg > 0.0 { total_dmg += dmg; }
+            if let Some(s) = status { applied_status.push(s); }
         }
         if total_dmg > 0.0 {
-            let maybe_player = self.player.clone();
-            if let Some(p_gd) = maybe_player {
-                if let Ok(mut player) = p_gd.try_cast::<Player>() {
-                    player.bind_mut().take_damage(total_dmg);
-                }
-            }
-            self.damage_flash_timer = 0.35;
+            self.damage_player(total_dmg);
         }
+        for id in applied_status {
+            self.apply_status_to_player(&id);
+        }
+    }
+
+    /// Урон игроку с учётом уязвимости (weakened) + красный флэш.
+    fn damage_player(&mut self, amount: f32) {
+        let amount = amount * self.player_statuses.vuln_mult();
+        if let Some(p_gd) = self.player.clone() {
+            if let Ok(mut player) = p_gd.try_cast::<Player>() {
+                player.bind_mut().take_damage(amount);
+            }
+        }
+        self.damage_flash_timer = 0.35;
+    }
+
+    /// Наложить статус на игрока по id (из statuses.json пресета).
+    fn apply_status_to_player(&mut self, id: &str) {
+        let cfg = self.cfg.as_ref().and_then(|c| c.statuses.iter().find(|s| s.id == id).cloned());
+        if let Some(sc) = cfg {
+            self.player_statuses.apply(&sc);
+        }
+    }
+
+    /// StatusCfg по id для наложения на врага (если ролл шанса прошёл).
+    fn rolled_enemy_status(&mut self, status: &Option<(String, f32)>) -> Option<crate::config::StatusCfg> {
+        let (id, chance) = status.as_ref()?;
+        if self.rng.f32() >= *chance { return None; }
+        self.cfg.as_ref()?.statuses.iter().find(|s| &s.id == id).cloned()
+    }
+
+    // ── Статусы игрока ─────────────────────────────────────────────────────────
+
+    fn tick_player_statuses(&mut self, dt: f32) {
+        // DoT: у игрока нет резистов — суммируем урон тиков
+        let dots = self.player_statuses.tick(dt);
+        let dot: f32 = dots.iter().map(|(d, _)| *d).sum();
+        if dot > 0.0 {
+            self.damage_player(dot);
+        }
+        // замедление → множитель скорости; оглушение → флаг стана
+        let sm = self.player_statuses.slow_mult();
+        let stunned = self.player_statuses.stunned();
+        if let Some(p_gd) = self.player.clone() {
+            if let Ok(mut player) = p_gd.try_cast::<Player>() {
+                let mut b = player.bind_mut();
+                b.speed_mult = sm;
+                b.stunned = stunned;
+            }
+        }
+    }
+
+    /// Оглушён ли игрок статусом (стрельба заблокирована).
+    fn player_stunned(&self) -> bool {
+        self.player.as_ref()
+            .and_then(|p| p.clone().try_cast::<Player>().ok())
+            .map(|pl| pl.bind().stunned)
+            .unwrap_or(false)
     }
 
     // ── Подбор предметов ─────────────────────────────────────────────────────
@@ -3257,6 +3367,11 @@ impl Game3D {
         if let Some(ref mut lbl) = self.hp_label {
             lbl.set_text(&format!("{}: {:.0}/{:.0}", t("hud_hp", &lang), hp, max_hp));
         }
+        // статусы игрока (иконки)
+        let st = self.player_statuses.summary();
+        if let Some(ref mut lbl) = self.status_label {
+            lbl.set_text(&st);
+        }
     }
 
     fn update_xp_bar(&mut self) {
@@ -3331,7 +3446,9 @@ impl Game3D {
                     let bar: String = "█".repeat(filled) + &"░".repeat(10 - filled.min(10));
                     let boss = if eb.is_boss { "СТРАЖ " }
                                else if eb.is_elite() { "⭐ " } else { "" };
-                    format!("{}[{}]  {}  {:.0}/{:.0}", boss, eb.display_name(), bar, eb.hp, eb.max_hp)
+                    let st = eb.status_summary();
+                    let st = if st.is_empty() { String::new() } else { format!("  {st}") };
+                    format!("{}[{}]  {}  {:.0}/{:.0}{}", boss, eb.display_name(), bar, eb.hp, eb.max_hp, st)
                 } else { String::new() }
             } else { String::new() }
         } else { String::new() };

@@ -17,6 +17,7 @@ const SCHEMAS := {
 			{"key": "sheet", "type": "str"}, {"key": "frame_h", "type": "float"},
 			{"key": "idle_frames", "type": "json"}, {"key": "fire_frames", "type": "json"},
 			{"key": "fire_fps", "type": "float"},
+			{"key": "status", "type": "json"},
 		],
 	},
 	"Классы": {
@@ -61,6 +62,7 @@ const SCHEMAS := {
 			{"key": "behavior", "type": "enum", "options": ["melee", "ranged"], "nullable": true},
 			{"key": "abilities", "type": "json", "default": []},
 			{"key": "pain_chance", "type": "float"},
+			{"key": "attack_status", "type": "json"},
 			{"key": "scale", "type": "float"},
 			{"key": "color_r", "type": "float"}, {"key": "color_g", "type": "float"},
 			{"key": "color_b", "type": "float"},
@@ -81,6 +83,20 @@ const SCHEMAS := {
 			{"key": "speed_mult", "type": "float"}, {"key": "duration", "type": "float"},
 			{"key": "minion", "type": "dyn_enum", "source": "enemies", "nullable": true},
 			{"key": "heal", "type": "float"}, {"key": "radius", "type": "float"},
+			{"key": "status", "type": "json"},
+		],
+	},
+	"Статусы": {
+		"file": "statuses.json", "root": [],
+		"fields": [
+			{"key": "id", "type": "str"}, {"key": "name_ru", "type": "str"},
+			{"key": "kind", "type": "enum", "options": ["dot", "slow", "stun", "vulnerable"]},
+			{"key": "duration", "type": "float"},
+			{"key": "damage", "type": "float"},
+			{"key": "dmg_type", "type": "enum",
+			 "options": ["physical", "fire", "energy", "void"], "nullable": true},
+			{"key": "tick", "type": "float"}, {"key": "amount", "type": "float"},
+			{"key": "tint", "type": "color"}, {"key": "icon", "type": "str"},
 		],
 	},
 	"Аффиксы": {
@@ -1167,7 +1183,7 @@ func _cached_file(rel: String, default_root):
 			# У dungeon/loot «нет файла» = встроенные core-настройки: стартуем
 			# от ПОЛНОЙ core-копии, чтобы правка одной секции не сохранила
 			# усечённый файл (пустые kill_drops = «дропа нет вообще»).
-			if rel in ["dungeon.json", "loot.json", "abilities.json", "affixes.json"]:
+			if rel in ["dungeon.json", "loot.json", "abilities.json", "affixes.json", "statuses.json"]:
 				parsed = _read_json("res://presets/core/%s" % rel)
 			synthetic[rel] = true
 			if parsed == null:

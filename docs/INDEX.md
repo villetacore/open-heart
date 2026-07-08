@@ -45,6 +45,7 @@ API, каждый файл данных, ассеты и инструменты.
 | `classes.rs` | 175 | `ClassDef`, `SpecDef`, `Loadout`, `load()`, `classes()`, `compute_loadout`, `xp_to_next` | Классы/спеки из `classes.json`; расчёт итоговых статов (класс+спек+уровень+сердца+перки) |
 | `perk.rs` | 172 | `PerkDef`, `SynergyDef`, `PerkMods`, `load()`, `perks()`, `synergies()`, `mods_for`, `available`, `reqs_met` | Дерево перков и синергии из JSON; агрегация модификаторов |
 | `config.rs` | 173 | `GameConfig::load_from(base)`, `EnemyCfg`, `ItemCfg`, `NpcCfg`, `QuestCfg`, `LevelCfg`, `Resist` | Загрузка enemies/items/npcs/quests/level пресета (per-run, без глобального стейта) |
+| `nav.rs` | ~110 | `NavGrid` (A* 4-dir по floor_map данжа), `cell_of`/`center_of` | Навигация врагов в данже |
 | `map.rs` | 393 | `MapDef` (+`BlockDef`/`BuildingDef`/`PropDef`/`FlatDef`/`LightDef`/`GlowDef`/`GroundDef`), `load_map`, `build_map` → `BuiltMap` | Карты из JSON: геометрия (box/**ramp**/stairs/cylinder), здания+вывески, glow-каналы, спавны, врата, env |
 
 ### 2.3 Игровые сущности (Godot-ноды)

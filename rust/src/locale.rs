@@ -15,6 +15,7 @@ fn ru(k: &'static str) -> &'static str {
         // Настройки
         "set_title"        => "НАСТРОЙКИ",
         "set_lang"         => "Язык",
+        "set_diff"         => "Сложность",
         "set_volume"       => "Громкость мастер",
         "set_sens"         => "Чувствительность мыши",
         "set_back"         => "← Назад",
@@ -55,6 +56,7 @@ fn en(k: &'static str) -> &'static str {
         "menu_quit"        => "Quit",
         "set_title"        => "SETTINGS",
         "set_lang"         => "Language",
+        "set_diff"         => "Difficulty",
         "set_volume"       => "Master Volume",
         "set_sens"         => "Mouse Sensitivity",
         "set_back"         => "← Back",

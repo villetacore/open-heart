@@ -98,11 +98,12 @@
   "id": "pyro_cultist", "name": "Пиро-культист",
   "hp": 77.0, "speed": 3.3,
   "attack_damage": 18.0, "attack_range": 2.0, "attack_cooldown": 1.2,
-  "chase_range": 11.0,          // радиус агра (атаки дальше 3 м требуют прямой видимости)
+  "chase_range": 11.0,          // радиус агра — по ЗРЕНИЮ (сквозь стены не видит; шум будит)
   "patrol_radius": 4.0,
   "color_r": 1.0, "color_g": 0.45, "color_b": 0.25,   // тинт спрайта
   "xp": 28.0,                   // опыт за убийство (умножается на mult данжа)
   "sprite": "cultist",          // лист enemy_<sprite>.png: grunt|fast|heavy|brute|sniper|cultist
+  "behavior": "ranged",         // melee (в контакт, по умолчанию) | ranged (держит дистанцию)
   "scale": 1.0,                 // масштаб спрайта и коллайдера (босс ≥1.35)
   "resist": { "fire": 0.6, "void": -0.4 }   // 0..1 = резист, <0 = уязвимость; ключи:
 }                                            // physical | fire | energy | void

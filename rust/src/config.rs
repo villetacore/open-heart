@@ -57,6 +57,9 @@ pub struct EnemyCfg {
     /// Масштаб спрайта/коллайдера (1.0 = обычный, >1.2 = «крупный»).
     #[serde(default = "default_scale")]
     pub scale:           f32,
+    /// Боевое поведение: "melee" (в контакт, по умолчанию) | "ranged" (держит дистанцию).
+    #[serde(default)]
+    pub behavior:        Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

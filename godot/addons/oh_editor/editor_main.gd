@@ -58,6 +58,7 @@ const SCHEMAS := {
 			{"key": "attack_cooldown", "type": "float"}, {"key": "chase_range", "type": "float"},
 			{"key": "patrol_radius", "type": "float"}, {"key": "xp", "type": "float"},
 			{"key": "sprite", "type": "dyn_enum", "source": "enemy_sprites"},
+			{"key": "behavior", "type": "enum", "options": ["melee", "ranged"], "nullable": true},
 			{"key": "scale", "type": "float"},
 			{"key": "color_r", "type": "float"}, {"key": "color_g", "type": "float"},
 			{"key": "color_b", "type": "float"},

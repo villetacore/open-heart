@@ -31,6 +31,7 @@ pub struct MainMenu {
     r_settings: Rect2,
     r_quit:     Rect2,
     r_lang:     Rect2,
+    r_diff:     Rect2,
     r_back:     Rect2,
 
     // Дочерние узлы которые нам нужно обновлять
@@ -39,6 +40,7 @@ pub struct MainMenu {
     lbl_preset_desc: Option<Gd<Label>>,
     panel_settings: Option<Gd<Panel>>,
     lbl_lang_val:   Option<Gd<Label>>,
+    lbl_diff_val:   Option<Gd<Label>>,
 
     presets:     Vec<String>,
     preset_idx:  usize,
@@ -91,12 +93,14 @@ impl IControl for MainMenu {
             r_settings: btn_rect(0.0),
             r_quit:     btn_rect(0.0),
             r_lang:     btn_rect(0.0),
+            r_diff:     btn_rect(0.0),
             r_back:     btn_rect(0.0),
             lbl_continue:   None,
             lbl_preset:     None,
             lbl_preset_desc: None,
             panel_settings: None,
             lbl_lang_val:   None,
+            lbl_diff_val:   None,
             presets:    Vec::new(),
             preset_idx: 0,
         }
@@ -219,7 +223,7 @@ impl MainMenu {
     }
 
     fn build_settings_panel(&mut self, lang: &str) {
-        let pw = 600.0; let ph = 400.0;
+        let pw = 600.0; let ph = 460.0;
         let px = (W - pw) * 0.5; let py = (H - ph) * 0.5;
 
         let mut panel = Panel::new_alloc();
@@ -263,16 +267,28 @@ impl MainMenu {
         // Кнопка переключения языка (рект внутри панели, скорректируем позже)
         self.r_lang = Rect2::new(Vector2::new(px + 30.0, py + 108.0), Vector2::new(pw - 60.0, 40.0));
 
-        // Громкость (заглушка)
-        row_label!(t("set_volume", lang), 175.0, 15,
+        // Сложность (клик переключает по кругу; влияет на hp/урон врагов)
+        row_label!(t("set_diff", lang), 165.0, 15,
                    Color::from_rgba(0.7, 0.65, 0.8, 1.0));
-        row_label!(&format!("{:.0}%", self.settings.master_vol * 100.0), 200.0, 16,
+        let mut lbl_diff = Label::new_alloc();
+        lbl_diff.set_text(&format!("[ {} ]  клик — переключить", self.settings.difficulty_ru()));
+        lbl_diff.set_position(Vector2::new(30.0, 191.0));
+        lbl_diff.set_size(Vector2::new(pw - 60.0, 32.0));
+        lbl_diff.add_theme_font_size_override("font_size", 16);
+        lbl_diff.add_theme_color_override("font_color", Color::from_rgba(0.9, 0.85, 1.0, 1.0));
+        panel.add_child(&lbl_diff);
+        self.r_diff = Rect2::new(Vector2::new(px + 30.0, py + 183.0), Vector2::new(pw - 60.0, 40.0));
+
+        // Громкость (заглушка)
+        row_label!(t("set_volume", lang), 250.0, 15,
+                   Color::from_rgba(0.7, 0.65, 0.8, 1.0));
+        row_label!(&format!("{:.0}%", self.settings.master_vol * 100.0), 275.0, 16,
                    Color::from_rgba(0.9, 0.85, 1.0, 1.0));
 
         // Чувствительность (заглушка)
-        row_label!(t("set_sens", lang), 255.0, 15,
+        row_label!(t("set_sens", lang), 330.0, 15,
                    Color::from_rgba(0.7, 0.65, 0.8, 1.0));
-        row_label!(&format!("{:.4}", self.settings.mouse_sens), 280.0, 16,
+        row_label!(&format!("{:.4}", self.settings.mouse_sens), 355.0, 16,
                    Color::from_rgba(0.9, 0.85, 1.0, 1.0));
 
         // Кнопка «Назад»
@@ -291,6 +307,7 @@ impl MainMenu {
 
         self.base_mut().add_child(&panel);
         self.lbl_lang_val   = Some(lbl_lang);
+        self.lbl_diff_val   = Some(lbl_diff);
         self.panel_settings = Some(panel);
     }
 
@@ -349,6 +366,12 @@ impl MainMenu {
             let val  = t(if lang == "en" { "set_lang_en" } else { "set_lang_ru" }, &lang);
             if let Some(ref mut lbl) = self.lbl_lang_val {
                 lbl.set_text(&format!("[ {} ]  ← →  чтобы переключить", val));
+            }
+        } else if self.r_diff.contains_point(pos) {
+            self.settings.cycle_difficulty();
+            let txt = format!("[ {} ]  клик — переключить", self.settings.difficulty_ru());
+            if let Some(ref mut lbl) = self.lbl_diff_val {
+                lbl.set_text(&txt);
             }
         }
     }

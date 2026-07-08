@@ -179,6 +179,13 @@ mod preset_tests {
                 }
             }
 
+            for e in &enemies.enemies {
+                if let Some(b) = &e.behavior {
+                    assert!(b == "melee" || b == "ranged",
+                        "{name}/enemies.json: враг '{}' — неизвестное behavior '{b}'", e.id);
+                }
+            }
+
             // генерация данжей: парс + ссылки на врагов/предметы/оружие + текстуры тем
             if let Some(t) = read(&preset, "dungeon.json") {
                 let d: crate::config::DungeonCfg = serde_json::from_str(&t)

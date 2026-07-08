@@ -22,6 +22,7 @@ use crate::enemy::Enemy;
 use crate::game_state::GameState;
 use crate::gfx::{make_billboard, make_light, Rng, TexCache};
 use crate::locale::t;
+use crate::nav::NavGrid;
 use crate::player::Player;
 use crate::save;
 use crate::settings::Settings;
@@ -171,6 +172,7 @@ pub struct Game3D {
     dungeon_root:   Option<Gd<Node3D>>,
     dungeon_depth:  u32,
     dungeon_name:   String,
+    dungeon_nav:    Option<std::sync::Arc<NavGrid>>,
     exit_portal:    Vector3,
     next_portal:    Vector3,
     boss_alive:     bool,
@@ -295,6 +297,7 @@ impl INode3D for Game3D {
             loadout: compute_loadout(0, 0, 1),
             mode: Mode::Explore, loc: Loc::World,
             dungeon_root: None, dungeon_depth: 0, dungeon_name: String::new(),
+            dungeon_nav: None,
             exit_portal: Vector3::ZERO, next_portal: Vector3::ZERO,
             boss_alive: false,
             scene: None, line_idx: 0, at_choices: false,
@@ -628,18 +631,35 @@ impl Game3D {
         e.set_position(pos);
         self.base_mut().add_child(&e);
         let color = Color::from_rgba(ecfg.color_r, ecfg.color_g, ecfg.color_b, 1.0);
+        // сложность из настроек масштабирует hp/урон/XP поверх глубинного множителя
+        let mult = mult * self.settings.difficulty_mult();
         e.bind_mut().configure(
             &ecfg.id, ecfg.hp, ecfg.speed, ecfg.attack_damage,
             ecfg.attack_range, ecfg.attack_cooldown, ecfg.chase_range,
             ecfg.patrol_radius, color, pos, ecfg.xp, mult, is_boss,
             ecfg.resist.arr(),
             ecfg.sprite.as_deref().unwrap_or(&ecfg.id), ecfg.scale,
+            crate::enemy::Behavior::from_id(ecfg.behavior.as_deref().unwrap_or("")),
         );
         if let Some(ref p) = self.player {
             e.bind_mut().set_player(p.clone());
         }
-        let _ = in_dungeon;
+        // в данже враги получают навигационную сетку — преследуют по A*
+        if in_dungeon {
+            if let Some(ref nav) = self.dungeon_nav {
+                e.bind_mut().set_nav(nav.clone(), DUNGEON_OFFSET);
+            }
+        }
         self.enemies.push(e);
+    }
+
+    /// Разбудить врагов вокруг точки (шум выстрела/взрыва — слух работает сквозь стены).
+    fn alert_enemies(&mut self, pos: Vector3, radius: f32) {
+        for e in self.enemies.iter_mut() {
+            if (e.get_global_position() - pos).length() < radius {
+                e.bind_mut().alert();
+            }
+        }
     }
 
     fn make_pickup_node(&mut self, tex_path: &str, pos: Vector3, px: f32) -> Gd<Node3D> {
@@ -762,6 +782,8 @@ impl Game3D {
         self.exit_portal = DUNGEON_OFFSET + plan.exit_portal;
         self.next_portal = DUNGEON_OFFSET + plan.next_portal;
         self.boss_alive = plan.enemies.iter().any(|e| e.is_boss);
+        // навигация: сетка проходимости данжа для A* врагов (до спавнов!)
+        self.dungeon_nav = Some(NavGrid::new(plan.floor_map.clone(), plan.floor_heights.clone()));
 
         for es in &plan.enemies {
             self.spawn_enemy(&cfg, &es.kind, DUNGEON_OFFSET + es.pos, es.mult, es.is_boss, true);
@@ -823,6 +845,7 @@ impl Game3D {
     }
 
     fn clear_dungeon(&mut self) {
+        self.dungeon_nav = None;
         if let Some(root) = self.dungeon_root.take() {
             root.free();
         }
@@ -2054,6 +2077,13 @@ impl Game3D {
         self.set_weapon_frame(def.fire_frames[0]);
         self.flash_muzzle();
 
+        // шум выстрела будит врагов в округе (мили — тихо, вдвое меньший радиус)
+        if let Some(ref p) = self.player {
+            let pos = p.get_global_position();
+            let noise = if matches!(def.kind, FireKind::Melee) { 8.0 } else { 18.0 };
+            self.alert_enemies(pos, noise);
+        }
+
         let Some((eye, dir)) = self.player_aim() else { return };
         let dmg = def.damage * self.loadout.dmg_mult;
         let dtype = def.dmg_type;
@@ -2230,6 +2260,7 @@ impl Game3D {
     fn explode(&mut self, pos: Vector3, dmg: f32, dtype: DmgType, radius: f32) {
         self.spawn_fx("res://assets/effects/effect_explosion.png", pos, 0.022, 0.4);
         self.spawn_light_fx(pos, Color::from_rgba(1.0, 0.5, 0.6, 1.0), 2.6, radius * 2.2, 0.35);
+        self.alert_enemies(pos, 22.0);   // взрыв слышно издалека
 
         for e in self.enemies.iter_mut() {
             let alive = e.bind().alive;

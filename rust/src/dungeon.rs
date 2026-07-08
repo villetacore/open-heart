@@ -67,6 +67,7 @@ pub struct DungeonPlan {
     pub ammo:         Vec<(AmmoType, u32, Vector3)>,
     pub weapons:      Vec<(WeaponId, Vector3)>,
     pub floor_map:    Vec<bool>,   // GRID×GRID, true = проходимый пол
+    pub floor_heights: Vec<f32>,   // GRID×GRID, высота пола клетки (для навигации)
 }
 
 // ── Комната ───────────────────────────────────────────────────────────────────
@@ -550,5 +551,6 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
         player_spawn, exit_portal, next_portal,
         enemies, items, ammo, weapons,
         floor_map: floor,
+        floor_heights: fh,
     }
 }

@@ -91,7 +91,8 @@
       "resist": {
         "energy": 0.25
       },
-      "sprite": "sniper"
+      "sprite": "sniper",
+      "behavior": "ranged"
     },
     {
       "id": "cultist",
@@ -215,7 +216,8 @@
         "physical": -0.15
       },
       "sprite": "sniper",
-      "scale": 1.0
+      "scale": 1.0,
+      "behavior": "ranged"
     },
     {
       "id": "vermin",

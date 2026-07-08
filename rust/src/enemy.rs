@@ -1,15 +1,23 @@
 //! Enemy — CharacterBody3D с AI: патруль → преследование → атака.
 //! Визуал: Sprite3D billboard с анимацией (DOOM-стиль).
-//! Дальнобойные (sniper) бьют только при прямой видимости.
+//!
+//! Обнаружение: зрение (радиус + прямая видимость — сквозь стены не агрятся),
+//! слух (Game3D будит врагов вокруг выстрела/взрыва через alert()).
+//! В данже преследование идёт по A*-пути (nav.rs), в мире — напрямик.
+//! behavior "ranged" держит дистанцию; "melee" идёт в контакт.
+
+use std::sync::Arc;
 
 use godot::prelude::*;
 use godot::classes::{
     CapsuleShape3D, CharacterBody3D, CollisionShape3D,
-    ICharacterBody3D, Image, ImageTexture, PhysicsRayQueryParameters3D,
+    ICharacterBody3D, Image, ImageTexture, Node3D, PhysicsRayQueryParameters3D,
     Sprite3D, Texture2D,
 };
 use godot::classes::base_material_3d::{BillboardMode, TextureFilter};
 use godot::classes::sprite_base_3d::AlphaCutMode;
+
+use crate::nav::NavGrid;
 use crate::weapon::DmgType;
 
 // ── Спрайтшит 512×256: 4 кадра по 128×256 (idle×2, walk×2) ───────────────────
@@ -32,6 +40,16 @@ const ENEMY_TEX_FALLBACK: &str = "res://assets/sprites/characters/enemy_grunt.pn
 #[derive(PartialEq, Clone, Copy)]
 enum EState { Patrol, Chase, Attack, Dead }
 
+/// Боевое поведение (enemies.json: "behavior", по умолчанию melee).
+#[derive(PartialEq, Clone, Copy)]
+pub enum Behavior { Melee, Ranged }
+
+impl Behavior {
+    pub fn from_id(s: &str) -> Self {
+        if s == "ranged" { Self::Ranged } else { Self::Melee }
+    }
+}
+
 #[derive(GodotClass)]
 #[class(base = CharacterBody3D)]
 pub struct Enemy {
@@ -51,6 +69,7 @@ pub struct Enemy {
     pub is_boss:      bool,
     resist:           [f32; 4],   // резисты по DmgType::idx
     vis_scale:        f32,        // масштаб спрайта/коллайдера
+    behavior:         Behavior,
 
     // runtime
     state:            EState,
@@ -59,6 +78,15 @@ pub struct Enemy {
     patrol_wait:      f32,
     patrol_counter:   u32,
     spawn_pos:        Vector3,
+
+    // навигация (только в данже)
+    nav:              Option<Arc<NavGrid>>,
+    nav_offset:       Vector3,          // DUNGEON_OFFSET: мир → локальные координаты
+    path:             Vec<(i32, i32)>,  // клетки до игрока (первая — ближайшая)
+    path_timer:       f32,              // перерасчёт пути
+    los_timer:        f32,              // троттлинг рейкаста зрения
+    los_cached:       bool,
+    alert_timer:      f32,              // тревога от шума: пока > 0, поводок не отпускает
 
     player:           Option<Gd<CharacterBody3D>>,
     pub alive:        bool,
@@ -82,8 +110,9 @@ impl Enemy {
         id: &str, hp: f32, speed: f32, damage: f32,
         atk_range: f32, cooldown: f32, chase: f32, patrol: f32,
         color: Color, spawn: Vector3, xp: f32, mult: f32, is_boss: bool,
-        resist: [f32; 4], sprite: &str, scale: f32,
+        resist: [f32; 4], sprite: &str, scale: f32, behavior: Behavior,
     ) {
+        self.behavior = behavior;
         self.cfg_id        = GString::from(id);
         self.hp            = hp * mult;
         self.max_hp        = hp * mult;
@@ -110,7 +139,8 @@ impl Enemy {
         let dealt = (amount * (1.0 - self.resist[dmg_type.idx()])).max(0.0);
         self.hp -= dealt;
         self.hurt_flash = 0.15;
-        // проснуться при уроне
+        // проснуться при уроне (и не отпускать поводок, даже если игрок далеко)
+        self.alert_timer = 6.0;
         if self.state == EState::Patrol { self.state = EState::Chase; }
         if self.hp <= 0.0 {
             self.hp    = 0.0;
@@ -122,6 +152,72 @@ impl Enemy {
 
     pub fn set_player(&mut self, player: Gd<CharacterBody3D>) {
         self.player = Some(player);
+    }
+
+    /// Навигационная сетка данжа (offset — позиция корня данжа в мире).
+    pub fn set_nav(&mut self, nav: Arc<NavGrid>, offset: Vector3) {
+        self.nav = Some(nav);
+        self.nav_offset = offset;
+    }
+
+    /// Разбудить (шум выстрела/взрыва, тревога от соседа): патруль → погоня.
+    /// Таймер тревоги не даёт поводку (chase_range×1.8) сразу отпустить врага,
+    /// который услышал шум издалека.
+    pub fn alert(&mut self) {
+        if !self.alive { return; }
+        self.alert_timer = 6.0;
+        if self.state == EState::Patrol {
+            self.state = EState::Chase;
+        }
+    }
+
+    /// Отталкивание от других врагов рядом — стая не слипается в колонну.
+    fn separation(&self, my_pos: Vector3) -> Vector3 {
+        let tree = self.base().get_tree();
+        let my_id = self.base().instance_id();
+        let mut push = Vector3::ZERO;
+        for node in tree.get_nodes_in_group("enemies").iter_shared() {
+            if node.instance_id() == my_id { continue; }
+            let Ok(other) = node.try_cast::<Node3D>() else { continue };
+            let d = my_pos - other.get_global_position();
+            let flat = Vector3::new(d.x, 0.0, d.z);
+            let len = flat.length();
+            if len > 0.01 && len < 1.7 {
+                push += flat / len * (1.7 - len);
+            }
+        }
+        push
+    }
+
+    /// Направление очередного шага по A*-пути к игроку (данж).
+    /// None — сетки нет или путь не найден (вызывающий идёт напрямик).
+    fn chase_dir(&mut self, my_pos: Vector3, player_pos: Vector3) -> Option<Vector3> {
+        use crate::dungeon::CELL;
+        let nav = self.nav.as_ref()?.clone();
+        let my_local = my_pos - self.nav_offset;
+        let pl_local = player_pos - self.nav_offset;
+
+        // перерасчёт строго по таймеру: пустой РЕЗУЛЬТАТ (пути нет) не должен
+        // гонять полный A* каждый кадр; исчерпанный путь → straight-фолбэк
+        if self.path_timer <= 0.0 {
+            self.path = nav
+                .astar(NavGrid::cell_of(my_local), NavGrid::cell_of(pl_local))
+                .unwrap_or_default();
+            self.path_timer = if self.path.is_empty() { 0.35 } else { 0.7 };
+        }
+        // выкидываем достигнутые вейпоинты
+        while let Some(&wp) = self.path.first() {
+            let c = NavGrid::center_of(wp.0, wp.1);
+            if Vector3::new(c.x - my_local.x, 0.0, c.z - my_local.z).length() < CELL * 0.35 {
+                self.path.remove(0);
+            } else {
+                break;
+            }
+        }
+        let wp = self.path.first()?;
+        let c = NavGrid::center_of(wp.0, wp.1);
+        let d = Vector3::new(c.x - my_local.x, 0.0, c.z - my_local.z);
+        (d.length() > 0.01).then(|| d.normalized())
     }
 
     /// Есть ли прямая видимость до игрока (для дальнобойных атак).
@@ -159,12 +255,20 @@ impl ICharacterBody3D for Enemy {
             chase_range: 8.0, patrol_radius: 3.0,
             xp_value: 10.0, is_boss: false,
             resist: [0.0; 4],
+            behavior: Behavior::Melee,
             state: EState::Patrol,
             atk_timer: 0.0,
             patrol_target: Vector3::ZERO,
             patrol_wait: 0.0,
             patrol_counter: 0,
             spawn_pos: Vector3::ZERO,
+            nav: None,
+            nav_offset: Vector3::ZERO,
+            path: Vec::new(),
+            path_timer: 0.0,
+            los_timer: 0.0,
+            los_cached: false,
+            alert_timer: 0.0,
             player: None,
             alive: true,
             frozen: false,
@@ -243,13 +347,25 @@ impl ICharacterBody3D for Enemy {
         let my_pos = self.base().get_global_position();
         let dist   = Vector3::new(player_pos.x - my_pos.x, 0.0, player_pos.z - my_pos.z).length();
 
+        // Зрение: рейкаст троттлится; актуален только когда игрок в радиусе интереса
+        self.los_timer -= dt;
+        self.path_timer -= dt;
+        self.alert_timer -= dt;
+        if self.los_timer <= 0.0 && dist < self.chase_range * 2.0 {
+            self.los_timer = 0.18;
+            self.los_cached = self.has_los(player_pos);
+        }
+        let sees = self.los_cached;
+
         self.state = match self.state {
             EState::Patrol => {
-                if dist < self.chase_range { EState::Chase } else { EState::Patrol }
+                // агро только по ЗРЕНИЮ — сквозь стены не видит (слух — через alert())
+                if dist < self.chase_range && sees { EState::Chase } else { EState::Patrol }
             }
             EState::Chase => {
                 if dist < self.atk_range { self.atk_timer = self.atk_cooldown * 0.5; EState::Attack }
-                else if dist > self.chase_range * 1.8 { EState::Patrol }
+                // поводок не отпускает, пока действует тревога от шума/урона
+                else if dist > self.chase_range * 1.8 && self.alert_timer <= 0.0 { EState::Patrol }
                 else { EState::Chase }
             }
             EState::Attack => {
@@ -257,6 +373,10 @@ impl ICharacterBody3D for Enemy {
             }
             EState::Dead => EState::Dead,
         };
+
+        let to_player = Vector3::new(
+            player_pos.x - my_pos.x, 0.0, player_pos.z - my_pos.z,
+        ).normalized();
 
         let mut vel = Vector3::ZERO;
         match self.state {
@@ -285,26 +405,45 @@ impl ICharacterBody3D for Enemy {
                 }
             }
             EState::Chase => {
-                let dir = Vector3::new(
-                    player_pos.x - my_pos.x, 0.0, player_pos.z - my_pos.z,
-                ).normalized();
+                // (отступление ranged живёт в Attack: Chase работает при dist ≥ atk_range)
+                let dir = if sees || self.nav.is_none() {
+                    // видит (или мир без сетки) — напрямик
+                    self.path.clear();
+                    self.path_timer = 0.0;   // потеряет из виду — путь строится сразу
+                    to_player
+                } else {
+                    // не видит: A* по данжу до игрока
+                    self.chase_dir(my_pos, player_pos).unwrap_or(to_player)
+                };
                 vel = dir * self.speed;
             }
             EState::Attack => {
                 self.atk_timer -= dt;
                 if self.atk_timer <= 0.0 {
                     self.atk_timer = self.atk_cooldown;
-                    // дальнобойные атаки требуют прямой видимости
+                    // атака в упор проходит всегда; издали — только при видимости
                     if dist <= 3.0 || self.has_los(player_pos) {
                         self.pending_dmg += self.atk_damage;
                     }
                 }
-                let dir = Vector3::new(
-                    player_pos.x - my_pos.x, 0.0, player_pos.z - my_pos.z,
-                ).normalized();
-                vel = dir * 0.15;
+                // melee дожимает вплотную; ranged отходит, если игрок налез
+                vel = if self.behavior == Behavior::Ranged && dist < self.atk_range * 0.45 {
+                    -to_player * self.speed * 0.6
+                } else {
+                    to_player * 0.15
+                };
             }
             EState::Dead => return,
+        }
+
+        // сепарация: в движении стая расходится, а не строится в колонну
+        if self.state == EState::Chase || self.state == EState::Attack {
+            let push = self.separation(my_pos);
+            if push.length_squared() > 0.001 {
+                vel += push * self.speed * 0.45;
+                let l = vel.length();
+                if l > self.speed { vel = vel / l * self.speed; }
+            }
         }
 
         let mut full_vel = vel;

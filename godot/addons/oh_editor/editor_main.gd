@@ -59,10 +59,28 @@ const SCHEMAS := {
 			{"key": "patrol_radius", "type": "float"}, {"key": "xp", "type": "float"},
 			{"key": "sprite", "type": "dyn_enum", "source": "enemy_sprites"},
 			{"key": "behavior", "type": "enum", "options": ["melee", "ranged"], "nullable": true},
+			{"key": "abilities", "type": "json", "default": []},
+			{"key": "pain_chance", "type": "float"},
 			{"key": "scale", "type": "float"},
 			{"key": "color_r", "type": "float"}, {"key": "color_g", "type": "float"},
 			{"key": "color_b", "type": "float"},
 			{"key": "resist", "type": "json"},
+		],
+	},
+	"Способности": {
+		"file": "abilities.json", "root": [],
+		"fields": [
+			{"key": "id", "type": "str"},
+			{"key": "kind", "type": "enum",
+			 "options": ["projectile_burst", "charge", "summon", "heal_pulse"]},
+			{"key": "cooldown", "type": "float"}, {"key": "telegraph", "type": "float"},
+			{"key": "min_range", "type": "float"}, {"key": "max_range", "type": "float"},
+			{"key": "color", "type": "color"},
+			{"key": "count", "type": "int"}, {"key": "spread", "type": "float"},
+			{"key": "proj_speed", "type": "float"}, {"key": "damage", "type": "float"},
+			{"key": "speed_mult", "type": "float"}, {"key": "duration", "type": "float"},
+			{"key": "minion", "type": "dyn_enum", "source": "enemies", "nullable": true},
+			{"key": "heal", "type": "float"}, {"key": "radius", "type": "float"},
 		],
 	},
 	"Предметы": {
@@ -1135,7 +1153,7 @@ func _cached_file(rel: String, default_root):
 			# У dungeon/loot «нет файла» = встроенные core-настройки: стартуем
 			# от ПОЛНОЙ core-копии, чтобы правка одной секции не сохранила
 			# усечённый файл (пустые kill_drops = «дропа нет вообще»).
-			if rel == "dungeon.json" or rel == "loot.json":
+			if rel in ["dungeon.json", "loot.json", "abilities.json"]:
 				parsed = _read_json("res://presets/core/%s" % rel)
 			synthetic[rel] = true
 			if parsed == null:

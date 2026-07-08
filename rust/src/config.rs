@@ -60,6 +60,12 @@ pub struct EnemyCfg {
     /// Боевое поведение: "melee" (в контакт, по умолчанию) | "ranged" (держит дистанцию).
     #[serde(default)]
     pub behavior:        Option<String>,
+    /// id способностей из abilities.json (кастуются по кулдауну при видимости).
+    #[serde(default)]
+    pub abilities:       Vec<String>,
+    /// Шанс (0..1) прервать врага стаггером при получении урона.
+    #[serde(default)]
+    pub pain_chance:     f32,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -135,6 +141,40 @@ pub struct QuestCfg {
     #[serde(deserialize_with = "de_u32")] pub count:       u32,
     #[serde(default, deserialize_with = "de_u32")] pub reward_xp:   u32,
     #[serde(default, deserialize_with = "de_i32")] pub reward_gold: i32,
+}
+
+// ── Способности врагов (abilities.json) ──────────────────────────────────────
+
+fn d_ab_cd() -> f32 { 4.0 }
+fn d_ab_maxr() -> f32 { 14.0 }
+
+/// Способность врага. kind определяет, какие поля значимы:
+/// projectile_burst — count/spread/proj_speed/damage;
+/// charge — speed_mult/duration/damage; summon — minion/count;
+/// heal_pulse — heal/radius. Общие: cooldown, telegraph (подсветка перед
+/// эффектом — окно на уворот), min_range/max_range (когда кастовать), color.
+#[derive(Debug, Deserialize, Clone)]
+pub struct AbilityCfg {
+    pub id:   String,
+    pub kind: String,
+    #[serde(default = "d_ab_cd")]   pub cooldown:  f32,
+    #[serde(default)]               pub telegraph: f32,
+    #[serde(default)]               pub min_range: f32,
+    #[serde(default = "d_ab_maxr")] pub max_range: f32,
+    #[serde(default)]               pub color: Option<[f32; 3]>,
+    // projectile_burst
+    #[serde(default, deserialize_with = "de_u32")] pub count: u32,
+    #[serde(default)] pub spread:     f32,
+    #[serde(default)] pub proj_speed: f32,
+    #[serde(default)] pub damage:     f32,
+    // charge
+    #[serde(default)] pub speed_mult: f32,
+    #[serde(default)] pub duration:   f32,
+    // summon
+    #[serde(default)] pub minion: Option<String>,
+    // heal_pulse
+    #[serde(default)] pub heal:   f32,
+    #[serde(default)] pub radius: f32,
 }
 
 // ── Данж (dungeon.json): темы, пулы врагов, настройки ────────────────────────
@@ -235,6 +275,8 @@ pub struct GameConfig {
     pub quests:  Vec<QuestCfg>,
     /// Data-driven сцены диалогов (dialogues.json); приоритетнее story.rs.
     pub dialogues: Vec<crate::dialogue::Scene>,
+    /// Способности врагов (abilities.json); нет файла → встроенные core.
+    pub abilities: Vec<AbilityCfg>,
     /// Генерация данжей (dungeon.json); нет файла → встроенные настройки core.
     pub dungeon: DungeonCfg,
     /// Таблицы лута (loot.json); нет файла → встроенные настройки core.
@@ -258,6 +300,7 @@ const EMBEDDED_NPCS:    &str = include_str!("../../godot/presets/core/npcs.json"
 const EMBEDDED_QUESTS:  &str = include_str!("../../godot/presets/core/quests.json");
 const EMBEDDED_DUNGEON: &str = include_str!("../../godot/presets/core/dungeon.json");
 const EMBEDDED_LOOT:    &str = include_str!("../../godot/presets/core/loot.json");
+const EMBEDDED_ABILITIES: &str = include_str!("../../godot/presets/core/abilities.json");
 
 /// Распарсить текст конфига; при ошибке — громкое предупреждение и встроенная копия.
 fn parse_loud<T: serde::de::DeserializeOwned + Default>(text: &str, file: &str, embedded: &str) -> T {
@@ -284,6 +327,7 @@ pub(crate) fn embedded_configs_parse_for_test() {
     let d = serde_json::from_str::<DungeonCfg>(EMBEDDED_DUNGEON).expect("embedded dungeon.json");
     assert!(!d.themes.is_empty() && !d.pools.is_empty(), "embedded dungeon.json: пустые themes/pools");
     serde_json::from_str::<LootCfg>(EMBEDDED_LOOT).expect("embedded loot.json");
+    serde_json::from_str::<Vec<AbilityCfg>>(EMBEDDED_ABILITIES).expect("embedded abilities.json");
 }
 
 impl GameConfig {
@@ -348,6 +392,12 @@ impl GameConfig {
             None => serde_json::from_str(EMBEDDED_LOOT).unwrap_or_default(),
         };
 
+        // способности врагов: нет файла — молча встроенные core (как dungeon/loot)
+        let abilities: Vec<AbilityCfg> = match read(&format!("{base}/abilities.json")) {
+            Some(t) => parse_loud(&t, "abilities.json", EMBEDDED_ABILITIES),
+            None => serde_json::from_str(EMBEDDED_ABILITIES).unwrap_or_default(),
+        };
+
         // диалоги: отсутствие файла — норма (story.rs остаётся встроенным контентом)
         let dialogues = match read(&format!("{base}/dialogues.json")) {
             None => Vec::new(),
@@ -365,10 +415,14 @@ impl GameConfig {
             },
         };
 
-        Self { enemies, items, level, npcs, quests, dialogues, dungeon, loot, npcs_file_present }
+        Self { enemies, items, level, npcs, quests, dialogues, abilities, dungeon, loot, npcs_file_present }
     }
 
     /// JSON-сцена диалога по id (приоритетнее story.rs — см. game.rs).
+    pub fn ability(&self, id: &str) -> Option<&AbilityCfg> {
+        self.abilities.iter().find(|a| a.id == id)
+    }
+
     pub fn dialogue(&self, id: &str) -> Option<&crate::dialogue::Scene> {
         self.dialogues.iter().find(|s| s.id == id)
     }

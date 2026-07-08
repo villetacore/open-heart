@@ -16,7 +16,8 @@
       "xp": 15.0,
       "resist": {
         "physical": 0.15
-      }
+      },
+      "pain_chance": 0.3
     },
     {
       "id": "heavy",
@@ -35,7 +36,8 @@
       "resist": {
         "physical": 0.35,
         "energy": -0.2
-      }
+      },
+      "pain_chance": 0.12
     },
     {
       "id": "fast",
@@ -53,7 +55,8 @@
       "xp": 12.0,
       "resist": {
         "physical": -0.15
-      }
+      },
+      "pain_chance": 0.25
     },
     {
       "id": "brute",
@@ -72,7 +75,11 @@
       "resist": {
         "physical": 0.3,
         "fire": -0.25
-      }
+      },
+      "abilities": [
+        "bull_charge"
+      ],
+      "pain_chance": 0.08
     },
     {
       "id": "sniper",
@@ -92,7 +99,8 @@
         "energy": 0.25
       },
       "sprite": "sniper",
-      "behavior": "ranged"
+      "behavior": "ranged",
+      "pain_chance": 0.2
     },
     {
       "id": "cultist",
@@ -112,7 +120,11 @@
         "fire": 0.3,
         "void": -0.3
       },
-      "sprite": "cultist"
+      "sprite": "cultist",
+      "abilities": [
+        "fire_volley"
+      ],
+      "pain_chance": 0.35
     },
     {
       "id": "pyro_cultist",
@@ -133,7 +145,11 @@
         "void": -0.4
       },
       "sprite": "cultist",
-      "scale": 1.0
+      "scale": 1.0,
+      "abilities": [
+        "fire_volley"
+      ],
+      "pain_chance": 0.35
     },
     {
       "id": "shade",
@@ -154,7 +170,11 @@
         "energy": -0.3
       },
       "sprite": "fast",
-      "scale": 1.0
+      "scale": 1.0,
+      "abilities": [
+        "void_bolt"
+      ],
+      "pain_chance": 0.25
     },
     {
       "id": "golem",
@@ -175,7 +195,8 @@
         "energy": -0.25
       },
       "sprite": "heavy",
-      "scale": 1.15
+      "scale": 1.15,
+      "pain_chance": 0.05
     },
     {
       "id": "royal_guard",
@@ -195,14 +216,15 @@
         "physical": 0.25
       },
       "sprite": "heavy",
-      "scale": 1.1
+      "scale": 1.1,
+      "pain_chance": 0.15
     },
     {
       "id": "reaper",
       "name": "Жнец",
       "hp": 60.0,
       "speed": 1.8,
-      "attack_damage": 39.0,
+      "attack_damage": 19.5,
       "attack_range": 12.0,
       "attack_cooldown": 2.5,
       "chase_range": 14.0,
@@ -217,7 +239,11 @@
       },
       "sprite": "sniper",
       "scale": 1.0,
-      "behavior": "ranged"
+      "behavior": "ranged",
+      "abilities": [
+        "void_bolt"
+      ],
+      "pain_chance": 0.18
     },
     {
       "id": "vermin",
@@ -237,7 +263,8 @@
         "physical": -0.15
       },
       "sprite": "fast",
-      "scale": 0.75
+      "scale": 0.75,
+      "pain_chance": 0.4
     },
     {
       "id": "warlord",
@@ -258,7 +285,12 @@
         "fire": -0.2
       },
       "sprite": "brute",
-      "scale": 1.25
+      "scale": 1.25,
+      "abilities": [
+        "bull_charge",
+        "summon_vermin"
+      ],
+      "pain_chance": 0.06
     },
     {
       "id": "phantom",
@@ -279,7 +311,12 @@
         "physical": -0.2
       },
       "sprite": "cultist",
-      "scale": 1.0
+      "scale": 1.0,
+      "abilities": [
+        "void_bolt",
+        "dark_mending"
+      ],
+      "pain_chance": 0.3
     }
   ]
 }

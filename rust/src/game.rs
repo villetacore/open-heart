@@ -128,6 +128,15 @@ struct Projectile {
     ttl:      f32,
 }
 
+/// Снаряд врага (abilities.json: projectile_burst) — летит в игрока, можно увернуться.
+struct EnemyProjectile {
+    node: Gd<Node3D>,
+    pos:  Vector3,
+    vel:  Vector3,
+    dmg:  f32,
+    ttl:  f32,
+}
+
 #[derive(PartialEq, Clone, Copy)]
 #[allow(clippy::enum_variant_names)]
 enum PortalKind { EnterDungeon, ExitDungeon, DeeperDungeon }
@@ -158,6 +167,7 @@ pub struct Game3D {
     enemies:     Vec<Gd<Enemy>>,
     world_items: Vec<WorldItemNode>,
     projectiles: Vec<Projectile>,
+    enemy_projectiles: Vec<EnemyProjectile>,
     sprite_fx:   Vec<SpriteFx>,
     light_fx:    Vec<LightFx>,
 
@@ -291,7 +301,8 @@ impl INode3D for Game3D {
             world_name: "ПУСТОШИ НЕОНОВОГО СЕРДЦА".into(),
             player: None, npc_sprites: Vec::new(), npcs: Vec::new(),
             enemies: Vec::new(), world_items: Vec::new(),
-            projectiles: Vec::new(), sprite_fx: Vec::new(), light_fx: Vec::new(),
+            projectiles: Vec::new(), enemy_projectiles: Vec::new(),
+            sprite_fx: Vec::new(), light_fx: Vec::new(),
             state: None, settings: Settings::default(),
             arsenal: Arsenal::new(),
             loadout: compute_loadout(0, 0, 1),
@@ -438,6 +449,8 @@ impl INode3D for Game3D {
         let in_gameplay = self.mode == Mode::Explore;
         if in_gameplay {
             self.tick_projectiles(dt);
+            self.collect_enemy_requests();
+            self.tick_enemy_projectiles(dt);
             self.collect_enemy_damage(dt);
         }
         if self.enemies_frozen == in_gameplay {
@@ -447,7 +460,12 @@ impl INode3D for Game3D {
                 b.frozen = frozen;
                 // Удар, успевший лечь в pending_dmg в тик перехода в меню,
                 // сгорает: иначе он «прилетел бы из паузы» после закрытия.
-                if frozen { b.pending_dmg = 0.0; }
+                if frozen {
+                    b.pending_dmg = 0.0;
+                    // запросы способностей из тика перехода тоже сгорают —
+                    // иначе «залп из паузы» после закрытия меню
+                    let _ = b.drain_requests();
+                }
             }
             self.enemies_frozen = frozen;
         }
@@ -641,6 +659,23 @@ impl Game3D {
             ecfg.sprite.as_deref().unwrap_or(&ecfg.id), ecfg.scale,
             crate::enemy::Behavior::from_id(ecfg.behavior.as_deref().unwrap_or("")),
         );
+        // способности из abilities.json + pain_chance (неизвестные id — с предупреждением)
+        let abs: Vec<crate::config::AbilityCfg> = ecfg.abilities.iter()
+            .filter_map(|id| {
+                let a = cfg.ability(id).cloned();
+                if a.is_none() {
+                    godot_warn!("[spawn] враг '{}': способность '{id}' не найдена в abilities.json",
+                                ecfg.id);
+                }
+                a
+            })
+            .collect();
+        if !abs.is_empty() || ecfg.pain_chance > 0.0 {
+            let seed = (self.game_time.to_bits() as u64) << 20
+                ^ (self.enemies.len() as u64) << 8
+                ^ pos.x.to_bits() as u64;
+            e.bind_mut().set_combat_extras(abs, ecfg.pain_chance, seed);
+        }
         if let Some(ref p) = self.player {
             e.bind_mut().set_player(p.clone());
         }
@@ -659,6 +694,145 @@ impl Game3D {
             if (e.get_global_position() - pos).length() < radius {
                 e.bind_mut().alert();
             }
+        }
+    }
+
+    // ── Способности врагов ───────────────────────────────────────────────────
+
+    /// Собрать запросы способностей у врагов (снаряды/призыв/лечение) и исполнить.
+    fn collect_enemy_requests(&mut self) {
+        let mut shots   = Vec::new();
+        let mut summons = Vec::new();
+        let mut heals   = Vec::new();
+        for e in self.enemies.iter_mut() {
+            let (s, m, h) = e.bind_mut().drain_requests();
+            shots.extend(s);
+            summons.extend(m);
+            heals.extend(h);
+        }
+
+        for req in shots {
+            self.spawn_enemy_shot(req);
+        }
+
+        for req in summons {
+            // spawn_enemy сам умножит на сложность — снимем её с mult кастера,
+            // иначе миньоны получили бы её дважды
+            let base_mult = req.mult / self.settings.difficulty_mult().max(0.01);
+            let cfg = self.cfg.take();
+            if let Some(ref cfg) = cfg {
+                for i in 0..req.count {
+                    let ang = i as f32 * 2.4 + 0.7;
+                    let off = Vector3::new(ang.cos() * 1.6, 0.0, ang.sin() * 1.6);
+                    self.spawn_enemy(cfg, &req.kind, req.pos + off, base_mult,
+                                     false, self.loc == Loc::Dungeon);
+                }
+            }
+            self.cfg = cfg;
+            self.spawn_fx("res://assets/effects/effect_teleport.png",
+                          req.pos + Vector3::new(0.0, 1.0, 0.0), 0.014, 0.4);
+        }
+
+        for req in heals {
+            for e in self.enemies.iter_mut() {
+                if (e.get_global_position() - req.pos).length() < req.radius {
+                    e.bind_mut().heal_hp(req.amount);
+                }
+            }
+            self.spawn_fx("res://assets/effects/effect_heal.png",
+                          req.pos + Vector3::new(0.0, 1.4, 0.0), 0.013, 0.5);
+        }
+    }
+
+    /// Спавн снарядов врага (веер вокруг направления на игрока).
+    fn spawn_enemy_shot(&mut self, req: crate::enemy::ShotReq) {
+        for i in 0..req.count {
+            let a = (i as f32 - (req.count as f32 - 1.0) * 0.5) * req.spread;
+            let (s, c) = a.sin_cos();
+            let d = Vector3::new(
+                req.dir.x * c - req.dir.z * s,
+                req.dir.y,
+                req.dir.x * s + req.dir.z * c,
+            ).normalized();
+
+            let mut node = Node3D::new_alloc();
+            node.set_position(req.origin);
+            if let Some(mut sp) = make_billboard(&mut self.cache,
+                    "res://assets/effects/effect_energy.png", Vector3::ZERO, 0.007) {
+                sp.set_modulate(req.color);
+                node.add_child(&sp);
+            }
+            let l = make_light(Vector3::ZERO, req.color, 0.7, 4.5);
+            node.add_child(&l);
+            self.base_mut().add_child(&node);
+            self.enemy_projectiles.push(EnemyProjectile {
+                node, pos: req.origin, vel: d * req.speed, dmg: req.damage, ttl: 3.5,
+            });
+        }
+    }
+
+    /// Полёт вражеских снарядов: сегментный рейкаст, попадание в игрока — урон,
+    /// любое другое тело (стена, свой же) гасит снаряд.
+    fn tick_enemy_projectiles(&mut self, dt: f32) {
+        let mut player_dmg = 0.0f32;
+        let mut wall_fx: Vec<Vector3> = Vec::new();
+
+        let mut i = 0;
+        while i < self.enemy_projectiles.len() {
+            let from = self.enemy_projectiles[i].pos;
+            let new_pos = from + self.enemy_projectiles[i].vel * dt;
+            let mut remove = false;
+
+            let hit = (|| {
+                let world = self.base().get_world_3d()?;
+                let mut space = world.clone().get_direct_space_state()?;
+                let query = PhysicsRayQueryParameters3D::create(from, new_pos)?;
+                let hit = space.intersect_ray(&query);
+                if hit.is_empty() { return None; }
+                let pos = hit.get("position")?.try_to::<Vector3>().ok()?;
+                let node = hit.get("collider")
+                    .and_then(|cv| cv.try_to::<Gd<godot::classes::Node>>().ok());
+                Some((pos, node))
+            })();
+
+            match hit {
+                Some((pos, node)) => {
+                    let is_player = node
+                        .map(|n| n.try_cast::<Player>().is_ok())
+                        .unwrap_or(false);
+                    if is_player {
+                        player_dmg += self.enemy_projectiles[i].dmg;
+                    } else {
+                        wall_fx.push(pos);
+                    }
+                    remove = true;
+                }
+                None => {
+                    self.enemy_projectiles[i].pos = new_pos;
+                    self.enemy_projectiles[i].node.set_position(new_pos);
+                    self.enemy_projectiles[i].ttl -= dt;
+                    if self.enemy_projectiles[i].ttl <= 0.0 { remove = true; }
+                }
+            }
+
+            if remove {
+                let p = self.enemy_projectiles.remove(i);
+                p.node.free();
+            } else {
+                i += 1;
+            }
+        }
+
+        for pos in wall_fx {
+            self.spawn_fx("res://assets/effects/effect_bullet.png", pos, 0.005, 0.18);
+        }
+        if player_dmg > 0.0 {
+            if let Some(ref p) = self.player {
+                if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                    pl.bind_mut().take_damage(player_dmg);
+                }
+            }
+            self.damage_flash_timer = 0.35;
         }
     }
 
@@ -868,6 +1042,9 @@ impl Game3D {
             } else { i += 1; }
         }
         for p in self.projectiles.drain(..) {
+            p.node.free();
+        }
+        for p in self.enemy_projectiles.drain(..) {
             p.node.free();
         }
         self.boss_alive = false;

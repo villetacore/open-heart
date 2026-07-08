@@ -186,6 +186,33 @@ mod preset_tests {
                 }
             }
 
+            // способности: парс + виды + ссылки (нет файла — рантайм берёт core)
+            let ability_src = read(&preset, "abilities.json")
+                .or_else(|| std::fs::read_to_string(
+                    presets_root().join("core/abilities.json")).ok());
+            let mut ability_ids: HashSet<String> = HashSet::new();
+            if let Some(t) = ability_src {
+                let abs: Vec<crate::config::AbilityCfg> = serde_json::from_str(&t)
+                    .unwrap_or_else(|e| panic!("{name}/abilities.json: {e}"));
+                for a in &abs {
+                    assert!(matches!(a.kind.as_str(),
+                            "projectile_burst" | "charge" | "summon" | "heal_pulse"),
+                        "{name}/abilities.json: '{}' — неизвестный kind '{}'", a.id, a.kind);
+                    if a.kind == "summon" {
+                        let m = a.minion.as_deref().unwrap_or("");
+                        assert!(enemy_ids.contains(m),
+                            "{name}/abilities.json: '{}' — миньон '{m}' не найден во врагах", a.id);
+                    }
+                    ability_ids.insert(a.id.clone());
+                }
+            }
+            for e in &enemies.enemies {
+                for ab in &e.abilities {
+                    assert!(ability_ids.contains(ab),
+                        "{name}/enemies.json: враг '{}' — способность '{ab}' не найдена", e.id);
+                }
+            }
+
             // генерация данжей: парс + ссылки на врагов/предметы/оружие + текстуры тем
             if let Some(t) = read(&preset, "dungeon.json") {
                 let d: crate::config::DungeonCfg = serde_json::from_str(&t)

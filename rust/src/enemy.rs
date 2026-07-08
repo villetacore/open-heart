@@ -17,8 +17,49 @@ use godot::classes::{
 use godot::classes::base_material_3d::{BillboardMode, TextureFilter};
 use godot::classes::sprite_base_3d::AlphaCutMode;
 
+use crate::config::AbilityCfg;
+use crate::gfx::Rng;
 use crate::nav::NavGrid;
 use crate::weapon::DmgType;
+
+/// Запрос вражеского выстрела — Game3D собирает их и спавнит снаряды.
+pub struct ShotReq {
+    pub origin:   Vector3,
+    pub dir:      Vector3,
+    pub speed:    f32,
+    pub damage:   f32,
+    pub count:    u32,
+    pub spread:   f32,
+    pub color:    Color,
+}
+
+/// Запрос призыва миньонов (kind × count рядом с кастером, mult кастера).
+pub struct SummonReq {
+    pub kind:  String,
+    pub count: u32,
+    pub pos:   Vector3,
+    pub mult:  f32,
+}
+
+/// Запрос лечения союзников в радиусе.
+pub struct HealReq {
+    pub pos:    Vector3,
+    pub amount: f32,
+    pub radius: f32,
+}
+
+/// Текущий каст: способность + оставшийся телеграф + цвет подсветки.
+struct Cast {
+    ability: usize,   // индекс в self.abilities
+    timer:   f32,
+    color:   Color,
+}
+
+/// Способность в рантайме: конфиг + кулдаун.
+struct AbilityRt {
+    cfg: AbilityCfg,
+    cd:  f32,
+}
 
 // ── Спрайтшит 512×256: 4 кадра по 128×256 (idle×2, walk×2) ───────────────────
 
@@ -88,6 +129,22 @@ pub struct Enemy {
     los_cached:       bool,
     alert_timer:      f32,              // тревога от шума: пока > 0, поводок не отпускает
 
+    // способности (abilities.json)
+    abilities:        Vec<AbilityRt>,
+    cast:             Option<Cast>,     // активный телеграф
+    charge_timer:     f32,              // остаток рывка
+    charge_dir:       Vector3,
+    charge_speed:     f32,
+    charge_damage:    f32,
+    charge_hit:       bool,             // урон рывка нанесён (один раз за рывок)
+    stagger:          f32,              // >0 — оглушён (pain)
+    pain_chance:      f32,
+    spawn_mult:       f32,              // множитель силы (наследуют миньоны)
+    rng:              Rng,
+    pub shot_reqs:    Vec<ShotReq>,
+    pub summon_reqs:  Vec<SummonReq>,
+    pub heal_reqs:    Vec<HealReq>,
+
     player:           Option<Gd<CharacterBody3D>>,
     pub alive:        bool,
     /// Мир «на паузе» (игрок в меню/диалоге): AI не двигается и не атакует.
@@ -131,6 +188,19 @@ impl Enemy {
         self.is_boss       = is_boss;
         self.resist        = resist;
         self.vis_scale     = if is_boss { scale.max(1.35) } else { scale.max(0.5) };
+        self.spawn_mult    = mult;
+    }
+
+    /// Способности из abilities.json + pain_chance. Отдельно от configure —
+    /// нужен доступ к GameConfig; сид рандомизирует кулдауны/pain.
+    pub fn set_combat_extras(&mut self, abilities: Vec<AbilityCfg>, pain_chance: f32, seed: u64) {
+        self.rng = Rng::new(seed | 1);
+        self.pain_chance = pain_chance;
+        self.abilities = abilities.into_iter().map(|cfg| {
+            // стартовый кулдаун случайный — толпа не кастует синхронно
+            let cd = cfg.cooldown * (0.3 + self.rng.f32() * 0.7);
+            AbilityRt { cfg, cd }
+        }).collect();
     }
 
     /// Урон с учётом типа и резиста. Возвращает фактически нанесённый урон.
@@ -142,6 +212,12 @@ impl Enemy {
         // проснуться при уроне (и не отпускать поводок, даже если игрок далеко)
         self.alert_timer = 6.0;
         if self.state == EState::Patrol { self.state = EState::Chase; }
+        // pain: шанс стаггера — прерывает телеграф и рывок (контр-игра против кастеров)
+        if self.pain_chance > 0.0 && self.rng.f32() < self.pain_chance {
+            self.stagger = 0.4;
+            self.cast = None;
+            self.charge_timer = 0.0;
+        }
         if self.hp <= 0.0 {
             self.hp    = 0.0;
             self.state = EState::Dead;
@@ -220,6 +296,81 @@ impl Enemy {
         (d.length() > 0.01).then(|| d.normalized())
     }
 
+    /// Применить скорость с гравитацией и шагнуть физикой (ранние ветки ИИ).
+    fn apply_velocity(&mut self, vel: Vector3) {
+        let mut fv = vel;
+        if !self.base().is_on_floor() { fv.y = -9.8; }
+        self.base_mut().set_velocity(fv);
+        self.base_mut().move_and_slide();
+    }
+
+    /// Эффект способности по окончании телеграфа.
+    fn fire_ability(&mut self, idx: usize, my_pos: Vector3, player_pos: Vector3) {
+        let Some(rt) = self.abilities.get(idx) else { return };
+        let cfg = rt.cfg.clone();
+        let flat = Vector3::new(player_pos.x - my_pos.x, 0.0, player_pos.z - my_pos.z);
+        let dir = if flat.length() > 0.01 { flat.normalized() } else { Vector3::new(0.0, 0.0, -1.0) };
+        let color = cfg.color
+            .map(|c| Color::from_rgba(c[0], c[1], c[2], 1.0))
+            .unwrap_or(Color::from_rgba(1.0, 0.5, 0.8, 1.0));
+        match cfg.kind.as_str() {
+            "projectile_burst" => {
+                let origin = my_pos + Vector3::new(0.0, 1.15 * self.vis_scale, 0.0) + dir * 0.6;
+                let aim = (player_pos + Vector3::new(0.0, 1.0, 0.0) - origin).normalized();
+                self.shot_reqs.push(ShotReq {
+                    origin,
+                    dir: aim,
+                    speed:  cfg.proj_speed.max(4.0),
+                    damage: cfg.damage * self.spawn_mult,
+                    count:  cfg.count.max(1),
+                    spread: cfg.spread,
+                    color,
+                });
+            }
+            "charge" => {
+                self.charge_dir    = dir;
+                self.charge_speed  = self.speed * cfg.speed_mult.max(1.2);
+                self.charge_damage = cfg.damage * self.spawn_mult;
+                self.charge_timer  = cfg.duration.max(0.2);
+                self.charge_hit    = false;
+            }
+            "summon" => {
+                if let Some(minion) = cfg.minion.clone() {
+                    self.summon_reqs.push(SummonReq {
+                        kind: minion,
+                        count: cfg.count.max(1),
+                        pos: my_pos,
+                        mult: self.spawn_mult,
+                    });
+                }
+            }
+            "heal_pulse" => {
+                self.heal_reqs.push(HealReq {
+                    pos: my_pos, amount: cfg.heal, radius: cfg.radius.max(1.0),
+                });
+            }
+            other => {
+                godot_warn!("[ability] '{}': неизвестный kind '{other}'", cfg.id);
+            }
+        }
+    }
+
+    /// Забрать накопленные запросы способностей (Game3D, раз в кадр).
+    pub fn drain_requests(&mut self) -> (Vec<ShotReq>, Vec<SummonReq>, Vec<HealReq>) {
+        (
+            std::mem::take(&mut self.shot_reqs),
+            std::mem::take(&mut self.summon_reqs),
+            std::mem::take(&mut self.heal_reqs),
+        )
+    }
+
+    /// Лечение от heal_pulse союзника.
+    pub fn heal_hp(&mut self, amount: f32) {
+        if self.alive {
+            self.hp = (self.hp + amount).min(self.max_hp);
+        }
+    }
+
     /// Есть ли прямая видимость до игрока (для дальнобойных атак).
     fn has_los(&mut self, player_pos: Vector3) -> bool {
         let from = self.base().get_global_position() + Vector3::new(0.0, 1.3, 0.0);
@@ -269,6 +420,20 @@ impl ICharacterBody3D for Enemy {
             los_timer: 0.0,
             los_cached: false,
             alert_timer: 0.0,
+            abilities: Vec::new(),
+            cast: None,
+            charge_timer: 0.0,
+            charge_dir: Vector3::ZERO,
+            charge_speed: 0.0,
+            charge_damage: 0.0,
+            charge_hit: false,
+            stagger: 0.0,
+            pain_chance: 0.0,
+            spawn_mult: 1.0,
+            rng: Rng::new(0x0E0E_0E0E),
+            shot_reqs: Vec::new(),
+            summon_reqs: Vec::new(),
+            heal_reqs: Vec::new(),
             player: None,
             alive: true,
             frozen: false,
@@ -356,6 +521,53 @@ impl ICharacterBody3D for Enemy {
             self.los_cached = self.has_los(player_pos);
         }
         let sees = self.los_cached;
+        let to_player = Vector3::new(
+            player_pos.x - my_pos.x, 0.0, player_pos.z - my_pos.z,
+        ).normalized();
+
+        // кулдауны способностей тикают всегда
+        for a in self.abilities.iter_mut() { a.cd -= dt; }
+
+        // Стаггер (pain): оглушён — стоит, каст/рывок уже сброшены в take_damage
+        if self.stagger > 0.0 {
+            self.stagger -= dt;
+            self.apply_velocity(Vector3::ZERO);
+            return;
+        }
+
+        // Рывок (charge): несёмся по прямой; контакт наносит урон один раз
+        if self.charge_timer > 0.0 {
+            self.charge_timer -= dt;
+            if !self.charge_hit && dist < 1.5 {
+                self.pending_dmg += self.charge_damage;
+                self.charge_hit = true;
+                self.charge_timer = 0.0;
+            }
+            let dir = self.charge_dir;
+            let spd = self.charge_speed;
+            self.apply_velocity(dir * spd);
+            return;
+        }
+
+        // Телеграф каста: стоим подсвеченными; по истечении — эффект
+        if let Some(c) = self.cast.take() {
+            let t2 = c.timer - dt;
+            if t2 <= 0.0 {
+                let col = self.pending_color;
+                if let Some(ref mut sp) = self.sprite { sp.set_modulate(col); }
+                self.fire_ability(c.ability, my_pos, player_pos);
+                // выйти сразу: charge не должен наложиться на старт нового
+                // телеграфа в этом же кадре (рывок «под чужой подсветкой»)
+                self.apply_velocity(Vector3::ZERO);
+                return;
+            } else {
+                let col = c.color;
+                if let Some(ref mut sp) = self.sprite { sp.set_modulate(col); }
+                self.cast = Some(Cast { timer: t2, ..c });
+                self.apply_velocity(Vector3::ZERO);
+                return;
+            }
+        }
 
         self.state = match self.state {
             EState::Patrol => {
@@ -374,9 +586,24 @@ impl ICharacterBody3D for Enemy {
             EState::Dead => EState::Dead,
         };
 
-        let to_player = Vector3::new(
-            player_pos.x - my_pos.x, 0.0, player_pos.z - my_pos.z,
-        ).normalized();
+        // Старт каста: видим игрока, свободны — первая готовая способность в диапазоне
+        if sees && self.charge_timer <= 0.0
+            && matches!(self.state, EState::Chase | EState::Attack) {
+            let ready = self.abilities.iter().position(|a|
+                a.cd <= 0.0 && dist >= a.cfg.min_range && dist <= a.cfg.max_range);
+            if let Some(idx) = ready {
+                let cfg = &self.abilities[idx].cfg;
+                let color = cfg.color
+                    .map(|c| Color::from_rgba(c[0], c[1], c[2], 1.0))
+                    .unwrap_or(Color::from_rgba(1.0, 0.85, 0.3, 1.0));
+                let timer = cfg.telegraph.max(0.05);
+                self.abilities[idx].cd = cfg.cooldown;
+                self.cast = Some(Cast { ability: idx, timer, color });
+                if let Some(ref mut sp) = self.sprite { sp.set_modulate(color); }
+                self.apply_velocity(Vector3::ZERO);
+                return;
+            }
+        }
 
         let mut vel = Vector3::ZERO;
         match self.state {

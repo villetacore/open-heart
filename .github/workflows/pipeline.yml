@@ -1,0 +1,544 @@
+name: Pipeline
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Единый пайплайн: тесты → авто-тег → сборка всех платформ → релиз.
+# Всё в ОДНОМ workflow-ране (job-зависимости через needs), поэтому:
+#   • нет каскада из нескольких воркфлоу и «кучи запусков»;
+#   • publish ждёт ВСЕ билды и прикрепляет все собравшиеся артефакты к релизу.
+#
+# Триггеры:
+#   • pull_request → main : только тесты
+#   • push        → main  : тесты → тег → сборка → релиз
+#   • ручной запуск        : можно выбрать тип бампа версии
+# ══════════════════════════════════════════════════════════════════════════════
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Тип версии (patch / minor / major)'
+        required: true
+        default: patch
+        type: choice
+        options: [patch, minor, major]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  GODOT_VER:    "4.7-stable"
+  # Каталог экспортных шаблонов. Для 4.x первых релизов (patch == 0) это
+  # "major.minor.stable" (НЕ "major.minor.0.stable"). Проверено на Linux CI.
+  GODOT_SEMVER: "4.7"
+
+jobs:
+
+# ── 1. Тесты (все триггеры) ────────────────────────────────────────────────────
+  test:
+    name: "Rust: check + clippy + test"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: cargo check
+        run: cargo check
+        working-directory: rust
+
+      - name: cargo clippy
+        run: cargo clippy -- -D warnings
+        working-directory: rust
+
+      - name: cargo test
+        run: cargo test
+        working-directory: rust
+
+# ── 2. Авто-тег (только push→main или ручной запуск) ───────────────────────────
+  tag:
+    name: "Bump & Tag"
+    needs: test
+    runs-on: ubuntu-24.04
+    if: >
+      github.event_name != 'pull_request' &&
+      github.ref == 'refs/heads/main'
+    outputs:
+      new_tag:  ${{ steps.next.outputs.new_tag }}
+      prev_tag: ${{ steps.next.outputs.prev_tag }}
+      bump:     ${{ steps.next.outputs.bump }}
+      skip:     ${{ steps.next.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: next
+        run: |
+          if git describe --exact-match HEAD 2>/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::HEAD already tagged, skipping build & release"
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+          LAST=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "prev_tag=$LAST" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BUMP="${{ inputs.bump }}"
+          else
+            COMMITS=$(git log "$LAST..HEAD" --format="%s %b" 2>/dev/null || true)
+            if echo "$COMMITS" | grep -qiE 'BREAKING[[:space:]]CHANGE|\[major\]'; then
+              BUMP=major
+            elif echo "$COMMITS" | grep -qiE '^\s*feat(\([^)]*\))?:|\[minor\]|^feature:'; then
+              BUMP=minor
+            else
+              BUMP=patch
+            fi
+          fi
+
+          VERSION="${LAST#v}"
+          MA=$(echo "$VERSION" | cut -d. -f1 | tr -dc '0-9'); MA=${MA:-0}
+          MI=$(echo "$VERSION" | cut -d. -f2 | tr -dc '0-9'); MI=${MI:-0}
+          PA=$(echo "$VERSION" | cut -d. -f3 | tr -dc '0-9'); PA=${PA:-0}
+
+          case "$BUMP" in
+            major) MA=$((MA+1)); MI=0; PA=0 ;;
+            minor) MI=$((MI+1)); PA=0 ;;
+            *)     PA=$((PA+1)) ;;
+          esac
+
+          NEW="v${MA}.${MI}.${PA}"
+          echo "new_tag=$NEW" >> "$GITHUB_OUTPUT"
+          echo "bump=$BUMP"   >> "$GITHUB_OUTPUT"
+          echo "::notice title=Version bump::$LAST → $NEW ($BUMP)"
+
+      - name: Create & push tag
+        if: steps.next.outputs.skip != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.next.outputs.new_tag }}" HEAD
+          git push origin "${{ steps.next.outputs.new_tag }}"
+          echo "✓ Tagged: ${{ steps.next.outputs.new_tag }}"
+
+# ── 3a. Windows x64 ────────────────────────────────────────────────────────────
+  build-windows:
+    name: "Build · Windows x64"
+    needs: tag
+    if: needs.tag.outputs.skip != 'true'
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: Build Rust DLL
+        run: cargo build --release
+        working-directory: rust
+
+      - name: Copy DLL → godot/bin/
+        run: Copy-Item rust\target\release\openheart.dll godot\bin\openheart.dll -Force
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        shell: pwsh
+        run: |
+          $base = "https://github.com/godotengine/godot/releases/download/$env:GODOT_VER"
+          curl.exe -fsSL --retry 3 -o godot.zip "$base/Godot_v$($env:GODOT_VER)_win64.exe.zip"
+          Expand-Archive godot.zip -DestinationPath C:\Godot -Force
+          $exe = Get-ChildItem C:\Godot -Recurse -Filter "*.exe" | Select-Object -First 1
+          if ($null -eq $exe) { throw "Godot exe not found in archive" }
+          Copy-Item $exe.FullName C:\Godot\godot.exe -Force
+          curl.exe -fsSL --retry 3 -o tpl.zip "$base/Godot_v$($env:GODOT_VER)_export_templates.tpz"
+          $tplDir = "$env:APPDATA\Godot\export_templates\$($env:GODOT_SEMVER).stable"
+          $tplTmp = "$env:TEMP\godot_tpl"
+          New-Item -ItemType Directory -Force $tplDir | Out-Null
+          New-Item -ItemType Directory -Force $tplTmp  | Out-Null
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [IO.Compression.ZipFile]::ExtractToDirectory((Resolve-Path tpl.zip).Path, $tplTmp)
+          Move-Item "$tplTmp\templates\*" $tplDir -Force
+          Remove-Item $tplTmp -Recurse -Force
+          Write-Host "Templates: $((Get-ChildItem $tplDir -File).Count) files"
+
+      - name: Import assets
+        shell: pwsh
+        working-directory: godot
+        run: |
+          $p = Start-Process C:\Godot\godot.exe -ArgumentList "--headless","--import" -Wait -PassThru -NoNewWindow
+          Write-Host "Import exit: $($p.ExitCode)"
+
+      - name: Godot export (Windows)
+        shell: pwsh
+        working-directory: godot
+        run: |
+          New-Item -ItemType Directory -Force dist\windows | Out-Null
+          $p = Start-Process C:\Godot\godot.exe `
+            -ArgumentList "--headless","--export-release","Windows Desktop","dist\windows\OpenHeart.exe" `
+            -Wait -PassThru -NoNewWindow
+          Write-Host "Export exit: $($p.ExitCode)"
+          if (-not (Test-Path dist\windows\OpenHeart.exe)) { throw "Export produced no .exe" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-windows
+          path: godot/dist/windows/
+          if-no-files-found: warn
+          retention-days: 1
+
+# ── 3b. Linux x64 ──────────────────────────────────────────────────────────────
+  build-linux:
+    name: "Build · Linux x64"
+    needs: tag
+    if: needs.tag.outputs.skip != 'true'
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: Build Rust .so
+        run: cargo build --release
+        working-directory: rust
+
+      - name: Copy .so → godot/bin/
+        run: cp rust/target/release/libopenheart.so godot/bin/libopenheart.so
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
+          wget -q "$BASE/Godot_v${GODOT_VER}_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
+          TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
+          mkdir -p "$TPL"
+          unzip -q tpl.zip -d /tmp/gtpl
+          mv /tmp/gtpl/templates/* "$TPL/"
+          echo "Templates: $(ls "$TPL" | wc -l) files"
+
+      - name: Import assets
+        working-directory: godot
+        run: godot --headless --import 2>&1 || true
+
+      - name: Godot export (Linux)
+        working-directory: godot
+        run: |
+          mkdir -p dist/linux
+          godot --headless --export-release "Linux/X11" dist/linux/OpenHeart.x86_64
+          test -f dist/linux/OpenHeart.x86_64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-linux
+          path: godot/dist/linux/
+          if-no-files-found: warn
+          retention-days: 1
+
+# ── 3c. macOS Universal ────────────────────────────────────────────────────────
+  build-macos:
+    name: "Build · macOS Universal"
+    needs: tag
+    if: needs.tag.outputs.skip != 'true'
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: Build Rust fat dylib
+        working-directory: rust
+        run: |
+          cargo build --release --target x86_64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin
+          lipo -create \
+            target/x86_64-apple-darwin/release/libopenheart.dylib \
+            target/aarch64-apple-darwin/release/libopenheart.dylib \
+            -output ../godot/bin/libopenheart.dylib
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
+          wget -q "$BASE/Godot_v${GODOT_VER}_macos.universal.zip" -O godot.zip
+          unzip -q godot.zip -d /tmp/godot_app
+          sudo cp -r /tmp/godot_app/Godot.app /Applications/
+          sudo xattr -dr com.apple.quarantine /Applications/Godot.app 2>/dev/null || true
+          sudo chmod +x /Applications/Godot.app/Contents/MacOS/Godot
+          GODOT=/Applications/Godot.app/Contents/MacOS/Godot
+          "$GODOT" --version || true
+          wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
+          TPL="$HOME/Library/Application Support/Godot/export_templates/${GODOT_SEMVER}.stable"
+          mkdir -p "$TPL"
+          unzip -q tpl.zip -d /tmp/gtpl
+          mv /tmp/gtpl/templates/* "$TPL/"
+          echo "Templates: $(ls "$TPL" | wc -l) files"
+
+      - name: Import assets
+        working-directory: godot
+        run: /Applications/Godot.app/Contents/MacOS/Godot --headless --import 2>&1 || true
+
+      - name: Godot export (macOS)
+        working-directory: godot
+        run: |
+          mkdir -p dist/macos
+          /Applications/Godot.app/Contents/MacOS/Godot --headless \
+            --export-release "macOS" dist/macos/OpenHeart.zip
+          test -f dist/macos/OpenHeart.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-macos
+          path: godot/dist/macos/
+          if-no-files-found: warn
+          retention-days: 1
+
+# ── 3d. Android (arm64 + armeabi-v7a) ──────────────────────────────────────────
+  build-android:
+    name: "Build · Android"
+    needs: tag
+    if: needs.tag.outputs.skip != 'true'
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK r23c
+        run: sdkmanager "ndk;23.2.8568313"
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      - name: Build Rust (arm64 + armeabi-v7a)
+        working-directory: rust
+        run: |
+          mkdir -p ../godot/bin/android
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/23.2.8568313"
+          cargo ndk -t arm64-v8a -t armeabi-v7a -o ../godot/bin/android build --release
+
+      - name: Generate debug keystore
+        run: |
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore \
+            -storepass android -alias androiddebugkey -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US" 2>/dev/null || true
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
+          wget -q "$BASE/Godot_v${GODOT_VER}_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
+          TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
+          mkdir -p "$TPL"
+          unzip -q tpl.zip -d /tmp/gtpl
+          mv /tmp/gtpl/templates/* "$TPL/"
+          echo "Templates: $(ls "$TPL" | wc -l) files"
+
+      - name: Import assets
+        working-directory: godot
+        run: godot --headless --import 2>&1 || true
+
+      - name: Godot export (Android APK)
+        working-directory: godot
+        # Godot 4.x reads the debug keystore from these env vars — надёжнее editor_settings.
+        # use_gradle_build=false в export_presets.cfg → Android SDK/Gradle не нужны,
+        # экспорт лишь переупаковывает готовый APK-шаблон и подписывает debug-ключом.
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH:     /home/runner/.android/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER:     androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p dist/android
+          godot --headless --export-release "Android" dist/android/OpenHeart.apk
+          test -f dist/android/OpenHeart.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-android
+          path: godot/dist/android/
+          if-no-files-found: warn
+          retention-days: 1
+
+# ── 3e. Web / HTML5 ────────────────────────────────────────────────────────────
+  build-web:
+    name: "Build · Web (HTML5)"
+    needs: tag
+    if: needs.tag.outputs.skip != 'true'
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      # Emscripten должен совпадать с версией, которой собран Godot 4.7.
+      # 3.1.64 — рекомендованная godot-rust для Godot 4.3+/4.x.
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.64
+          actions-cache-folder: emsdk-cache
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-unknown-emscripten
+          components: rust-src
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> rust/target
+
+      - name: Build Rust WASM
+        working-directory: rust
+        run: |
+          emcc --version
+          mkdir -p ../godot/bin/web
+          cargo +nightly build -Z build-std=std,panic_abort \
+            --release --target wasm32-unknown-emscripten
+          cp target/wasm32-unknown-emscripten/release/libopenheart.so \
+             ../godot/bin/web/libopenheart.wasm
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
+          wget -q "$BASE/Godot_v${GODOT_VER}_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          wget -q "$BASE/Godot_v${GODOT_VER}_export_templates.tpz" -O tpl.zip
+          TPL="$HOME/.local/share/godot/export_templates/${GODOT_SEMVER}.stable"
+          mkdir -p "$TPL"
+          unzip -q tpl.zip -d /tmp/gtpl
+          mv /tmp/gtpl/templates/* "$TPL/"
+          echo "Templates: $(ls "$TPL" | wc -l) files"
+
+      - name: Import assets
+        working-directory: godot
+        run: godot --headless --import 2>&1 || true
+
+      - name: Godot export (Web)
+        working-directory: godot
+        run: |
+          mkdir -p dist/web
+          godot --headless --export-release "Web" dist/web/index.html
+          test -f dist/web/index.html
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-web
+          path: godot/dist/web/
+          if-no-files-found: warn
+          retention-days: 1
+
+# ── 4. Публикация релиза ───────────────────────────────────────────────────────
+# Запускается при ЛЮБОМ исходе билдов (if: always()), но только если тег создан.
+# Скачивает ВСЕ артефакты этого рана, пакует то, что собралось, и прикрепляет
+# к GitHub Release. Отсутствующие платформы не ломают релиз.
+  publish:
+    name: "Publish Release"
+    needs: [tag, build-windows, build-linux, build-macos, build-android, build-web]
+    if: ${{ always() && needs.tag.result == 'success' && needs.tag.outputs.skip != 'true' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+        continue-on-error: true
+
+      - name: Package artifacts
+        run: |
+          echo "=== Downloaded ==="
+          ls -R artifacts 2>/dev/null || echo "(none)"
+          cd artifacts
+
+          if [ -d build-windows ] && [ "$(ls -A build-windows 2>/dev/null)" ]; then
+            (cd build-windows && zip -r ../../OpenHeart-windows-x64.zip .) && echo "✓ windows"
+          else echo "✗ windows"; fi
+
+          if [ -d build-linux ] && [ "$(ls -A build-linux 2>/dev/null)" ]; then
+            tar -czf ../OpenHeart-linux-x64.tar.gz -C build-linux . && echo "✓ linux"
+          else echo "✗ linux"; fi
+
+          if [ -f build-macos/OpenHeart.zip ]; then
+            cp build-macos/OpenHeart.zip ../OpenHeart-macos-universal.zip && echo "✓ macos"
+          elif [ -d build-macos ] && [ "$(ls -A build-macos 2>/dev/null)" ]; then
+            (cd build-macos && zip -r ../../OpenHeart-macos-universal.zip .) && echo "✓ macos (zipped)"
+          else echo "✗ macos"; fi
+
+          if [ -f build-android/OpenHeart.apk ]; then
+            cp build-android/OpenHeart.apk ../OpenHeart-android.apk && echo "✓ android"
+          else echo "✗ android"; fi
+
+          if [ -d build-web ] && [ "$(ls -A build-web 2>/dev/null)" ]; then
+            (cd build-web && zip -r ../../OpenHeart-web.zip .) && echo "✓ web"
+          else echo "✗ web"; fi
+
+          echo "=== Packaged ==="
+          ls -lh ../OpenHeart-* 2>/dev/null || echo "(nothing packaged)"
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name:                ${{ needs.tag.outputs.new_tag }}
+          name:                    "OpenHeart ${{ needs.tag.outputs.new_tag }}"
+          draft:                   false
+          prerelease:              ${{ contains(needs.tag.outputs.new_tag, 'alpha') || contains(needs.tag.outputs.new_tag, 'beta') || contains(needs.tag.outputs.new_tag, 'rc') }}
+          generate_release_notes:  true
+          fail_on_unmatched_files: false
+          make_latest:             true
+          files: |
+            OpenHeart-*.zip
+            OpenHeart-*.tar.gz
+            OpenHeart-*.apk

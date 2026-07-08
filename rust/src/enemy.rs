@@ -17,7 +17,7 @@ use godot::classes::{
 use godot::classes::base_material_3d::{BillboardMode, TextureFilter};
 use godot::classes::sprite_base_3d::AlphaCutMode;
 
-use crate::config::AbilityCfg;
+use crate::config::{AbilityCfg, AffixCfg};
 use crate::gfx::Rng;
 use crate::nav::NavGrid;
 use crate::weapon::DmgType;
@@ -140,6 +140,11 @@ pub struct Enemy {
     stagger:          f32,              // >0 — оглушён (pain)
     pain_chance:      f32,
     spawn_mult:       f32,              // множитель силы (наследуют миньоны)
+
+    // элита (аффиксы)
+    elite_prefix:     String,           // «Быстрый Вампирический» (для HUD)
+    lifesteal:        f32,              // доля урона игроку → своё HP
+    pub death_blast:  Option<(f32, f32)>,   // (урон, радиус) при смерти
     rng:              Rng,
     pub shot_reqs:    Vec<ShotReq>,
     pub summon_reqs:  Vec<SummonReq>,
@@ -189,6 +194,47 @@ impl Enemy {
         self.resist        = resist;
         self.vis_scale     = if is_boss { scale.max(1.35) } else { scale.max(0.5) };
         self.spawn_mult    = mult;
+    }
+
+    /// Применить аффиксы элиты: мультипликаторы статов, tint, спец-механики.
+    /// Вызывать ПОСЛЕ configure и set_combat_extras (модифицирует pain_chance).
+    pub fn apply_affixes(&mut self, affixes: &[AffixCfg]) {
+        for a in affixes {
+            self.hp          *= a.hp_mult;
+            self.max_hp      *= a.hp_mult;
+            self.atk_damage  *= a.dmg_mult;
+            self.speed       *= a.speed_mult;
+            self.xp_value    *= a.xp_mult;
+            self.pain_chance *= a.pain_mult;
+            self.lifesteal   += a.lifesteal;
+            if let Some([dmg, r]) = a.death_blast {
+                // урон взрыва масштабируется силой врага, как и остальной урон
+                self.death_blast = Some((dmg * self.spawn_mult, r));
+            }
+            if let Some(t) = a.tint {
+                // подмешиваем цвет аффикса — элиту видно издалека
+                let tint = Color::from_rgba(t[0], t[1], t[2], 1.0);
+                self.pending_color = self.pending_color.lerp(tint, 0.6);
+            }
+            if !self.elite_prefix.is_empty() {
+                self.elite_prefix.push(' ');
+            }
+            self.elite_prefix.push_str(&a.name_ru);
+        }
+    }
+
+    /// Имя для HUD: «Быстрый grunt» у элит, просто id — у обычных.
+    pub fn display_name(&self) -> String {
+        if self.elite_prefix.is_empty() {
+            self.cfg_id.to_string()
+        } else {
+            format!("{} {}", self.elite_prefix, self.cfg_id)
+        }
+    }
+
+    /// Элита? (для HUD-подсветки)
+    pub fn is_elite(&self) -> bool {
+        !self.elite_prefix.is_empty()
     }
 
     /// Способности из abilities.json + pain_chance. Отдельно от configure —
@@ -430,6 +476,9 @@ impl ICharacterBody3D for Enemy {
             stagger: 0.0,
             pain_chance: 0.0,
             spawn_mult: 1.0,
+            elite_prefix: String::new(),
+            lifesteal: 0.0,
+            death_blast: None,
             rng: Rng::new(0x0E0E_0E0E),
             shot_reqs: Vec::new(),
             summon_reqs: Vec::new(),
@@ -540,6 +589,9 @@ impl ICharacterBody3D for Enemy {
             self.charge_timer -= dt;
             if !self.charge_hit && dist < 1.5 {
                 self.pending_dmg += self.charge_damage;
+                if self.lifesteal > 0.0 {
+                    self.hp = (self.hp + self.charge_damage * self.lifesteal).min(self.max_hp);
+                }
                 self.charge_hit = true;
                 self.charge_timer = 0.0;
             }
@@ -651,6 +703,10 @@ impl ICharacterBody3D for Enemy {
                     // атака в упор проходит всегда; издали — только при видимости
                     if dist <= 3.0 || self.has_los(player_pos) {
                         self.pending_dmg += self.atk_damage;
+                        // вампирический аффикс: лечится от нанесённого урона
+                        if self.lifesteal > 0.0 {
+                            self.hp = (self.hp + self.atk_damage * self.lifesteal).min(self.max_hp);
+                        }
                     }
                 }
                 // melee дожимает вплотную; ranged отходит, если игрок налез

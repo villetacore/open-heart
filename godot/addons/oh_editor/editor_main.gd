@@ -83,6 +83,17 @@ const SCHEMAS := {
 			{"key": "heal", "type": "float"}, {"key": "radius", "type": "float"},
 		],
 	},
+	"Аффиксы": {
+		"file": "affixes.json", "root": [],
+		"fields": [
+			{"key": "id", "type": "str"}, {"key": "name_ru", "type": "str"},
+			{"key": "tint", "type": "color"},
+			{"key": "hp_mult", "type": "float"}, {"key": "dmg_mult", "type": "float"},
+			{"key": "speed_mult", "type": "float"}, {"key": "xp_mult", "type": "float"},
+			{"key": "pain_mult", "type": "float"}, {"key": "lifesteal", "type": "float"},
+			{"key": "death_blast", "type": "json"},
+		],
+	},
 	"Предметы": {
 		"file": "items.json", "root": ["items"],
 		"fields": [
@@ -159,6 +170,9 @@ const SCHEMAS := {
 			{"key": "boss_items", "type": "json", "default": []},
 			{"key": "mult_per_depth", "type": "float"},
 			{"key": "weapon_cache", "type": "json", "default": []},
+			{"key": "elite_chance", "type": "float"},
+			{"key": "elite_per_depth", "type": "float"},
+			{"key": "elite_affixes_max", "type": "int"},
 		],
 	},
 	"Лут: в комнатах": {
@@ -1153,7 +1167,7 @@ func _cached_file(rel: String, default_root):
 			# У dungeon/loot «нет файла» = встроенные core-настройки: стартуем
 			# от ПОЛНОЙ core-копии, чтобы правка одной секции не сохранила
 			# усечённый файл (пустые kill_drops = «дропа нет вообще»).
-			if rel in ["dungeon.json", "loot.json", "abilities.json"]:
+			if rel in ["dungeon.json", "loot.json", "abilities.json", "affixes.json"]:
 				parsed = _read_json("res://presets/core/%s" % rel)
 			synthetic[rel] = true
 			if parsed == null:

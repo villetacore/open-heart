@@ -29,6 +29,9 @@
     "boss_guards": ["cultist", "cultist"],
     "boss_items": ["ancient_ruby", "gold_stack", "heart_1up"],
     "mult_per_depth": 0.18,
-    "weapon_cache": ["shotgun", "rifle", "nailgun", "plasma", "rocket"]
+    "weapon_cache": ["shotgun", "rifle", "nailgun", "plasma", "rocket"],
+    "elite_chance": 0.08,
+    "elite_per_depth": 0.03,
+    "elite_affixes_max": 2
   }
 }

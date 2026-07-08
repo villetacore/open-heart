@@ -53,6 +53,8 @@ pub struct EnemySpawn {
     pub pos:     Vector3,
     pub mult:    f32,
     pub is_boss: bool,
+    /// id аффиксов элиты (пусто = обычный враг).
+    pub affixes: Vec<String>,
 }
 
 pub struct DungeonPlan {
@@ -457,12 +459,14 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
 
         if is_boss_room {
             enemies.push(EnemySpawn { kind: st.boss.clone(), pos: boss_center,
-                                      mult: mult * st.boss_mult, is_boss: true });
+                                      mult: mult * st.boss_mult, is_boss: true,
+                                      affixes: Vec::new() });
             // свита по бокам алтаря
             for (gi, guard) in st.boss_guards.iter().enumerate() {
                 let d = if gi % 2 == 0 { -2 - (gi as i32 / 2) } else { 2 + (gi as i32 / 2) };
                 enemies.push(EnemySpawn { kind: guard.clone(),
-                    pos: cell_at(cx + d, cz, fy), mult, is_boss: false });
+                    pos: cell_at(cx + d, cz, fy), mult, is_boss: false,
+                    affixes: Vec::new() });
             }
             // награда рядком за алтарём: центр, слева, справа, дальше наружу
             for (ii, item) in st.boss_items.iter().enumerate() {
@@ -475,6 +479,8 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
 
         // Враги: 2–5 на комнату (растёт с глубиной)
         let n = 2 + rng.range(0, 2 + (depth.min(6) as i32));
+        let elite_chance = (st.elite_chance + st.elite_per_depth * (depth - 1) as f32)
+            .clamp(0.0, 0.6);
         for idx in 0..n {
             let Some(kind) = (!pool.is_empty()).then(|| rng.pick(pool)) else { break };
             let px = r.x + 1 + rng.range(0, (r.w - 2).max(1));
@@ -482,11 +488,22 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
             // Небольшой разброс по комнате чтобы не стояли в кучке
             let ox = if idx % 2 == 0 { 0 } else { rng.range(-1, 1) };
             let oz = if idx % 3 == 0 { 0 } else { rng.range(-1, 1) };
+            // Элита: 1..max случайных РАЗНЫХ аффиксов (комбинаторика видов)
+            let mut affixes: Vec<String> = Vec::new();
+            if !cfg.affixes.is_empty() && rng.chance(elite_chance) {
+                let take = 1 + rng.below(st.elite_affixes_max.max(1)) as usize;
+                for _ in 0..take.min(cfg.affixes.len()) {
+                    let a = &cfg.affixes[rng.below(cfg.affixes.len() as u32) as usize].id;
+                    if !affixes.contains(a) {
+                        affixes.push(a.clone());
+                    }
+                }
+            }
             enemies.push(EnemySpawn {
                 kind: kind.clone(),
                 pos: cell_at((px + ox).clamp(r.x + 1, r.x + r.w - 2),
                              (pz + oz).clamp(r.z + 1, r.z + r.h - 2), fy),
-                mult, is_boss: false,
+                mult, is_boss: false, affixes,
             });
         }
         // Патроны: точки комнаты по шансам из loot.json (позиции чередуются)

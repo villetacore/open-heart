@@ -617,7 +617,7 @@ impl Game3D {
 
         for spawn in &level.spawn_enemies {
             self.spawn_enemy(&cfg, &spawn.kind,
-                             Vector3::new(spawn.x, 0.0, spawn.z), 1.0, false, false);
+                             Vector3::new(spawn.x, 0.0, spawn.z), 1.0, false, false, &[]);
         }
         for spawn in &level.spawn_items {
             self.spawn_item(&cfg, &spawn.kind, Vector3::new(spawn.x, 0.0, spawn.z), false);
@@ -640,14 +640,16 @@ impl Game3D {
     }
 
     fn spawn_enemy(&mut self, cfg: &GameConfig, kind: &str, pos: Vector3, mult: f32,
-                   is_boss: bool, in_dungeon: bool) {
+                   is_boss: bool, in_dungeon: bool, affixes: &[String]) {
         let Some(ecfg) = cfg.enemy(kind) else {
             godot_warn!("[spawn] враг '{kind}' не найден в enemies.json пресета — пропускаю");
             return;
         };
+        // ВАЖНО: конфигурируем ДО add_child — ready() врага выполняется синхронно
+        // внутри add_child и строит спрайт из pending-полей (цвет/лист/масштаб);
+        // конфигурация после add_child давала белых «грунтов» вместо всех видов.
         let mut e = Enemy::new_alloc();
         e.set_position(pos);
-        self.base_mut().add_child(&e);
         let color = Color::from_rgba(ecfg.color_r, ecfg.color_g, ecfg.color_b, 1.0);
         // сложность из настроек масштабирует hp/урон/XP поверх глубинного множителя
         let mult = mult * self.settings.difficulty_mult();
@@ -676,6 +678,19 @@ impl Game3D {
                 ^ pos.x.to_bits() as u64;
             e.bind_mut().set_combat_extras(abs, ecfg.pain_chance, seed);
         }
+        // аффиксы элиты (после combat_extras — модифицируют и pain_chance)
+        if !affixes.is_empty() {
+            let resolved: Vec<crate::config::AffixCfg> = affixes.iter()
+                .filter_map(|id| {
+                    let a = cfg.affixes.iter().find(|a| &a.id == id).cloned();
+                    if a.is_none() {
+                        godot_warn!("[spawn] аффикс '{id}' не найден в affixes.json — пропускаю");
+                    }
+                    a
+                })
+                .collect();
+            e.bind_mut().apply_affixes(&resolved);
+        }
         if let Some(ref p) = self.player {
             e.bind_mut().set_player(p.clone());
         }
@@ -685,6 +700,9 @@ impl Game3D {
                 e.bind_mut().set_nav(nav.clone(), DUNGEON_OFFSET);
             }
         }
+        // add_child В КОНЦЕ: ready() выполняется синхронно здесь и читает уже
+        // сконфигурированные pending-поля (спрайт/цвет/тинт элиты/масштаб).
+        self.base_mut().add_child(&e);
         self.enemies.push(e);
     }
 
@@ -725,7 +743,7 @@ impl Game3D {
                     let ang = i as f32 * 2.4 + 0.7;
                     let off = Vector3::new(ang.cos() * 1.6, 0.0, ang.sin() * 1.6);
                     self.spawn_enemy(cfg, &req.kind, req.pos + off, base_mult,
-                                     false, self.loc == Loc::Dungeon);
+                                     false, self.loc == Loc::Dungeon, &[]);
                 }
             }
             self.cfg = cfg;
@@ -960,7 +978,8 @@ impl Game3D {
         self.dungeon_nav = Some(NavGrid::new(plan.floor_map.clone(), plan.floor_heights.clone()));
 
         for es in &plan.enemies {
-            self.spawn_enemy(&cfg, &es.kind, DUNGEON_OFFSET + es.pos, es.mult, es.is_boss, true);
+            self.spawn_enemy(&cfg, &es.kind, DUNGEON_OFFSET + es.pos, es.mult, es.is_boss, true,
+                             &es.affixes);
         }
         for (kind, pos) in &plan.items {
             self.spawn_item(&cfg, kind, DUNGEON_OFFSET + *pos, true);
@@ -2463,7 +2482,7 @@ impl Game3D {
 
     /// Обработка убитых врагов: XP, дроп, эффекты, квест босса.
     fn process_kills(&mut self) {
-        let mut kills: Vec<(Vector3, f32, bool, String)> = Vec::new();
+        let mut kills: Vec<(Vector3, f32, bool, String, Option<(f32, f32)>)> = Vec::new();
         let mut i = 0;
         while i < self.enemies.len() {
             let alive = self.enemies[i].bind().alive;
@@ -2472,7 +2491,8 @@ impl Game3D {
                 let xp = self.enemies[i].bind().xp_value;
                 let is_boss = self.enemies[i].bind().is_boss;
                 let kind = self.enemies[i].bind().cfg_id.to_string();
-                kills.push((pos, xp, is_boss, kind));
+                let blast = self.enemies[i].bind().death_blast;
+                kills.push((pos, xp, is_boss, kind, blast));
                 let e = self.enemies.remove(i);
                 e.free();
             } else {
@@ -2480,7 +2500,11 @@ impl Game3D {
             }
         }
 
-        for (pos, xp, is_boss, kind) in kills {
+        for (pos, xp, is_boss, kind, blast) in kills {
+            // «Взрывной» аффикс: посмертный взрыв — игроку полный урон, врагам половину
+            if let Some((dmg, radius)) = blast {
+                self.enemy_death_blast(pos, dmg, radius);
+            }
             self.spawn_fx("res://assets/effects/effect_blood.png",
                           pos + Vector3::new(0.0, 0.9, 0.0), 0.014, 0.4);
             // прогресс kill-квестов
@@ -2553,6 +2577,33 @@ impl Game3D {
                 let _ = msgs;
                 self.show_flash("СТРАЖ ПОВЕРЖЕН! Портал вглубь открыт (+50 зол.)");
                 self.auto_save();
+            }
+        }
+    }
+
+    /// Посмертный взрыв «взрывной» элиты: полный урон игроку в радиусе (с
+    /// затуханием), врагам — половина; будит округу.
+    fn enemy_death_blast(&mut self, pos: Vector3, dmg: f32, radius: f32) {
+        self.spawn_fx("res://assets/effects/effect_explosion.png", pos + Vector3::new(0.0, 0.8, 0.0), 0.024, 0.45);
+        self.spawn_light_fx(pos, Color::from_rgba(1.0, 0.55, 0.2, 1.0), 2.8, radius * 2.0, 0.4);
+        self.alert_enemies(pos, 20.0);
+
+        if let Some(ref p) = self.player {
+            let d = (p.get_global_position() - pos).length();
+            if d < radius {
+                if let Ok(mut pl) = p.clone().try_cast::<Player>() {
+                    let fall = 1.0 - (d / radius) * 0.6;
+                    pl.bind_mut().take_damage(dmg * fall);
+                    self.damage_flash_timer = 0.35;
+                }
+            }
+        }
+        for e in self.enemies.iter_mut() {
+            if !e.bind().alive { continue; }
+            let d = (e.get_global_position() - pos).length();
+            if d < radius {
+                let fall = 1.0 - (d / radius) * 0.6;
+                e.bind_mut().take_damage(dmg * 0.5 * fall, DmgType::Fire);
             }
         }
     }
@@ -3278,8 +3329,9 @@ impl Game3D {
                     let ratio = (eb.hp / eb.max_hp).clamp(0.0, 1.0);
                     let filled = (ratio * 10.0).round() as usize;
                     let bar: String = "█".repeat(filled) + &"░".repeat(10 - filled.min(10));
-                    let boss = if eb.is_boss { "СТРАЖ " } else { "" };
-                    format!("{}[{}]  {}  {:.0}/{:.0}", boss, eb.cfg_id, bar, eb.hp, eb.max_hp)
+                    let boss = if eb.is_boss { "СТРАЖ " }
+                               else if eb.is_elite() { "⭐ " } else { "" };
+                    format!("{}[{}]  {}  {:.0}/{:.0}", boss, eb.display_name(), bar, eb.hp, eb.max_hp)
                 } else { String::new() }
             } else { String::new() }
         } else { String::new() };

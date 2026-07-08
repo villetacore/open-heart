@@ -177,6 +177,29 @@ pub struct AbilityCfg {
     #[serde(default)] pub radius: f32,
 }
 
+// ── Элитные аффиксы (affixes.json) ────────────────────────────────────────────
+
+fn d_one() -> f32 { 1.0 }
+
+/// Аффикс элиты: элита = базовый враг + 1–2 аффикса (комбинаторика видов).
+/// Мультипликаторы применяются поверх статов врага; tint подмешивается в цвет.
+#[derive(Debug, Deserialize, Clone)]
+pub struct AffixCfg {
+    pub id:      String,
+    pub name_ru: String,                      // префикс имени: «Быстрый Грунт»
+    #[serde(default)] pub tint: Option<[f32; 3]>,
+    #[serde(default = "d_one")] pub hp_mult:    f32,
+    #[serde(default = "d_one")] pub dmg_mult:   f32,
+    #[serde(default = "d_one")] pub speed_mult: f32,
+    #[serde(default = "d_one")] pub xp_mult:    f32,
+    /// Множитель pain_chance (<1 у «бронированных» — тяжелее прервать).
+    #[serde(default = "d_one")] pub pain_mult:  f32,
+    /// Доля нанесённого игроку урона, возвращаемая элите как HP.
+    #[serde(default)] pub lifesteal: f32,
+    /// Взрыв при смерти: [урон, радиус] (урон игроку полный, врагам — половина).
+    #[serde(default)] pub death_blast: Option<[f32; 2]>,
+}
+
 // ── Данж (dungeon.json): темы, пулы врагов, настройки ────────────────────────
 
 /// Тема данжа. Текстуры — короткими именами (dtile_* → textures/dungeon,
@@ -204,6 +227,8 @@ fn d_boss()       -> String { "brute".into() }
 fn d_boss_mult()  -> f32 { 1.25 }
 fn d_mult_depth() -> f32 { 0.18 }
 
+fn d_elite_max() -> u32 { 2 }
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct DungeonSettings {
     /// id босса (enemies.json)
@@ -217,6 +242,12 @@ pub struct DungeonSettings {
     #[serde(default = "d_mult_depth")] pub mult_per_depth: f32,
     /// пул оружейного тайника (id оружия)
     #[serde(default)]                  pub weapon_cache:   Vec<String>,
+    /// шанс элиты на спавн (базовый + прирост за глубину)
+    #[serde(default)]                  pub elite_chance:    f32,
+    #[serde(default)]                  pub elite_per_depth: f32,
+    /// максимум аффиксов на элиту (1..N)
+    #[serde(default = "d_elite_max", deserialize_with = "de_u32")]
+    pub elite_affixes_max: u32,
 }
 
 impl Default for DungeonSettings {
@@ -277,6 +308,8 @@ pub struct GameConfig {
     pub dialogues: Vec<crate::dialogue::Scene>,
     /// Способности врагов (abilities.json); нет файла → встроенные core.
     pub abilities: Vec<AbilityCfg>,
+    /// Элитные аффиксы (affixes.json); нет файла → встроенные core.
+    pub affixes:   Vec<AffixCfg>,
     /// Генерация данжей (dungeon.json); нет файла → встроенные настройки core.
     pub dungeon: DungeonCfg,
     /// Таблицы лута (loot.json); нет файла → встроенные настройки core.
@@ -301,6 +334,7 @@ const EMBEDDED_QUESTS:  &str = include_str!("../../godot/presets/core/quests.jso
 const EMBEDDED_DUNGEON: &str = include_str!("../../godot/presets/core/dungeon.json");
 const EMBEDDED_LOOT:    &str = include_str!("../../godot/presets/core/loot.json");
 const EMBEDDED_ABILITIES: &str = include_str!("../../godot/presets/core/abilities.json");
+const EMBEDDED_AFFIXES:   &str = include_str!("../../godot/presets/core/affixes.json");
 
 /// Распарсить текст конфига; при ошибке — громкое предупреждение и встроенная копия.
 fn parse_loud<T: serde::de::DeserializeOwned + Default>(text: &str, file: &str, embedded: &str) -> T {
@@ -328,6 +362,7 @@ pub(crate) fn embedded_configs_parse_for_test() {
     assert!(!d.themes.is_empty() && !d.pools.is_empty(), "embedded dungeon.json: пустые themes/pools");
     serde_json::from_str::<LootCfg>(EMBEDDED_LOOT).expect("embedded loot.json");
     serde_json::from_str::<Vec<AbilityCfg>>(EMBEDDED_ABILITIES).expect("embedded abilities.json");
+    serde_json::from_str::<Vec<AffixCfg>>(EMBEDDED_AFFIXES).expect("embedded affixes.json");
 }
 
 impl GameConfig {
@@ -398,6 +433,12 @@ impl GameConfig {
             None => serde_json::from_str(EMBEDDED_ABILITIES).unwrap_or_default(),
         };
 
+        // аффиксы элит: нет файла — молча встроенные core
+        let affixes: Vec<AffixCfg> = match read(&format!("{base}/affixes.json")) {
+            Some(t) => parse_loud(&t, "affixes.json", EMBEDDED_AFFIXES),
+            None => serde_json::from_str(EMBEDDED_AFFIXES).unwrap_or_default(),
+        };
+
         // диалоги: отсутствие файла — норма (story.rs остаётся встроенным контентом)
         let dialogues = match read(&format!("{base}/dialogues.json")) {
             None => Vec::new(),
@@ -415,7 +456,7 @@ impl GameConfig {
             },
         };
 
-        Self { enemies, items, level, npcs, quests, dialogues, abilities, dungeon, loot, npcs_file_present }
+        Self { enemies, items, level, npcs, quests, dialogues, abilities, affixes, dungeon, loot, npcs_file_present }
     }
 
     /// JSON-сцена диалога по id (приоритетнее story.rs — см. game.rs).

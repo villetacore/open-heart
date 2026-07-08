@@ -213,6 +213,16 @@ mod preset_tests {
                 }
             }
 
+            // аффиксы: парс (нет файла — рантайм берёт core)
+            if let Some(t) = read(&preset, "affixes.json") {
+                let afs: Vec<crate::config::AffixCfg> = serde_json::from_str(&t)
+                    .unwrap_or_else(|e| panic!("{name}/affixes.json: {e}"));
+                for a in &afs {
+                    assert!(a.hp_mult > 0.0 && a.speed_mult > 0.0,
+                        "{name}/affixes.json: '{}' — неположительный множитель", a.id);
+                }
+            }
+
             // генерация данжей: парс + ссылки на врагов/предметы/оружие + текстуры тем
             if let Some(t) = read(&preset, "dungeon.json") {
                 let d: crate::config::DungeonCfg = serde_json::from_str(&t)

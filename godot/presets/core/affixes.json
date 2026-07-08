@@ -1,0 +1,27 @@
+[
+  {
+    "id": "swift", "name_ru": "Быстрый",
+    "tint": [0.45, 0.85, 1.0],
+    "speed_mult": 1.45, "xp_mult": 1.4
+  },
+  {
+    "id": "armored", "name_ru": "Бронированный",
+    "tint": [0.85, 0.8, 0.5],
+    "hp_mult": 1.7, "speed_mult": 0.9, "pain_mult": 0.25, "xp_mult": 1.5
+  },
+  {
+    "id": "vampiric", "name_ru": "Вампирический",
+    "tint": [1.0, 0.35, 0.6],
+    "lifesteal": 0.6, "hp_mult": 1.2, "xp_mult": 1.5
+  },
+  {
+    "id": "volatile", "name_ru": "Взрывной",
+    "tint": [1.0, 0.55, 0.15],
+    "death_blast": [26.0, 4.5], "xp_mult": 1.4
+  },
+  {
+    "id": "brutal", "name_ru": "Свирепый",
+    "tint": [1.0, 0.25, 0.25],
+    "dmg_mult": 1.5, "xp_mult": 1.45
+  }
+]

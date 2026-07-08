@@ -423,15 +423,17 @@ jobs:
           ls -lh ../*.zip ../*.tar.gz ../*.apk 2>/dev/null || echo "(no files packaged)"
 
       # ── GitHub Release ───────────────────────────────────────────────────────
-      - name: Create GitHub Release
+      # auto-tag.yml уже создал релиз — мы просто прикрепляем артефакты.
+      # make_latest: false — не трогаем «latest», авто-тег уже поставил.
+      - name: Attach artifacts to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name:              ${{ steps.ver.outputs.tag }}
-          name:                  "OpenHeart ${{ steps.ver.outputs.tag }}"
-          draft:                 false
-          prerelease:            ${{ contains(steps.ver.outputs.tag, 'alpha') || contains(steps.ver.outputs.tag, 'beta') || contains(steps.ver.outputs.tag, 'rc') }}
-          generate_release_notes: true
+          tag_name:               ${{ steps.ver.outputs.tag }}
+          name:                   "OpenHeart ${{ steps.ver.outputs.tag }}"
+          draft:                  false
+          prerelease:             ${{ contains(steps.ver.outputs.tag, 'alpha') || contains(steps.ver.outputs.tag, 'beta') || contains(steps.ver.outputs.tag, 'rc') }}
           fail_on_unmatched_files: false
+          make_latest:            true
           files: |
             OpenHeart-*.zip
             OpenHeart-*.tar.gz

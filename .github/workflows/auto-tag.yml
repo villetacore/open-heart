@@ -24,7 +24,6 @@ jobs:
   auto-tag:
     name: "Bump & Tag"
     runs-on: ubuntu-24.04
-    # Для workflow_run — только если CI прошёл; для ручного запуска — всегда
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
@@ -33,13 +32,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # При workflow_run — коммит того пуша, который запустил CI
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Compute next version
         id: next
         run: |
-          # Если на HEAD уже есть тег — пропускаем
           if git describe --exact-match HEAD 2>/dev/null; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "::notice::HEAD already tagged, skipping"
@@ -47,15 +44,12 @@ jobs:
           fi
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
-          # Последний тег (фолбэк v0.0.0)
           LAST=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           echo "prev_tag=$LAST" >> "$GITHUB_OUTPUT"
 
-          # ── Тип бампа ──────────────────────────────────────────────────────
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             BUMP="${{ inputs.bump }}"
           else
-            # Анализируем коммиты с последнего тега
             COMMITS=$(git log "$LAST..HEAD" --format="%s %b" 2>/dev/null || true)
             if echo "$COMMITS" | grep -qiE 'BREAKING[[:space:]]CHANGE|\[major\]'; then
               BUMP=major
@@ -66,7 +60,6 @@ jobs:
             fi
           fi
 
-          # ── Вычисляем новый тег ────────────────────────────────────────────
           VERSION="${LAST#v}"
           MA=$(echo "$VERSION" | cut -d. -f1 | tr -dc '0-9'); MA=${MA:-0}
           MI=$(echo "$VERSION" | cut -d. -f2 | tr -dc '0-9'); MI=${MI:-0}
@@ -90,20 +83,61 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "${{ steps.next.outputs.new_tag }}" HEAD
           git push origin "${{ steps.next.outputs.new_tag }}"
-          echo "✓ Tagged and pushed: ${{ steps.next.outputs.new_tag }}"
+          echo "✓ Tagged: ${{ steps.next.outputs.new_tag }}"
 
-      # GITHUB_TOKEN не триггерит другие воркфлоу при push-е тега.
-      # Поэтому запускаем release.yml явно через API workflow dispatch.
-      - name: Trigger release workflow
+      # Создаём GitHub Release СРАЗУ (без артефактов).
+      # release.yml позже прикрепит собранные файлы к этому же релизу.
+      # Благодаря этому релиз появляется через ~10 сек, а не через 30–60 мин.
+      - name: Create GitHub Release immediately
         if: steps.next.outputs.skip != 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo:  context.repo.repo,
-              workflow_id: 'release.yml',
-              ref:   'main',
-              inputs: { tag: '${{ steps.next.outputs.new_tag }}' }
+            const tag  = '${{ steps.next.outputs.new_tag }}';
+            const prev = '${{ steps.next.outputs.prev_tag }}';
+            const bump = '${{ steps.next.outputs.bump }}';
+
+            // Генерируем release notes через API (как generate_release_notes: true)
+            let notes = '';
+            try {
+              const rn = await github.rest.repos.generateReleaseNotes({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                tag_name:          tag,
+                previous_tag_name: prev === 'v0.0.0' ? undefined : prev,
+              });
+              notes = rn.data.body;
+            } catch (_) { /* если тегов ещё не было, пропускаем */ }
+
+            const body = notes
+              ? notes + '\n\n---\n⏳ Собираем артефакты платформ — вернитесь через ~30 мин.'
+              : '⏳ Собираем артефакты платформ — вернитесь через ~30 мин.';
+
+            await github.rest.repos.createRelease({
+              owner:      context.repo.owner,
+              repo:       context.repo.repo,
+              tag_name:   tag,
+              name:       `OpenHeart ${tag}`,
+              body,
+              draft:      false,
+              prerelease: tag.includes('alpha') || tag.includes('beta') || tag.includes('rc'),
             });
-            console.log('✓ release.yml dispatched for tag ${{ steps.next.outputs.new_tag }}');
+            console.log(`✓ Release создан: ${tag}`);
+
+      # GITHUB_TOKEN не триггерит другие воркфлоу при git push тега.
+      # Запускаем release.yml явно через API — он соберёт платформы
+      # и прикрепит артефакты к уже существующему релизу.
+      - name: Dispatch release.yml (build platforms + attach artifacts)
+        if: steps.next.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.next.outputs.new_tag }}';
+            const res = await github.rest.actions.createWorkflowDispatch({
+              owner:       context.repo.owner,
+              repo:        context.repo.repo,
+              workflow_id: 'release.yml',
+              ref:         'main',
+              inputs:      { tag },
+            });
+            console.log(`✓ release.yml dispatched (status ${res.status}) for ${tag}`);

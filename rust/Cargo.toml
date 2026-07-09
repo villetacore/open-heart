@@ -11,3 +11,9 @@ crate-type = ["cdylib"]
 godot      = { version = "0.5.4", features = ["api-4-3"] }
 serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# Web/WASM: gdext требует opt-in фичу experimental-wasm для wasm-таргета.
+# Cargo объединит её с api-4-3 только при сборке под emscripten; на остальных
+# платформах фича не подключается.
+[target.'cfg(target_os = "emscripten")'.dependencies]
+godot = { version = "0.5.4", features = ["experimental-wasm"] }

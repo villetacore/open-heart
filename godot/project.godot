@@ -16,6 +16,10 @@ run/main_scene="res://main_menu.tscn"
 config/features=PackedStringArray("4.7")
 config/icon="res://icon.svg"
 
+[autoload]
+
+Music="*res://autoload/music_player.gd"
+
 [display]
 
 window/size/viewport_width=1920

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://b5lcyxvvyh6e7"
+path="res://.godot/imported/Chrome Coil.ogg-ced2e8f4c216641b757008a1f3b08afb.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/music/Chrome Coil.ogg"
+dest_files=["res://.godot/imported/Chrome Coil.ogg-ced2e8f4c216641b757008a1f3b08afb.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

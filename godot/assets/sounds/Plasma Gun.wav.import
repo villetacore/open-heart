@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dlw578cern6o3"
+path="res://.godot/imported/Plasma Gun.wav-e80f12fc57199870953410bc1775ef7c.sample"
+
+[deps]
+
+source_file="res://assets/sounds/Plasma Gun.wav"
+dest_files=["res://.godot/imported/Plasma Gun.wav-e80f12fc57199870953410bc1775ef7c.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

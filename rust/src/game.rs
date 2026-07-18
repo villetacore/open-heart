@@ -5,7 +5,8 @@
 
 use godot::prelude::*;
 use godot::classes::{
-    AtlasTexture, CanvasLayer, CharacterBody3D, DirectionalLight3D,
+    AtlasTexture, AudioStream, AudioStreamPlayer, AudioStreamPlayer3D,
+    CanvasLayer, CharacterBody3D, DirectionalLight3D,
     Environment, Image, ImageTexture, Input, Label, Node3D, OmniLight3D,
     PanoramaSkyMaterial, Panel, PhysicsRayQueryParameters3D, Sky, Sprite3D,
     StyleBoxFlat, Texture2D, TextureRect, VBoxContainer, WorldEnvironment, INode3D,
@@ -177,6 +178,8 @@ pub struct Game3D {
     enemy_projectiles: Vec<EnemyProjectile>,
     sprite_fx:   Vec<SpriteFx>,
     light_fx:    Vec<LightFx>,
+    sfx_2d:      Vec<Gd<AudioStreamPlayer>>,
+    sfx_3d:      Vec<Gd<AudioStreamPlayer3D>>,
 
     state:       Option<GameState>,
     settings:    Settings,
@@ -281,6 +284,25 @@ const HUD_H: f32      = 1080.0;
 
 const DUNGEON_OFFSET: Vector3 = Vector3::new(500.0, 0.0, 500.0);
 
+// ── Звуковые эффекты (варианты — выбираем случайный для разнообразия) ──────────
+const SFX_FIRE: [&str; 3] = [
+    "res://assets/sounds/Plasma Gun.wav",
+    "res://assets/sounds/Plasma Gun1.wav",
+    "res://assets/sounds/Plasma Gun Shot.wav",
+];
+const SFX_MELEE: [&str; 2] = [
+    "res://assets/sounds/Plasma Sword Strike.wav",
+    "res://assets/sounds/Plasma Sword Strike1.wav",
+];
+const SFX_DEATH: [&str; 2] = [
+    "res://assets/sounds/The Evil Robot Dies.wav",
+    "res://assets/sounds/The Evil Robot Dies1.wav",
+];
+const SFX_WALK: [&str; 2] = [
+    "res://assets/sounds/An Evil Robot Is Walking.wav",
+    "res://assets/sounds/An Evil Robot Is Walking1.wav",
+];
+
 const NPC_IDLE_FRAMES: [(f32, f32, f32, f32); 2] = [
     (0.0,   0.0, 128.0, 256.0),
     (128.0, 0.0, 128.0, 256.0),
@@ -314,6 +336,7 @@ impl INode3D for Game3D {
             enemies: Vec::new(), world_items: Vec::new(),
             projectiles: Vec::new(), enemy_projectiles: Vec::new(),
             sprite_fx: Vec::new(), light_fx: Vec::new(),
+            sfx_2d: Vec::new(), sfx_3d: Vec::new(),
             state: None, settings: Settings::default(),
             arsenal: Arsenal::new(),
             loadout: compute_loadout(0, 0, 1),
@@ -452,6 +475,7 @@ impl INode3D for Game3D {
         self.tick_damage_flash(dt);
         self.tick_npc_anim(dt);
         self.tick_fx(dt);
+        self.tick_sfx();
         self.tick_weapon_anim(dt);
         self.tick_muzzle(dt);
         self.update_compass();
@@ -727,10 +751,19 @@ impl Game3D {
 
     /// Разбудить врагов вокруг точки (шум выстрела/взрыва — слух работает сквозь стены).
     fn alert_enemies(&mut self, pos: Vector3, radius: f32) {
+        let mut woke_at: Option<Vector3> = None;
         for e in self.enemies.iter_mut() {
             if (e.get_global_position() - pos).length() < radius {
-                e.bind_mut().alert();
+                let just_woke = e.bind_mut().alert();
+                if just_woke && woke_at.is_none() {
+                    woke_at = Some(e.get_global_position());
+                }
             }
+        }
+        // проигрываем один звук «пробуждения», даже если проснулось несколько —
+        // иначе будет каша из наложенных звуков.
+        if let Some(p) = woke_at {
+            self.play_sfx_at(&SFX_WALK, p);
         }
     }
 
@@ -2313,6 +2346,13 @@ impl Game3D {
         self.set_weapon_frame(def.fire_frames[0]);
         self.flash_muzzle();
 
+        // звук выстрела/удара
+        if matches!(def.kind, FireKind::Melee) {
+            self.play_sfx(&SFX_MELEE);
+        } else {
+            self.play_sfx(&SFX_FIRE);
+        }
+
         // шум выстрела будит врагов в округе (мили — тихо, вдвое меньший радиус)
         if let Some(ref p) = self.player {
             let pos = p.get_global_position();
@@ -2567,6 +2607,7 @@ impl Game3D {
             }
             self.spawn_fx("res://assets/effects/effect_blood.png",
                           pos + Vector3::new(0.0, 0.9, 0.0), 0.014, 0.4);
+            self.play_sfx_at(&SFX_DEATH, pos + Vector3::new(0.0, 1.0, 0.0));
             // прогресс kill-квестов
             self.bump_quests("kill", &kind);
 
@@ -2682,6 +2723,59 @@ impl Game3D {
         if let Some(sp) = make_billboard(&mut self.cache, tex, pos, px) {
             self.base_mut().add_child(&sp);
             self.sprite_fx.push(SpriteFx { node: sp, ttl, total: ttl });
+        }
+    }
+
+    /// Случайный путь из набора вариантов звука.
+    fn pick_sfx<'a>(&mut self, paths: &[&'a str]) -> &'a str {
+        if paths.len() <= 1 {
+            return paths[0];
+        }
+        let i = ((self.rng.f32() * paths.len() as f32) as usize).min(paths.len() - 1);
+        paths[i]
+    }
+
+    /// Проиграть звук без позиции (звуки игрока — стрельба, удар).
+    fn play_sfx(&mut self, paths: &[&str]) {
+        let path = self.pick_sfx(paths);
+        let Ok(stream) = godot::tools::try_load::<AudioStream>(path) else { return };
+        let mut p = AudioStreamPlayer::new_alloc();
+        p.set_stream(&stream);
+        self.base_mut().add_child(&p);
+        p.play();
+        self.sfx_2d.push(p);
+    }
+
+    /// Проиграть 3D-звук в точке мира (звуки врагов — смерть, пробуждение).
+    fn play_sfx_at(&mut self, paths: &[&str], pos: Vector3) {
+        let path = self.pick_sfx(paths);
+        let Ok(stream) = godot::tools::try_load::<AudioStream>(path) else { return };
+        let mut p = AudioStreamPlayer3D::new_alloc();
+        p.set_stream(&stream);
+        p.set_position(pos);
+        p.set_max_distance(45.0);
+        self.base_mut().add_child(&p);
+        p.play();
+        self.sfx_3d.push(p);
+    }
+
+    /// Освободить закончившиеся аудио-плееры (вызывается каждый кадр).
+    fn tick_sfx(&mut self) {
+        let mut i = 0;
+        while i < self.sfx_2d.len() {
+            if self.sfx_2d[i].is_playing() {
+                i += 1;
+            } else {
+                self.sfx_2d.remove(i).free();
+            }
+        }
+        let mut i = 0;
+        while i < self.sfx_3d.len() {
+            if self.sfx_3d[i].is_playing() {
+                i += 1;
+            } else {
+                self.sfx_3d.remove(i).free();
+            }
         }
     }
 

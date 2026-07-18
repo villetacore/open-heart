@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://bk0hlxoa448ur"
+path="res://.godot/imported/Plasma Sword Strike1.wav-a615e8fa1c2cbfb0a4e3b7d2af60148e.sample"
+
+[deps]
+
+source_file="res://assets/sounds/Plasma Sword Strike1.wav"
+dest_files=["res://.godot/imported/Plasma Sword Strike1.wav-a615e8fa1c2cbfb0a4e3b7d2af60148e.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

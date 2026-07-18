@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://gxvh7bldwme5"
+path="res://.godot/imported/Chrome Rave Loop.ogg-5095c252a679d29b8a420ae0c328d06c.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/music/Chrome Rave Loop.ogg"
+dest_files=["res://.godot/imported/Chrome Rave Loop.ogg-5095c252a679d29b8a420ae0c328d06c.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

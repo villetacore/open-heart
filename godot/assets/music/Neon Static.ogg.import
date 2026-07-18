@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://caeepy8d82lm4"
+path="res://.godot/imported/Neon Static.ogg-9357584c9427cd0a9a0c4c99106e382d.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/music/Neon Static.ogg"
+dest_files=["res://.godot/imported/Neon Static.ogg-9357584c9427cd0a9a0c4c99106e382d.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

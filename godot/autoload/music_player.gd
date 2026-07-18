@@ -19,6 +19,7 @@ const TRACKS: Array[String] = [
 var _player: AudioStreamPlayer
 var _order: Array[int] = []
 var _idx: int = 0
+var _last_scene: String = ""
 
 func _ready() -> void:
 	# Музыка не должна замолкать, когда игра на паузе (меню, диалоги).
@@ -32,6 +33,19 @@ func _ready() -> void:
 
 	_reshuffle()
 	_play_current()
+
+func _process(_delta: float) -> void:
+	# Меняем трек при смене сцены (меню -> игра -> меню), чтобы музыка
+	# заметно менялась по ходу игры, а не только когда трек доиграл до конца.
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var name := String(scene.name)
+	if _last_scene == "":
+		_last_scene = name  # первичная инициализация — трек не трогаем
+	elif name != _last_scene:
+		_last_scene = name
+		skip()
 
 ## Перемешать порядок треков (каждый круг — новый порядок).
 func _reshuffle() -> void:

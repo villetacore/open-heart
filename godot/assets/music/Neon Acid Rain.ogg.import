@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://doo3gtdajlavb"
+path="res://.godot/imported/Neon Acid Rain.ogg-8a2d5240cce3c8aa6c7fc3807b198d4d.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/music/Neon Acid Rain.ogg"
+dest_files=["res://.godot/imported/Neon Acid Rain.ogg-8a2d5240cce3c8aa6c7fc3807b198d4d.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

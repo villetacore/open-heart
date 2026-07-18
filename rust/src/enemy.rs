@@ -330,12 +330,16 @@ impl Enemy {
     /// Разбудить (шум выстрела/взрыва, тревога от соседа): патруль → погоня.
     /// Таймер тревоги не даёт поводку (chase_range×1.8) сразу отпустить врага,
     /// который услышал шум издалека.
-    pub fn alert(&mut self) {
-        if !self.alive { return; }
+    /// Возвращает `true`, если враг только что перешёл из патруля в погоню
+    /// (используется, чтобы проиграть звук «пробуждения» один раз).
+    pub fn alert(&mut self) -> bool {
+        if !self.alive { return false; }
         self.alert_timer = 6.0;
         if self.state == EState::Patrol {
             self.state = EState::Chase;
+            return true;
         }
+        false
     }
 
     /// Отталкивание от других врагов рядом — стая не слипается в колонну.

@@ -112,7 +112,7 @@ pub(crate) fn parse(json: &str) -> Result<Vec<ClassDef>, String> {
     Ok(out)
 }
 
-const EMBEDDED: &str = include_str!("../../godot/presets/core/classes.json");
+const EMBEDDED: &str = include_str!("../../../godot/presets/core/classes.json");
 
 static CLASSES: RwLock<Option<&'static [ClassDef]>> = RwLock::new(None);
 

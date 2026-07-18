@@ -87,8 +87,8 @@ pub(crate) fn parse_syn(json: &str) -> Result<Vec<SynergyDef>, String> {
     serde_json::from_str(json).map_err(|e| e.to_string())
 }
 
-const EMBEDDED_PERKS: &str = include_str!("../../godot/presets/core/perks.json");
-const EMBEDDED_SYN:   &str = include_str!("../../godot/presets/core/synergies.json");
+const EMBEDDED_PERKS: &str = include_str!("../../../godot/presets/core/perks.json");
+const EMBEDDED_SYN:   &str = include_str!("../../../godot/presets/core/synergies.json");
 
 static PERKS: RwLock<Option<&'static [PerkDef]>> = RwLock::new(None);
 static SYNERGIES: RwLock<Option<&'static [SynergyDef]>> = RwLock::new(None);

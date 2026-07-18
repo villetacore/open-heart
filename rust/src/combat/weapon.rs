@@ -250,7 +250,7 @@ pub(crate) fn parse(json: &str) -> Result<Vec<WeaponDef>, String> {
 }
 
 /// Встроенная копия конфига — гарантированный фолбэк.
-const EMBEDDED: &str = include_str!("../../godot/presets/core/weapons.json");
+const EMBEDDED: &str = include_str!("../../../godot/presets/core/weapons.json");
 
 static WEAPONS: RwLock<Option<&'static [WeaponDef]>> = RwLock::new(None);
 

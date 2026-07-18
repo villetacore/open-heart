@@ -362,16 +362,16 @@ fn read(path: &str) -> Option<String> {
 // Встроенные копии core-пресета: битый JSON контент-мейкера не должен молча
 // превращаться в пустой мир (без врагов/предметов/квестов) — падаем на них
 // с предупреждением в лог (тот же принцип, что в weapon.rs/classes.rs/perk.rs).
-const EMBEDDED_ENEMIES: &str = include_str!("../../godot/presets/core/enemies.json");
-const EMBEDDED_ITEMS:   &str = include_str!("../../godot/presets/core/items.json");
-const EMBEDDED_LEVEL:   &str = include_str!("../../godot/presets/core/level.json");
-const EMBEDDED_NPCS:    &str = include_str!("../../godot/presets/core/npcs.json");
-const EMBEDDED_QUESTS:  &str = include_str!("../../godot/presets/core/quests.json");
-const EMBEDDED_DUNGEON: &str = include_str!("../../godot/presets/core/dungeon.json");
-const EMBEDDED_LOOT:    &str = include_str!("../../godot/presets/core/loot.json");
-const EMBEDDED_ABILITIES: &str = include_str!("../../godot/presets/core/abilities.json");
-const EMBEDDED_AFFIXES:   &str = include_str!("../../godot/presets/core/affixes.json");
-const EMBEDDED_STATUSES:  &str = include_str!("../../godot/presets/core/statuses.json");
+const EMBEDDED_ENEMIES: &str = include_str!("../../../godot/presets/core/enemies.json");
+const EMBEDDED_ITEMS:   &str = include_str!("../../../godot/presets/core/items.json");
+const EMBEDDED_LEVEL:   &str = include_str!("../../../godot/presets/core/level.json");
+const EMBEDDED_NPCS:    &str = include_str!("../../../godot/presets/core/npcs.json");
+const EMBEDDED_QUESTS:  &str = include_str!("../../../godot/presets/core/quests.json");
+const EMBEDDED_DUNGEON: &str = include_str!("../../../godot/presets/core/dungeon.json");
+const EMBEDDED_LOOT:    &str = include_str!("../../../godot/presets/core/loot.json");
+const EMBEDDED_ABILITIES: &str = include_str!("../../../godot/presets/core/abilities.json");
+const EMBEDDED_AFFIXES:   &str = include_str!("../../../godot/presets/core/affixes.json");
+const EMBEDDED_STATUSES:  &str = include_str!("../../../godot/presets/core/statuses.json");
 
 /// Распарсить текст конфига; при ошибке — громкое предупреждение и встроенная копия.
 fn parse_loud<T: serde::de::DeserializeOwned + Default>(text: &str, file: &str, embedded: &str) -> T {

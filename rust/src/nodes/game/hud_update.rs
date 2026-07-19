@@ -12,12 +12,8 @@ impl Game3D {
                 (player.bind().hp, player.bind().max_hp)
             } else { (100.0, 100.0) }
         } else { (100.0, 100.0) };
-        let ratio = (hp / max_hp).clamp(0.0, 1.0);
-        if let Some(ref mut fg) = self.hp_bar_fg {
-            fg.set_size(Vector2::new(218.0 * ratio, 22.0));
-            let c = Color::from_rgba(0.9 - ratio * 0.5, 0.1 + ratio * 0.3, 0.1, 1.0);
-            fg.add_theme_stylebox_override("panel", &make_style(c, Color::TRANSPARENT_BLACK, 0));
-        }
+        // цель для плавного бара — ширину/цвет крутит tick_hud_anim
+        self.hp_target = (hp / max_hp).clamp(0.0, 1.0);
         if let Some(ref mut lbl) = self.hp_label {
             lbl.set_text(&format!("{}: {:.0}/{:.0}", t("hud_hp", &lang), hp, max_hp));
         }
@@ -32,12 +28,39 @@ impl Game3D {
         let (level, xp, next) = self.state.as_ref()
             .map(|s| (s.level, s.xp, xp_to_next(s.level)))
             .unwrap_or((1, 0, 100));
-        let ratio = (xp as f32 / next as f32).clamp(0.0, 1.0);
-        if let Some(ref mut fg) = self.xp_bar_fg {
-            fg.set_size(Vector2::new(220.0 * ratio, 8.0));
-        }
+        self.xp_target = (xp as f32 / next as f32).clamp(0.0, 1.0);
         if let Some(ref mut lbl) = self.xp_label {
             lbl.set_text(&format!("ур. {}  ({}/{})", level, xp, next));
+        }
+    }
+
+    /// Плавная анимация HUD: бары лерпят к цели, HP-бар пульсирует и краснеет
+    /// при низком здоровье + красная виньетка через пост-процесс.
+    pub(super) fn tick_hud_anim(&mut self, dt: f32) {
+        self.hud_time += dt;
+        let k = (dt * 9.0).min(1.0);
+        self.hp_shown += (self.hp_target - self.hp_shown) * k;
+        self.xp_shown += (self.xp_target - self.xp_shown) * (dt * 6.0).min(1.0);
+        let hp = self.hp_shown;
+
+        // низкое HP: доля тревоги 0..1 + пульс
+        let low = ((0.35 - hp) / 0.35).clamp(0.0, 1.0);
+        let pulse = 0.6 + 0.4 * (self.hud_time * 5.5).sin();
+
+        if let Some(ref mut fg) = self.hp_bar_fg {
+            fg.set_size(Vector2::new(218.0 * hp, 22.0));
+            let c = Color::from_rgba(0.9 - hp * 0.5, 0.1 + hp * 0.3, 0.1, 1.0);
+            fg.add_theme_stylebox_override("panel", &make_style(c, Color::TRANSPARENT_BLACK, 0));
+            // при низком HP бар пульсирует яркостью
+            let a = 1.0 - low * (1.0 - pulse) * 0.5;
+            fg.set_modulate(Color::from_rgba(1.0, 1.0, 1.0, a));
+        }
+        if let Some(ref mut fg) = self.xp_bar_fg {
+            fg.set_size(Vector2::new(220.0 * self.xp_shown, 8.0));
+        }
+        // красная виньетка по здоровью (пульсирует)
+        if let Some(mat) = self.post_mat.as_mut() {
+            mat.set_shader_parameter("lowhp", &(low * pulse).to_variant());
         }
     }
 
@@ -199,12 +222,21 @@ impl Game3D {
         if self.flash_timer > 0.0 {
             self.flash_timer -= dt;
             if self.flash_timer <= 0.0 {
-                if let Some(ref mut lbl) = self.flash_label { lbl.set_visible(false); }
+                if let Some(ref mut lbl) = self.flash_label {
+                    lbl.set_visible(false);
+                    lbl.set_scale(Vector2::ONE);
+                }
             } else {
                 let alpha = if self.flash_timer < 0.8 { self.flash_timer / 0.8 } else { 1.0 };
                 let c = Color::from_rgba(C_GOLD.r, C_GOLD.g, C_GOLD.b, alpha);
+                // «поп» появления: короткий overshoot-скейл в первые 0.2 c
+                let age = 2.5 - self.flash_timer;
+                let scale = if age < 0.2 { 1.0 + (1.0 - age / 0.2) * 0.18 } else { 1.0 };
                 if let Some(ref mut lbl) = self.flash_label {
                     lbl.add_theme_color_override("font_color", c);
+                    let sz = lbl.get_size();
+                    lbl.set_pivot_offset(sz * 0.5);
+                    lbl.set_scale(Vector2::new(scale, scale));
                 }
             }
         }

@@ -188,6 +188,13 @@ pub struct Game3D {
     fx_kill:  f32,  // убийство      → короткий яркий «панч»
     fx_pick:  f32,  // подбор предмета→ тёплое золотистое свечение
 
+    // Анимация HUD: плавные бары + пульс при низком HP
+    hp_shown:  f32, // отображаемая доля HP (лерп к цели)
+    xp_shown:  f32,
+    hp_target: f32,
+    xp_target: f32,
+    hud_time:  f32, // время для пульсаций
+
     state:       Option<GameState>,
     settings:    Settings,
     arsenal:     Arsenal,
@@ -345,6 +352,7 @@ impl INode3D for Game3D {
             sprite_fx: Vec::new(), light_fx: Vec::new(),
             sfx_2d: Vec::new(), sfx_3d: Vec::new(),
             post_mat: None, fx_hit: 0.0, fx_kill: 0.0, fx_pick: 0.0,
+            hp_shown: 1.0, xp_shown: 0.0, hp_target: 1.0, xp_target: 0.0, hud_time: 0.0,
             state: None, settings: Settings::default(),
             arsenal: Arsenal::new(),
             loadout: compute_loadout(0, 0, 1),
@@ -502,6 +510,7 @@ impl INode3D for Game3D {
         self.tick_fx(dt);
         self.tick_sfx();
         self.tick_post_fx(dt);
+        self.tick_hud_anim(dt);
         self.tick_weapon_anim(dt);
         self.tick_muzzle(dt);
         self.update_compass();

@@ -16,9 +16,10 @@ uniform float aberration = 1.4;
 uniform float scanline   = 0.045;
 uniform float grain      = 0.04;
 // реактивные импульсы 0..1 (затухают в Rust)
-uniform float hit  = 0.0;   // урон  — красная пульсация + тряска аберрации
-uniform float kill = 0.0;   // фраг  — короткий яркий панч
-uniform float pick = 0.0;   // подбор — тёплое золотистое свечение
+uniform float hit   = 0.0;  // урон  — красная пульсация + тряска аберрации
+uniform float kill  = 0.0;  // фраг  — короткий яркий панч
+uniform float pick  = 0.0;  // подбор — тёплое золотистое свечение
+uniform float lowhp = 0.0;  // низкое HP — пульсирующая красная виньетка
 
 float hash(vec2 p) {
     return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
@@ -48,9 +49,9 @@ void fragment() {
     // подбор: тёплое золотистое свечение от краёв
     col += pick * vec3(0.35, 0.25, 0.05) * smoothstep(0.2, 0.9, d);
 
-    // виньетка (при уроне краснеет и сгущается)
-    float vig = vignette + hit * 0.35;
-    vec3 vig_col = mix(vec3(0.0), vec3(0.6, 0.0, 0.02), hit);
+    // виньетка (при уроне/низком HP краснеет и сгущается)
+    float vig = vignette + hit * 0.35 + lowhp * 0.45;
+    vec3 vig_col = mix(vec3(0.0), vec3(0.65, 0.0, 0.03), max(hit, lowhp));
     col = mix(col, vig_col, vig * smoothstep(0.30, 0.90, d));
 
     // анимированные сканлайны + зерно

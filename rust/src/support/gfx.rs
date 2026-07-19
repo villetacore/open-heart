@@ -146,7 +146,7 @@ pub fn make_billboard(
     sp.set_pixel_size(pixel_size);
     sp.set_billboard_mode(BillboardMode::ENABLED);
     sp.set_alpha_cut_mode(AlphaCutMode::DISCARD);
-    sp.set_texture_filter(TextureFilter::LINEAR_WITH_MIPMAPS);
+    sp.set_texture_filter(TextureFilter::NEAREST_WITH_MIPMAPS);
     sp.set_texture(&tex);
     Some(sp)
 }
@@ -161,7 +161,7 @@ pub fn make_flat_sprite(
     sp.set_rotation(Vector3::new(0.0, rot_y, 0.0));
     sp.set_pixel_size(pixel_size);
     sp.set_alpha_cut_mode(AlphaCutMode::DISCARD);
-    sp.set_texture_filter(TextureFilter::LINEAR_WITH_MIPMAPS);
+    sp.set_texture_filter(TextureFilter::NEAREST_WITH_MIPMAPS);
     sp.set_texture(&tex);
     Some(sp)
 }

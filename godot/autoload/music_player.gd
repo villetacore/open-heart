@@ -31,6 +31,10 @@ func _ready() -> void:
 	_player.bus = &"Music"
 	_player.volume_db = volume_db
 	add_child(_player)
+	_player.finished.connect(_on_finished)
+
+	_reshuffle()
+	_play_current()
 
 ## Завести аудио-шины Music и SFX (маршрут в Master), если их ещё нет —
 ## по ним рулят громкостью настройки (Settings.apply_audio в Rust).
@@ -41,10 +45,6 @@ func _ensure_buses() -> void:
 			AudioServer.add_bus(idx)
 			AudioServer.set_bus_name(idx, bus_name)
 			AudioServer.set_bus_send(idx, "Master")
-	_player.finished.connect(_on_finished)
-
-	_reshuffle()
-	_play_current()
 
 func _process(_delta: float) -> void:
 	# Меняем трек при смене сцены (меню -> игра -> меню), чтобы музыка

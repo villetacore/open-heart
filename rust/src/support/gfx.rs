@@ -74,6 +74,30 @@ pub fn make_box_rot(
     b
 }
 
+/// Наклонный слэб-пандус с коллизией: соединяет два уровня пола плавным склоном.
+/// `low`/`high` — мировые точки поверхности пола на нижнем и верхнем концах,
+/// `width` — ширина пандуса, `thick` — толщина плиты.
+pub fn make_ramp(
+    low: Vector3, high: Vector3, width: f32, thick: f32,
+    color: Color, tex: Option<&Gd<Texture2D>>,
+) -> Gd<StaticBody3D> {
+    let dir = high - low;
+    let len = dir.length().max(0.01);
+    let dirn = dir / len;
+    // ось ширины — перпендикуляр к направлению склона в горизонтали
+    let right = Vector3::UP.cross(dirn).normalized();
+    let up = dirn.cross(right).normalized();
+    let uv = (len / 3.0).max(1.0);
+    // размеры запекаем в меш/шейп; basis — чистое вращение (ортонормированный)
+    let mut body = make_box(Vector3::ZERO, Vector3::new(width, thick, len), color, tex, uv);
+    let basis = Basis::from_cols(right, up, dirn);
+    body.set_transform(Transform3D {
+        basis,
+        origin: (low + high) * 0.5 - up * (thick * 0.5),
+    });
+    body
+}
+
 /// Светящийся декоративный бокс (без коллизии), например лужа лавы.
 pub fn make_glow_slab(
     pos: Vector3, size: Vector3, tex: Option<&Gd<Texture2D>>, emission: Color, uv: f32,

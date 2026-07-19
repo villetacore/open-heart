@@ -11,6 +11,10 @@ use godot::builtin::Vector3;
 
 use crate::dungeon::{CELL, GRID};
 
+/// Максимальный перепад высоты между соседними клетками, который считается
+/// проходимым (шаг пандуса). Резкие переходы уровней (0.8) выше этого — стена.
+pub const RAMP_STEP: f32 = 0.35;
+
 pub struct NavGrid {
     cells:   Vec<bool>,   // true = проходимый пол
     heights: Vec<f32>,    // высота пола клетки: враги не умеют прыгать —
@@ -81,8 +85,9 @@ impl NavGrid {
             for (di, dj) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
                 let nb = (cur.0 + di, cur.1 + dj);
                 if !self.walkable(nb.0, nb.1) { continue; }
-                // ступени между уровнями пола (0/0.8/1.6) враг не перелезет
-                if (self.heights[idx(nb)] - self.heights[idx(cur)]).abs() > 0.05 { continue; }
+                // Резкий перепад уровней (0/0.8/1.6) враг не перелезет; но пологие
+                // шаги пандуса (<= RAMP_STEP) проходимы — это соединяет уровни.
+                if (self.heights[idx(nb)] - self.heights[idx(cur)]).abs() > RAMP_STEP { continue; }
                 let g_new = g_here + 1;
                 if g_new < g_cost[idx(nb)] {
                     g_cost[idx(nb)] = g_new;

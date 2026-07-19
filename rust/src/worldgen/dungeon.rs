@@ -1,13 +1,15 @@
 //! Процедурный генератор данжей — Doom/Quake стиль.
 //!
-//! Комнаты на разных высотах (0, 0.8, 1.6), переменная высота потолка,
-//! ступенчатые стены на границах уровней, платформы в больших комнатах.
+//! Комнаты связываются по близости (MST + петли), высоты пола (0 / 0.8)
+//! назначаются по дереву и соединяются пологими пандусами (только когда коридор
+//! достаточно длинный). Коридоры шириной 2. Пост-проверка достижимости
+//! (flood-fill) не даёт спавнить врагов/лут в отрезанных карманах.
 
 use godot::prelude::*;
 use godot::classes::Node3D;
 
 use crate::config::GameConfig;
-use crate::gfx::{make_box, make_glow_slab, make_light, make_billboard, Rng, TexCache};
+use crate::gfx::{make_box, make_ramp, make_glow_slab, make_light, make_billboard, Rng, TexCache};
 use crate::weapon::{AmmoType, WeaponId};
 
 pub const CELL: f32   = 3.0;
@@ -100,14 +102,16 @@ fn cell_at(i: i32, j: i32, y: f32) -> Vector3 {
 // ── Вспомогательные функции carve ────────────────────────────────────────────
 
 #[allow(clippy::too_many_arguments)]
-fn carve_cell(floor: &mut [bool], fh: &mut [f32], cwh: &mut [f32],
-              is_room: &[bool], i: i32, j: i32, h: f32, wh: f32) {
+fn carve_cell(floor: &mut [bool], fh: &mut [f32], cwh: &mut [f32], is_ramp: &mut [bool],
+              is_room: &[bool], i: i32, j: i32, h: f32, wh: f32, ramp: bool) {
     if i < 1 || j < 1 || i >= GRID as i32 - 1 || j >= GRID as i32 - 1 { return; }
     let idx = j as usize * GRID + i as usize;
     floor[idx] = true;
+    // Комнаты не перезаписываем (у них своя высота и это не пандус).
     if !is_room[idx] {
         fh[idx]  = h;
         cwh[idx] = wh;
+        if ramp { is_ramp[idx] = true; }
     }
 }
 
@@ -119,12 +123,12 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
     let dc = &cfg.dungeon;
     let theme = Theme::from_cfg(&dc.themes[((depth - 1) as usize) % dc.themes.len()]);
 
-    // Возможные высоты пола: сильный перевес в пользу 0.0
-    const FLOOR_LEVELS: [f32; 7] = [0.0, 0.0, 0.0, 0.8, 0.8, 1.6, 0.0];
-    // Возможные высоты потолка
-    const CEIL_LEVELS:  [f32; 5] = [3.4, 3.4, 4.8, 2.4, 3.4];
+    // Уровни высот пола: только 0.0 и 0.8 — перепад, который пандус (>=3 клетки)
+    // проходит пологим склоном (<= RAMP_STEP на клетку). 1.6 убран как источник
+    // непроходимых обрывов.
+    const CEIL_LEVELS: [f32; 5] = [3.4, 3.4, 4.8, 2.4, 3.4];
 
-    // 1. Комнаты
+    // 1. Комнаты (высоту назначим позже — по дереву связей)
     let mut rooms: Vec<Room> = Vec::new();
     let target = 6 + (depth.min(6) as i32) / 2 + rng.range(0, 2);
     for _ in 0..120 {
@@ -133,22 +137,17 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
         let h = rng.range(4, 9);
         let x = rng.range(2, GRID as i32 - w - 3);
         let z = rng.range(2, GRID as i32 - h - 3);
-        // Стартовая комната всегда на полу 0.0
-        let floor_y = if rooms.is_empty() {
-            0.0
-        } else {
-            FLOOR_LEVELS[rng.below(7) as usize]
-        };
         let wall_h = CEIL_LEVELS[rng.below(5) as usize];
-        let r = Room { x, z, w, h, floor_y, wall_h };
+        let r = Room { x, z, w, h, floor_y: 0.0, wall_h };
         if !rooms.iter().any(|o| r.overlaps(o, 2)) {
             rooms.push(r);
         }
     }
+    let n = rooms.len();
 
     // Боссовая комната — самая дальняя от входа, всегда высокий потолок
     let (e_cx, e_cz) = rooms[0].center();
-    let mut boss_idx = rooms.len() - 1;
+    let mut boss_idx = n - 1;
     let mut best_d = -1i32;
     for (k, r) in rooms.iter().enumerate() {
         if k == 0 { continue; }
@@ -158,11 +157,78 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
     }
     rooms[boss_idx].wall_h = 5.5;
 
-    // 2. Пол/высоты — два прохода: комнаты, потом коридоры
+    // Центры комнат кэшируем отдельно — высоты будем менять, а центры нет,
+    // и это развязывает заимствования при назначении высот.
+    let centers: Vec<(i32, i32)> = rooms.iter().map(|r| r.center()).collect();
+    // Манхэттенское расстояние между центрами комнат (длина L-коридора в клетках)
+    let corridor_len = |a: usize, b: usize| -> i32 {
+        let (ax, az) = centers[a];
+        let (bx, bz) = centers[b];
+        (ax - bx).abs() + (az - bz).abs()
+    };
+
+    // 1b. Связь: MST (Прим) по центрам комнат — соединяем БЛИЖАЙШИЕ, не по индексу.
+    let mut in_tree = vec![false; n];
+    let mut tree: Vec<(usize, usize)> = Vec::new();
+    in_tree[0] = true;
+    for _ in 1..n {
+        let mut best = (i32::MAX, 0usize, 0usize);
+        #[allow(clippy::needless_range_loop)]
+        for a in 0..n {
+            if !in_tree[a] { continue; }
+            for b in 0..n {
+                if in_tree[b] { continue; }
+                let d = corridor_len(a, b);
+                if d < best.0 { best = (d, a, b); }
+            }
+        }
+        in_tree[best.2] = true;
+        tree.push((best.1, best.2));
+    }
+
+    // 1c. Высоты комнат: BFS по дереву. Поднимаем/опускаем только когда коридор
+    //     достаточно длинный для пологого пандуса — иначе высота как у родителя.
+    let mut visited = vec![false; n];
+    visited[0] = true;
+    let mut queue = std::collections::VecDeque::from([0usize]);
+    while let Some(a) = queue.pop_front() {
+        for &(u, v) in &tree {
+            let b = if u == a { v } else if v == a { u } else { continue };
+            if visited[b] { continue; }
+            visited[b] = true;
+            let can_ramp = corridor_len(a, b) >= 3;
+            rooms[b].floor_y = if can_ramp && b != boss_idx && rng.chance(0.4) {
+                if rooms[a].floor_y < 0.4 { 0.8 } else { 0.0 }
+            } else {
+                rooms[a].floor_y
+            };
+            queue.push_back(b);
+        }
+    }
+    rooms[0].floor_y = 0.0;
+
+    // 1d. Петли: добавим 1–2 коротких доп-ребра между комнатами ОДНОЙ высоты
+    //     (чтобы не плодить крутые пандусы) для более связной топологии.
+    let mut links = tree.clone();
+    let mut extra_cand: Vec<(i32, usize, usize)> = Vec::new();
+    for a in 0..n {
+        for b in (a + 1)..n {
+            if links.contains(&(a, b)) || links.contains(&(b, a)) { continue; }
+            if (rooms[a].floor_y - rooms[b].floor_y).abs() > 0.05 { continue; }
+            extra_cand.push((corridor_len(a, b), a, b));
+        }
+    }
+    extra_cand.sort_by_key(|e| e.0);
+    for &(_, a, b) in extra_cand.iter().take((n / 4).max(1)) {
+        links.push((a, b));
+    }
+
+    // 2. Пол/высоты
     let mut floor   = vec![false; GRID * GRID];
     let mut fh      = vec![0.0f32; GRID * GRID];
     let mut cwh     = vec![WALL_H; GRID * GRID];
     let mut is_room = vec![false; GRID * GRID];
+    let mut is_ramp = vec![false; GRID * GRID];
 
     // Фаза A: комнаты
     for r in &rooms {
@@ -179,30 +245,53 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
         }
     }
 
-    // Фаза B: коридоры (L-образные)
-    let mut links: Vec<(usize, usize)> = (1..rooms.len()).map(|i| (i - 1, i)).collect();
-    if rooms.len() > 3 { links.push((0, rooms.len() - 1)); }
-
-    for (a, b) in &links {
-        let ra = rooms[*a]; let rb = rooms[*b];
+    // Фаза B: коридоры (L-образные, ширина 2). При разной высоте комнат весь
+    // коридор — плавный пандус: высота линейно интерполируется по длине пути,
+    // а сегменты записываются для отрисовки наклонными слэбами.
+    let mut ramp_segs: Vec<(Vector3, Vector3)> = Vec::new(); // (низ, верх) поверхности
+    for &(a, b) in &links {
+        let ra = rooms[a]; let rb = rooms[b];
         let (ax, az) = ra.center();
         let (bx, bz) = rb.center();
-        let wide = rng.chance(0.35);
-        // Горизонтальный сегмент → высота комнаты A
-        let h_a = ra.floor_y; let wh_a = ra.wall_h.min(rb.wall_h);
-        // Вертикальный сегмент → высота комнаты B
-        let h_b = rb.floor_y;
+        let wh = ra.wall_h.min(rb.wall_h);
+        let dx = (ax - bx).abs();
+        let dz = (az - bz).abs();
+        let total = (dx + dz).max(1) as f32;
+        let ramp = (ra.floor_y - rb.floor_y).abs() > 0.05;
+        let lerp_h = |step: f32| ra.floor_y + (rb.floor_y - ra.floor_y) * (step / total);
+        // Горизонтальный сегмент (widen по Z)
         let mut cx = ax;
+        let mut step = 0.0f32;
         while cx != bx {
-            carve_cell(&mut floor, &mut fh, &mut cwh, &is_room, cx, az, h_a, wh_a);
-            if wide { carve_cell(&mut floor, &mut fh, &mut cwh, &is_room, cx, az + 1, h_a, wh_a); }
+            let h = lerp_h(step);
+            carve_cell(&mut floor, &mut fh, &mut cwh, &mut is_ramp, &is_room, cx, az,     h, wh, ramp);
+            carve_cell(&mut floor, &mut fh, &mut cwh, &mut is_ramp, &is_room, cx, az + 1, h, wh, ramp);
             cx += (bx - cx).signum();
+            step += 1.0;
         }
+        // Вертикальный сегмент (widen по X)
         let mut cz = az;
         while cz != bz {
-            carve_cell(&mut floor, &mut fh, &mut cwh, &is_room, bx, cz, h_b, wh_a);
-            if wide { carve_cell(&mut floor, &mut fh, &mut cwh, &is_room, bx + 1, cz, h_b, wh_a); }
+            let h = lerp_h(step);
+            carve_cell(&mut floor, &mut fh, &mut cwh, &mut is_ramp, &is_room, bx,     cz, h, wh, ramp);
+            carve_cell(&mut floor, &mut fh, &mut cwh, &mut is_ramp, &is_room, bx + 1, cz, h, wh, ramp);
             cz += (bz - cz).signum();
+            step += 1.0;
+        }
+        // Записываем наклонные слэбы (центр 2-клеточного коридора)
+        if ramp {
+            let off_z = Vector3::new(0.0, 0.0, CELL * 0.5);
+            let off_x = Vector3::new(CELL * 0.5, 0.0, 0.0);
+            if dx > 0 {
+                let p0 = cell_at(ax, az, ra.floor_y) + off_z;
+                let p1 = cell_at(bx, az, lerp_h(dx as f32)) + off_z;
+                ramp_segs.push(if p0.y <= p1.y { (p0, p1) } else { (p1, p0) });
+            }
+            if dz > 0 {
+                let p0 = cell_at(bx, az, lerp_h(dx as f32)) + off_x;
+                let p1 = cell_at(bx, bz, rb.floor_y) + off_x;
+                ramp_segs.push(if p0.y <= p1.y { (p0, p1) } else { (p1, p0) });
+            }
         }
     }
 
@@ -217,6 +306,10 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
     let get_cwh = |i: i32, j: i32| -> f32 {
         if i < 0 || j < 0 || i as usize >= GRID || j as usize >= GRID { WALL_H }
         else { cwh[j as usize * GRID + i as usize] }
+    };
+    let is_ramp_at = |i: i32, j: i32| -> bool {
+        i >= 0 && j >= 0 && (i as usize) < GRID && (j as usize) < GRID
+            && is_ramp[j as usize * GRID + i as usize]
     };
 
     // 3. Геометрия
@@ -237,18 +330,23 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
                 let start = i;
                 let h0  = get_fh(i, j);
                 let wh0 = get_cwh(i, j);
+                let ramp0 = is_ramp_at(i, j);
                 while i < GRID as i32 && is_floor(i, j)
                     && (get_fh(i, j) - h0).abs() < 0.01
                     && (get_cwh(i, j) - wh0).abs() < 0.01
+                    && is_ramp_at(i, j) == ramp0
                 { i += 1; }
                 let len = (i - start) as f32 * CELL;
                 let cx = ((start + i) as f32 * 0.5 - GRID as f32 * 0.5) * CELL;
                 let cz = (j as f32 + 0.5 - GRID as f32 * 0.5) * CELL;
                 let uv = (len / CELL).max(1.0);
-                let fl = make_box(Vector3::new(cx, h0 - 0.15, cz),
-                                  Vector3::new(len + 0.02, 0.3, CELL + 0.02),
-                                  c_dark, t_floor.as_ref(), uv);
-                root.add_child(&fl);
+                // Пол пандус-клеток заменяет наклонный слэб (см. 3e) — здесь только потолок.
+                if !ramp0 {
+                    let fl = make_box(Vector3::new(cx, h0 - 0.15, cz),
+                                      Vector3::new(len + 0.02, 0.3, CELL + 0.02),
+                                      c_dark, t_floor.as_ref(), uv);
+                    root.add_child(&fl);
+                }
                 let ce = make_box(Vector3::new(cx, h0 + wh0 + 0.15, cz),
                                   Vector3::new(len + 0.02, 0.3, CELL + 0.02),
                                   c_dark, t_ceil.as_ref(), uv);
@@ -288,11 +386,13 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
                 let h_me = get_fh(i, j);
                 let h_nb = get_fh(i, j + side);
                 // Рисуем ступень только от ВЫСОКОЙ клетки (избегаем дублей)
-                if is_floor(i, j) && is_floor(i, j + side) && h_me > h_nb + 0.05 {
+                if is_floor(i, j) && is_floor(i, j + side) && h_me > h_nb + 0.05
+                    && !is_ramp_at(i, j) && !is_ramp_at(i, j + side) {
                     let start = i;
                     let step_h = h_me - h_nb;
                     while i < GRID as i32
                         && is_floor(i, j) && is_floor(i, j + side)
+                        && !is_ramp_at(i, j) && !is_ramp_at(i, j + side)
                         && (get_fh(i, j) - h_me).abs() < 0.01
                         && (get_fh(i, j + side) - h_nb).abs() < 0.01
                     { i += 1; }
@@ -338,11 +438,13 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
             while j < GRID as i32 {
                 let h_me = get_fh(i, j);
                 let h_nb = get_fh(i + side, j);
-                if is_floor(i, j) && is_floor(i + side, j) && h_me > h_nb + 0.05 {
+                if is_floor(i, j) && is_floor(i + side, j) && h_me > h_nb + 0.05
+                    && !is_ramp_at(i, j) && !is_ramp_at(i + side, j) {
                     let start = j;
                     let step_h = h_me - h_nb;
                     while j < GRID as i32
                         && is_floor(i, j) && is_floor(i + side, j)
+                        && !is_ramp_at(i, j) && !is_ramp_at(i + side, j)
                         && (get_fh(i, j) - h_me).abs() < 0.01
                         && (get_fh(i + side, j) - h_nb).abs() < 0.01
                     { j += 1; }
@@ -356,6 +458,12 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
                 } else { j += 1; }
             }
         }
+    }
+
+    // ── 3e. Слэбы-пандусы (пологие склоны между уровнями) ────────────────────
+    for &(low, high) in &ramp_segs {
+        let slab = make_ramp(low, high, CELL * 2.0, T, c_dark, t_floor.as_ref());
+        root.add_child(&slab);
     }
 
     // ── 3d. Детали комнат ────────────────────────────────────────────────────
@@ -451,8 +559,39 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
         .map(|p| p.enemies.as_slice())
         .unwrap_or(&[]);
 
+    // Достижимость: flood-fill от клетки спавна игрока по ТЕМ ЖЕ правилам, что и
+    // навигация (перепад <= RAMP_STEP). В недостижимых карманах не спавним ничего
+    // — иначе враги оказываются «за стеной»/«на крыше» и до них не дойти.
+    let reachable = {
+        let mut reach = vec![false; GRID * GRID];
+        let (sx, sz) = centers[0];
+        let start = sz as usize * GRID + sx as usize;
+        if floor.get(start).copied().unwrap_or(false) {
+            reach[start] = true;
+            let mut stack = vec![start];
+            while let Some(c) = stack.pop() {
+                let (ci, cj) = ((c % GRID) as i32, (c / GRID) as i32);
+                for (di, dj) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    let (ni, nj) = (ci + di, cj + dj);
+                    if ni < 0 || nj < 0 || ni as usize >= GRID || nj as usize >= GRID { continue; }
+                    let nidx = nj as usize * GRID + ni as usize;
+                    if reach[nidx] || !floor[nidx] { continue; }
+                    if (fh[nidx] - fh[c]).abs() > crate::nav::RAMP_STEP { continue; }
+                    reach[nidx] = true;
+                    stack.push(nidx);
+                }
+            }
+        }
+        reach
+    };
+    let room_reachable = |k: usize| -> bool {
+        let (cx, cz) = centers[k];
+        reachable.get(cz as usize * GRID + cx as usize).copied().unwrap_or(false)
+    };
+
     for (k, r) in rooms.iter().enumerate() {
         if k == 0 { continue; }
+        if !room_reachable(k) { continue; }
         let (cx, cz) = r.center();
         let fy = r.floor_y;
         let is_boss_room = k == boss_idx;

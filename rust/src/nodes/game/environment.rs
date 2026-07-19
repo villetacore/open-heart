@@ -32,12 +32,17 @@ impl Game3D {
         env.set_fog_light_color(Color::from_rgba(0.10, 0.05, 0.14, 1.0));
         env.set_fog_density(fog_density);
 
-        // bloom/glow — неоновая эстетика (Forward Mobile рендерер)
-        env.set_glow_enabled(true);
+        // bloom/glow — неоновая эстетика (Forward Mobile рендерер), управляется настройкой
+        env.set_glow_enabled(self.settings.glow);
         env.set_glow_intensity(0.65);
         env.set_glow_strength(1.0);
         env.set_glow_bloom(0.18);
         env.set_glow_hdr_bleed_threshold(1.0);
+
+        // ambient occlusion — глубина в углах (только когда включены тени/качество)
+        if self.settings.shadows {
+            env.set_ssao_enabled(true);
+        }
 
         // tone mapping
         env.set_tonemapper(ToneMapper::ACES);
@@ -51,7 +56,8 @@ impl Game3D {
         dir.set_rotation(Vector3::new(-0.9, 0.3, 0.0));
         dir.set_param(Param::ENERGY, 0.35);
         dir.set_color(Color::from_rgba(0.8, 0.6, 0.85, 1.0));
-        dir.set_shadow(false);
+        // тени direction-света — по настройке (стильные мягкие тени)
+        dir.set_shadow(self.settings.shadows);
         self.base_mut().add_child(&dir);
     }
 

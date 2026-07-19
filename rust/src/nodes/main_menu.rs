@@ -3,10 +3,10 @@
 
 use godot::prelude::*;
 use godot::classes::{
-    Control, IControl, InputEvent, InputEventMouseButton, Label,
+    Control, IControl, InputEvent, InputEventKey, InputEventMouseButton, Label,
     Panel, StyleBoxFlat,
 };
-use godot::global::{HorizontalAlignment, MouseButton};
+use godot::global::{HorizontalAlignment, Key, MouseButton};
 use crate::locale::t;
 use crate::save;
 use crate::settings::Settings;
@@ -30,26 +30,53 @@ pub struct MainMenu {
     r_preset:   Rect2,
     r_settings: Rect2,
     r_quit:     Rect2,
-    r_lang:     Rect2,
-    r_diff:     Rect2,
     r_back:     Rect2,
+
+    // Строки настроек: кликабельный рект + что он меняет, и параллельно label-ы
+    set_rows:   Vec<(Rect2, SetKind)>,
+    set_labels: Vec<Gd<Label>>,
 
     // Дочерние узлы которые нам нужно обновлять
     lbl_continue: Option<Gd<Label>>,
     lbl_preset:   Option<Gd<Label>>,
     lbl_preset_desc: Option<Gd<Label>>,
     panel_settings: Option<Gd<Panel>>,
-    lbl_lang_val:   Option<Gd<Label>>,
-    lbl_diff_val:   Option<Gd<Label>>,
 
     presets:     Vec<String>,
     preset_idx:  usize,
+}
+
+/// Что меняет строка настроек (клик — шаг/переключение).
+#[derive(Clone, Copy, PartialEq)]
+enum SetKind {
+    Lang, Difficulty, Fullscreen, Vsync, Fov, PostFx, PostIntensity,
+    Glow, Shadows, ScreenShake, MasterVol, MusicVol, SfxVol, Sens,
 }
 
 // ── Утилиты ───────────────────────────────────────────────────────────────────
 
 fn btn_rect(y: f32) -> Rect2 {
     Rect2::new(Vector2::new(BTN_X, y), Vector2::new(BTN_W, BTN_H))
+}
+
+/// Название строки настройки.
+fn set_name(kind: SetKind) -> &'static str {
+    match kind {
+        SetKind::Lang          => "Язык",
+        SetKind::Difficulty    => "Сложность",
+        SetKind::Fullscreen    => "Полный экран",
+        SetKind::Vsync         => "Верт. синхронизация",
+        SetKind::Fov           => "Поле зрения (FOV)",
+        SetKind::PostFx        => "Пост-эффекты",
+        SetKind::PostIntensity => "Интенсивность эффектов",
+        SetKind::Glow          => "Свечение (bloom)",
+        SetKind::Shadows       => "Тени + SSAO",
+        SetKind::ScreenShake   => "Тряска экрана",
+        SetKind::MasterVol     => "Общая громкость",
+        SetKind::MusicVol      => "Музыка",
+        SetKind::SfxVol        => "Звуки",
+        SetKind::Sens          => "Чувствительность мыши",
+    }
 }
 
 fn make_style(bg: Color, border: Color, w: i32) -> Gd<StyleBoxFlat> {
@@ -92,15 +119,13 @@ impl IControl for MainMenu {
             r_preset:   btn_rect(0.0),
             r_settings: btn_rect(0.0),
             r_quit:     btn_rect(0.0),
-            r_lang:     btn_rect(0.0),
-            r_diff:     btn_rect(0.0),
             r_back:     btn_rect(0.0),
+            set_rows:   Vec::new(),
+            set_labels: Vec::new(),
             lbl_continue:   None,
             lbl_preset:     None,
             lbl_preset_desc: None,
             panel_settings: None,
-            lbl_lang_val:   None,
-            lbl_diff_val:   None,
             presets:    Vec::new(),
             preset_idx: 0,
         }
@@ -108,6 +133,7 @@ impl IControl for MainMenu {
 
     fn ready(&mut self) {
         self.settings = Settings::load();
+        self.settings.apply_global();   // окно/vsync/громкость из сохранённых настроек
         self.presets = crate::content::discover_presets();
         self.preset_idx = self.presets.iter()
             .position(|p| *p == self.settings.preset)
@@ -124,8 +150,22 @@ impl IControl for MainMenu {
     }
 
     fn input(&mut self, event: Gd<InputEvent>) {
+        // F11 — переключить полный экран (в меню и на экране настроек)
+        if let Ok(k) = event.clone().try_cast::<InputEventKey>() {
+            if k.is_pressed() && !k.is_echo()
+                && k.get_physical_keycode() == Key::F11 {
+                self.settings.fullscreen = !self.settings.fullscreen;
+                self.settings.apply_video();
+                self.settings.save();
+                if self.show_settings { self.refresh_set_labels(); }
+            }
+            return;
+        }
         let Ok(mb) = event.try_cast::<InputEventMouseButton>() else { return };
-        if !mb.is_pressed() || mb.get_button_index() != MouseButton::LEFT { return }
+        if !mb.is_pressed() { return; }
+        let btn = mb.get_button_index();
+        if btn != MouseButton::LEFT && btn != MouseButton::RIGHT { return; }
+        let dir = if btn == MouseButton::RIGHT { -1.0 } else { 1.0 };
         let raw = mb.get_position();
         // Scale from actual viewport pixels to our 1920×1080 design space
         let sz = self.base().get_size();
@@ -134,8 +174,8 @@ impl IControl for MainMenu {
         } else { raw };
 
         if self.show_settings {
-            self.handle_settings_click(pos);
-        } else {
+            self.handle_settings_click(pos, dir);
+        } else if dir > 0.0 {
             self.handle_main_click(pos);
         }
     }
@@ -223,7 +263,7 @@ impl MainMenu {
     }
 
     fn build_settings_panel(&mut self, lang: &str) {
-        let pw = 600.0; let ph = 460.0;
+        let pw = 760.0; let ph = 860.0;
         let px = (W - pw) * 0.5; let py = (H - ph) * 0.5;
 
         let mut panel = Panel::new_alloc();
@@ -231,65 +271,53 @@ impl MainMenu {
         panel.set_size(Vector2::new(pw, ph));
         panel.add_theme_stylebox_override(
             "panel",
-            &make_style(Color::from_rgba(0.05, 0.02, 0.09, 0.97),
+            &make_style(Color::from_rgba(0.05, 0.02, 0.09, 0.98),
                         Color::from_rgba(0.65, 0.30, 0.52, 1.0), 2),
         );
         panel.set_visible(false);
 
-        macro_rules! row_label {
-            ($text:expr, $y:expr, $size:expr, $col:expr) => {{
-                let mut lbl = Label::new_alloc();
-                lbl.set_text($text);
-                lbl.set_position(Vector2::new(30.0, $y));
-                lbl.set_size(Vector2::new(pw - 60.0, 36.0));
-                lbl.add_theme_font_size_override("font_size", $size);
-                lbl.add_theme_color_override("font_color", $col);
-                panel.add_child(&lbl);
-                lbl
-            }};
+        let mut title = Label::new_alloc();
+        title.set_text(t("set_title", lang));
+        title.set_position(Vector2::new(0.0, 22.0));
+        title.set_size(Vector2::new(pw, 42.0));
+        title.set_horizontal_alignment(HorizontalAlignment::CENTER);
+        title.add_theme_font_size_override("font_size", 26);
+        title.add_theme_color_override("font_color", Color::from_rgba(1.0, 0.55, 0.8, 1.0));
+        panel.add_child(&title);
+
+        const ROWS: [SetKind; 14] = [
+            SetKind::Lang, SetKind::Difficulty, SetKind::Fullscreen, SetKind::Vsync,
+            SetKind::Fov, SetKind::PostFx, SetKind::PostIntensity, SetKind::Glow,
+            SetKind::Shadows, SetKind::ScreenShake, SetKind::MasterVol, SetKind::MusicVol,
+            SetKind::SfxVol, SetKind::Sens,
+        ];
+        let row_h = 46.0;
+        let y0 = 80.0;
+        self.set_rows.clear();
+        self.set_labels.clear();
+        for (i, kind) in ROWS.iter().enumerate() {
+            let y = y0 + i as f32 * row_h;
+            let mut lbl = Label::new_alloc();
+            lbl.set_text(&format!("{}:   {}", set_name(*kind), self.set_value_str(*kind)));
+            lbl.set_position(Vector2::new(36.0, y));
+            lbl.set_size(Vector2::new(pw - 72.0, row_h - 8.0));
+            lbl.add_theme_font_size_override("font_size", 18);
+            lbl.add_theme_color_override("font_color", Color::from_rgba(0.9, 0.85, 1.0, 1.0));
+            panel.add_child(&lbl);
+            let rect = Rect2::new(Vector2::new(px + 24.0, py + y - 4.0),
+                                  Vector2::new(pw - 48.0, row_h - 2.0));
+            self.set_rows.push((rect, *kind));
+            self.set_labels.push(lbl);
         }
 
-        row_label!(t("set_title", lang), 24.0, 22,
-                   Color::from_rgba(1.0, 0.55, 0.8, 1.0));
-
-        // Язык
-        row_label!(t("set_lang", lang), 90.0, 15,
-                   Color::from_rgba(0.7, 0.65, 0.8, 1.0));
-        let lang_val = t(if lang == "en" { "set_lang_en" } else { "set_lang_ru" }, lang);
-        let mut lbl_lang = Label::new_alloc();
-        lbl_lang.set_text(&format!("[ {} ]  ← →  чтобы переключить", lang_val));
-        lbl_lang.set_position(Vector2::new(30.0, 116.0));
-        lbl_lang.set_size(Vector2::new(pw - 60.0, 32.0));
-        lbl_lang.add_theme_font_size_override("font_size", 16);
-        lbl_lang.add_theme_color_override("font_color", Color::from_rgba(0.9, 0.85, 1.0, 1.0));
-        panel.add_child(&lbl_lang);
-
-        // Кнопка переключения языка (рект внутри панели, скорректируем позже)
-        self.r_lang = Rect2::new(Vector2::new(px + 30.0, py + 108.0), Vector2::new(pw - 60.0, 40.0));
-
-        // Сложность (клик переключает по кругу; влияет на hp/урон врагов)
-        row_label!(t("set_diff", lang), 165.0, 15,
-                   Color::from_rgba(0.7, 0.65, 0.8, 1.0));
-        let mut lbl_diff = Label::new_alloc();
-        lbl_diff.set_text(&format!("[ {} ]  клик — переключить", self.settings.difficulty_ru()));
-        lbl_diff.set_position(Vector2::new(30.0, 191.0));
-        lbl_diff.set_size(Vector2::new(pw - 60.0, 32.0));
-        lbl_diff.add_theme_font_size_override("font_size", 16);
-        lbl_diff.add_theme_color_override("font_color", Color::from_rgba(0.9, 0.85, 1.0, 1.0));
-        panel.add_child(&lbl_diff);
-        self.r_diff = Rect2::new(Vector2::new(px + 30.0, py + 183.0), Vector2::new(pw - 60.0, 40.0));
-
-        // Громкость (заглушка)
-        row_label!(t("set_volume", lang), 250.0, 15,
-                   Color::from_rgba(0.7, 0.65, 0.8, 1.0));
-        row_label!(&format!("{:.0}%", self.settings.master_vol * 100.0), 275.0, 16,
-                   Color::from_rgba(0.9, 0.85, 1.0, 1.0));
-
-        // Чувствительность (заглушка)
-        row_label!(t("set_sens", lang), 330.0, 15,
-                   Color::from_rgba(0.7, 0.65, 0.8, 1.0));
-        row_label!(&format!("{:.4}", self.settings.mouse_sens), 355.0, 16,
-                   Color::from_rgba(0.9, 0.85, 1.0, 1.0));
+        let mut hint = Label::new_alloc();
+        hint.set_text("клик — изменить / переключить   ·   ПКМ — уменьшить");
+        hint.set_position(Vector2::new(0.0, ph - 96.0));
+        hint.set_size(Vector2::new(pw, 26.0));
+        hint.set_horizontal_alignment(HorizontalAlignment::CENTER);
+        hint.add_theme_font_size_override("font_size", 13);
+        hint.add_theme_color_override("font_color", Color::from_rgba(0.55, 0.5, 0.65, 1.0));
+        panel.add_child(&hint);
 
         // Кнопка «Назад»
         self.r_back = Rect2::new(
@@ -306,9 +334,62 @@ impl MainMenu {
         panel.add_child(&btn_back);
 
         self.base_mut().add_child(&panel);
-        self.lbl_lang_val   = Some(lbl_lang);
-        self.lbl_diff_val   = Some(lbl_diff);
         self.panel_settings = Some(panel);
+    }
+
+    /// Текущее значение настройки строкой.
+    fn set_value_str(&self, kind: SetKind) -> String {
+        let s = &self.settings;
+        let on = |b: bool| if b { "вкл" } else { "выкл" };
+        match kind {
+            SetKind::Lang          => if s.lang == "en" { "English".into() } else { "Русский".into() },
+            SetKind::Difficulty    => s.difficulty_ru().to_string(),
+            SetKind::Fullscreen    => on(s.fullscreen).into(),
+            SetKind::Vsync         => on(s.vsync).into(),
+            SetKind::Fov           => format!("{:.0}°", s.fov),
+            SetKind::PostFx        => on(s.post_fx).into(),
+            SetKind::PostIntensity => format!("{:.0}%", s.post_intensity * 100.0),
+            SetKind::Glow          => on(s.glow).into(),
+            SetKind::Shadows       => on(s.shadows).into(),
+            SetKind::ScreenShake   => on(s.screen_shake).into(),
+            SetKind::MasterVol     => format!("{:.0}%", s.master_vol * 100.0),
+            SetKind::MusicVol      => format!("{:.0}%", s.music_vol * 100.0),
+            SetKind::SfxVol        => format!("{:.0}%", s.sfx_vol * 100.0),
+            SetKind::Sens          => format!("{:.4}", s.mouse_sens),
+        }
+    }
+
+    /// Изменить настройку (dir: +1 клик ЛКМ, −1 ПКМ), сохранить и применить.
+    fn step_setting(&mut self, kind: SetKind, dir: f32) {
+        match kind {
+            SetKind::Lang => self.settings.lang =
+                if self.settings.lang == "ru" { "en".into() } else { "ru".into() },
+            SetKind::Difficulty    => self.settings.cycle_difficulty(),
+            SetKind::Fullscreen    => self.settings.fullscreen = !self.settings.fullscreen,
+            SetKind::Vsync         => self.settings.vsync = !self.settings.vsync,
+            SetKind::Fov           => self.settings.fov = (self.settings.fov + dir * 5.0).clamp(60.0, 110.0),
+            SetKind::PostFx        => self.settings.post_fx = !self.settings.post_fx,
+            SetKind::PostIntensity => self.settings.post_intensity = (self.settings.post_intensity + dir * 0.1).clamp(0.0, 2.0),
+            SetKind::Glow          => self.settings.glow = !self.settings.glow,
+            SetKind::Shadows       => self.settings.shadows = !self.settings.shadows,
+            SetKind::ScreenShake   => self.settings.screen_shake = !self.settings.screen_shake,
+            SetKind::MasterVol     => self.settings.master_vol = (self.settings.master_vol + dir * 0.1).clamp(0.0, 1.0),
+            SetKind::MusicVol      => self.settings.music_vol  = (self.settings.music_vol  + dir * 0.1).clamp(0.0, 1.0),
+            SetKind::SfxVol        => self.settings.sfx_vol    = (self.settings.sfx_vol    + dir * 0.1).clamp(0.0, 1.0),
+            SetKind::Sens          => self.settings.mouse_sens = (self.settings.mouse_sens + dir * 0.0005).clamp(0.0005, 0.01),
+        }
+        self.settings.save();
+        self.settings.apply_global();   // окно/vsync/громкость сразу
+        self.refresh_set_labels();
+    }
+
+    /// Обновить тексты всех строк настроек.
+    fn refresh_set_labels(&mut self) {
+        for i in 0..self.set_labels.len() {
+            let kind = self.set_rows[i].1;
+            let text = format!("{}:   {}", set_name(kind), self.set_value_str(kind));
+            self.set_labels[i].set_text(&text);
+        }
     }
 
     // ── Обработка кликов ──────────────────────────────────────────────────────
@@ -350,29 +431,18 @@ impl MainMenu {
         }
     }
 
-    fn handle_settings_click(&mut self, pos: Vector2) {
+    fn handle_settings_click(&mut self, pos: Vector2, dir: f32) {
         if self.r_back.contains_point(pos) {
             self.settings.save();
             self.show_settings = false;
             if let Some(ref mut p) = self.panel_settings { p.set_visible(false); }
-        } else if self.r_lang.contains_point(pos) {
-            // Переключить язык
-            self.settings.lang = if self.settings.lang == "ru" {
-                "en".into()
-            } else {
-                "ru".into()
-            };
-            let lang = self.settings.lang.clone();
-            let val  = t(if lang == "en" { "set_lang_en" } else { "set_lang_ru" }, &lang);
-            if let Some(ref mut lbl) = self.lbl_lang_val {
-                lbl.set_text(&format!("[ {} ]  ← →  чтобы переключить", val));
-            }
-        } else if self.r_diff.contains_point(pos) {
-            self.settings.cycle_difficulty();
-            let txt = format!("[ {} ]  клик — переключить", self.settings.difficulty_ru());
-            if let Some(ref mut lbl) = self.lbl_diff_val {
-                lbl.set_text(&txt);
-            }
+            return;
+        }
+        let hit = self.set_rows.iter()
+            .find(|(r, _)| r.contains_point(pos))
+            .map(|(_, k)| *k);
+        if let Some(kind) = hit {
+            self.step_setting(kind, dir);
         }
     }
 

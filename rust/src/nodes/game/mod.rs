@@ -7,7 +7,8 @@ use godot::prelude::*;
 use godot::classes::{
     AtlasTexture, AudioStream, AudioStreamPlayer, AudioStreamPlayer3D,
     CanvasLayer, CharacterBody3D, DirectionalLight3D,
-    Environment, Image, ImageTexture, Input, Label, Node3D, OmniLight3D,
+    Environment, Image, ImageTexture, Input, InputEvent, InputEventKey, Label,
+    Node3D, OmniLight3D,
     PanoramaSkyMaterial, Panel, PhysicsRayQueryParameters3D, Sky, Sprite3D,
     StyleBoxFlat, Texture2D, TextureRect, VBoxContainer, WorldEnvironment, INode3D,
 };
@@ -386,6 +387,7 @@ impl INode3D for Game3D {
 
     fn ready(&mut self) {
         self.settings = Settings::load();
+        self.settings.apply_global();   // окно/vsync/громкость
         let lang = self.settings.lang.clone();
 
         let loaded = save::load();
@@ -442,6 +444,10 @@ impl INode3D for Game3D {
 
         let player_gd = self.base().get_node_as::<CharacterBody3D>("Player");
         self.player = Some(player_gd.clone());
+        // FOV камеры из настроек
+        if let Some(mut cam) = player_gd.try_get_node_as::<godot::classes::Camera3D>("Camera3D") {
+            cam.set_fov(self.settings.fov);
+        }
         if let Ok(mut p) = player_gd.try_cast::<Player>() {
             p.bind_mut().teleport(spawn);
         }
@@ -472,6 +478,18 @@ impl INode3D for Game3D {
             self.open_class_select();
         }
         self.update_loc_label();
+    }
+
+    fn input(&mut self, event: Gd<InputEvent>) {
+        // F11 — быстрый тумблер полного экрана прямо в игре
+        if let Ok(k) = event.try_cast::<InputEventKey>() {
+            if k.is_pressed() && !k.is_echo()
+                && k.get_physical_keycode() == godot::global::Key::F11 {
+                self.settings.fullscreen = !self.settings.fullscreen;
+                self.settings.apply_video();
+                self.settings.save();
+            }
+        }
     }
 
     fn process(&mut self, delta: f64) {

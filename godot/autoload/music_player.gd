@@ -25,10 +25,22 @@ func _ready() -> void:
 	# Музыка не должна замолкать, когда игра на паузе (меню, диалоги).
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
+	_ensure_buses()
+
 	_player = AudioStreamPlayer.new()
-	_player.bus = &"Master"
+	_player.bus = &"Music"
 	_player.volume_db = volume_db
 	add_child(_player)
+
+## Завести аудио-шины Music и SFX (маршрут в Master), если их ещё нет —
+## по ним рулят громкостью настройки (Settings.apply_audio в Rust).
+func _ensure_buses() -> void:
+	for bus_name in ["Music", "SFX"]:
+		if AudioServer.get_bus_index(bus_name) == -1:
+			var idx := AudioServer.bus_count
+			AudioServer.add_bus(idx)
+			AudioServer.set_bus_name(idx, bus_name)
+			AudioServer.set_bus_send(idx, "Master")
 	_player.finished.connect(_on_finished)
 
 	_reshuffle()

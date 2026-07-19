@@ -69,10 +69,19 @@ impl Game3D {
         use godot::classes::{ColorRect, Shader, ShaderMaterial};
         use godot::classes::control::MouseFilter;
 
+        // Пост-обработку можно полностью выключить в настройках.
+        if !self.settings.post_fx { return; }
+        let k = self.settings.post_intensity.clamp(0.0, 2.0);
+
         let mut shader = Shader::new_gd();
         shader.set_code(POST_FX_SHADER);
         let mut mat = ShaderMaterial::new_gd();
         mat.set_shader(&shader);
+        // базовые параметры масштабируем интенсивностью из настроек
+        mat.set_shader_parameter("vignette",   &(0.34_f32 * k).to_variant());
+        mat.set_shader_parameter("aberration", &(1.4_f32 * k).to_variant());
+        mat.set_shader_parameter("scanline",   &(0.045_f32 * k).to_variant());
+        mat.set_shader_parameter("grain",      &(0.04_f32 * k).to_variant());
 
         let mut rect = ColorRect::new_alloc();
         rect.set_anchors_preset(godot::classes::control::LayoutPreset::FULL_RECT);
@@ -102,8 +111,12 @@ impl Game3D {
 
     /// Спайк импульса (значение 0..1). Берём максимум, чтобы частые события
     /// не гасили друг друга.
-    pub(super) fn punch_hit(&mut self)  { self.fx_hit  = self.fx_hit.max(1.0); }
-    pub(super) fn punch_kill(&mut self) { self.fx_kill = self.fx_kill.max(1.0); }
+    pub(super) fn punch_hit(&mut self)  {
+        if self.settings.screen_shake { self.fx_hit = self.fx_hit.max(1.0); }
+    }
+    pub(super) fn punch_kill(&mut self) {
+        if self.settings.screen_shake { self.fx_kill = self.fx_kill.max(1.0); }
+    }
     pub(super) fn punch_pick(&mut self) { self.fx_pick = self.fx_pick.max(0.85); }
 
     pub(super) fn build_hud(&mut self, lang: &str) {

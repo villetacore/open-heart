@@ -428,6 +428,7 @@ impl Game3D {
         let Ok(stream) = godot::tools::try_load::<AudioStream>(path) else { return };
         let mut p = AudioStreamPlayer::new_alloc();
         p.set_stream(&stream);
+        p.set_bus("SFX");
         self.base_mut().add_child(&p);
         p.play();
         self.sfx_2d.push(p);
@@ -441,6 +442,7 @@ impl Game3D {
         p.set_stream(&stream);
         p.set_position(pos);
         p.set_max_distance(45.0);
+        p.set_bus("SFX");
         self.base_mut().add_child(&p);
         p.play();
         self.sfx_3d.push(p);

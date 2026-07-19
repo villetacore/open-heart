@@ -11,6 +11,7 @@ impl Game3D {
         let wi = self.world_items.remove(idx);
         wi.node.free();
         self.near_item = None;
+        self.punch_pick();
         let name = wi.name.clone();
 
         // прогресс collect-квестов

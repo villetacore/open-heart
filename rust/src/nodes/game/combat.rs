@@ -259,6 +259,7 @@ impl Game3D {
                     let fall = 1.0 - d / (radius * 0.8);
                     pl.bind_mut().take_damage(dmg * 0.35 * fall);
                     self.damage_flash_timer = 0.3;
+                    self.punch_hit();
                 }
             }
         }
@@ -292,6 +293,7 @@ impl Game3D {
             self.spawn_fx("res://assets/effects/effect_blood.png",
                           pos + Vector3::new(0.0, 0.9, 0.0), 0.014, 0.4);
             self.play_sfx_at(&SFX_DEATH, pos + Vector3::new(0.0, 1.0, 0.0));
+            self.punch_kill();
             // прогресс kill-квестов
             self.bump_quests("kill", &kind);
 
@@ -380,6 +382,7 @@ impl Game3D {
                     let fall = 1.0 - (d / radius) * 0.6;
                     pl.bind_mut().take_damage(dmg * fall);
                     self.damage_flash_timer = 0.35;
+                    self.punch_hit();
                 }
             }
         }
@@ -563,6 +566,7 @@ impl Game3D {
             }
         }
         self.damage_flash_timer = 0.35;
+        self.punch_hit();
     }
 
     /// Наложить статус на игрока по id (из statuses.json пресета).

@@ -4,25 +4,60 @@ use super::*;
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
 
-/// Полноэкранная постобработка: виньетка + лёгкая хроматическая аберрация +
-/// тонкие сканлайны. Canvas-шейдер — работает и в GL Compatibility.
+/// Полноэкранная постобработка: виньетка, хроматическая аберрация, сканлайны,
+/// анимированное зерно, лёгкий цвето-грейд + РЕАКТИВНЫЕ импульсы (урон/убийство/
+/// подбор) — они затухают со временем, значения шлёт Rust каждый кадр.
+/// Canvas-шейдер — работает и в GL Compatibility.
 const POST_FX_SHADER: &str = r#"
 shader_type canvas_item;
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
-uniform float vignette : hint_range(0.0, 1.0) = 0.34;
+uniform float vignette   : hint_range(0.0, 1.0) = 0.34;
 uniform float aberration = 1.4;
-uniform float scanline = 0.045;
+uniform float scanline   = 0.045;
+uniform float grain      = 0.04;
+// реактивные импульсы 0..1 (затухают в Rust)
+uniform float hit  = 0.0;   // урон  — красная пульсация + тряска аберрации
+uniform float kill = 0.0;   // фраг  — короткий яркий панч
+uniform float pick = 0.0;   // подбор — тёплое золотистое свечение
+
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
 
 void fragment() {
     vec2 uv = SCREEN_UV;
-    vec2 off = (uv - 0.5) * aberration * 0.0018;
+    float d = length(uv - 0.5);
+
+    // хроматическая аберрация усиливается при уроне/фраге
+    float ab = aberration + hit * 6.0 + kill * 3.0;
+    vec2 off = (uv - 0.5) * ab * 0.0018;
     float r = texture(screen_tex, uv + off).r;
     float g = texture(screen_tex, uv).g;
     float b = texture(screen_tex, uv - off).b;
     vec3 col = vec3(r, g, b);
-    float d = length(uv - 0.5);
-    col *= 1.0 - vignette * smoothstep(0.32, 0.86, d);
-    col *= 1.0 - scanline * (0.5 + 0.5 * sin(uv.y * 620.0));
+
+    // лёгкий цвето-грейд: холодные тени, тёплые света
+    float luma = dot(col, vec3(0.299, 0.587, 0.114));
+    col = mix(col, col * vec3(0.92, 0.98, 1.10), 0.25 * (1.0 - luma));
+    col = mix(col, col * vec3(1.10, 1.02, 0.92), 0.20 * luma);
+
+    // убийство: короткий яркий панч + лёгкая десатурация к белому по краям
+    col += kill * 0.12;
+    col = mix(col, vec3(luma), kill * 0.18);
+
+    // подбор: тёплое золотистое свечение от краёв
+    col += pick * vec3(0.35, 0.25, 0.05) * smoothstep(0.2, 0.9, d);
+
+    // виньетка (при уроне краснеет и сгущается)
+    float vig = vignette + hit * 0.35;
+    vec3 vig_col = mix(vec3(0.0), vec3(0.6, 0.0, 0.02), hit);
+    col = mix(col, vig_col, vig * smoothstep(0.30, 0.90, d));
+
+    // анимированные сканлайны + зерно
+    col *= 1.0 - scanline * (0.5 + 0.5 * sin((uv.y + TIME * 0.02) * 620.0));
+    float gr = (hash(uv * vec2(1920.0, 1080.0) + fract(TIME) * 100.0) - 0.5);
+    col += gr * grain;
+
     COLOR = vec4(col, 1.0);
 }
 "#;
@@ -48,7 +83,28 @@ impl Game3D {
         layer.set_layer(0); // под HUD (1), поверх 3D-вьюпорта
         layer.add_child(&rect);
         self.base_mut().add_child(&layer);
+        self.post_mat = Some(mat);   // хэндл для реактивных импульсов
     }
+
+    /// Затухание реактивных импульсов пост-процесса и отправка их в шейдер.
+    /// Вызывается каждый кадр. Спайки ставят combat/подбор/урон.
+    pub(super) fn tick_post_fx(&mut self, dt: f32) {
+        // экспоненциальное затухание (импульсы короткие, ~0.25–0.5 c)
+        self.fx_hit  = (self.fx_hit  - dt * 3.5).max(0.0);
+        self.fx_kill = (self.fx_kill - dt * 4.5).max(0.0);
+        self.fx_pick = (self.fx_pick - dt * 3.0).max(0.0);
+        if let Some(mat) = self.post_mat.as_mut() {
+            mat.set_shader_parameter("hit",  &self.fx_hit.to_variant());
+            mat.set_shader_parameter("kill", &self.fx_kill.to_variant());
+            mat.set_shader_parameter("pick", &self.fx_pick.to_variant());
+        }
+    }
+
+    /// Спайк импульса (значение 0..1). Берём максимум, чтобы частые события
+    /// не гасили друг друга.
+    pub(super) fn punch_hit(&mut self)  { self.fx_hit  = self.fx_hit.max(1.0); }
+    pub(super) fn punch_kill(&mut self) { self.fx_kill = self.fx_kill.max(1.0); }
+    pub(super) fn punch_pick(&mut self) { self.fx_pick = self.fx_pick.max(0.85); }
 
     pub(super) fn build_hud(&mut self, lang: &str) {
         self.build_post_fx();

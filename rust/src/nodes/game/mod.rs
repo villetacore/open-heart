@@ -181,6 +181,12 @@ pub struct Game3D {
     sfx_2d:      Vec<Gd<AudioStreamPlayer>>,
     sfx_3d:      Vec<Gd<AudioStreamPlayer3D>>,
 
+    // Реактивный пост-процесс: хэндл материала + затухающие импульсы эффектов
+    post_mat: Option<Gd<godot::classes::ShaderMaterial>>,
+    fx_hit:   f32,  // получен урон  → красная пульсация/аберрация
+    fx_kill:  f32,  // убийство      → короткий яркий «панч»
+    fx_pick:  f32,  // подбор предмета→ тёплое золотистое свечение
+
     state:       Option<GameState>,
     settings:    Settings,
     arsenal:     Arsenal,
@@ -337,6 +343,7 @@ impl INode3D for Game3D {
             projectiles: Vec::new(), enemy_projectiles: Vec::new(),
             sprite_fx: Vec::new(), light_fx: Vec::new(),
             sfx_2d: Vec::new(), sfx_3d: Vec::new(),
+            post_mat: None, fx_hit: 0.0, fx_kill: 0.0, fx_pick: 0.0,
             state: None, settings: Settings::default(),
             arsenal: Arsenal::new(),
             loadout: compute_loadout(0, 0, 1),
@@ -476,6 +483,7 @@ impl INode3D for Game3D {
         self.tick_npc_anim(dt);
         self.tick_fx(dt);
         self.tick_sfx();
+        self.tick_post_fx(dt);
         self.tick_weapon_anim(dt);
         self.tick_muzzle(dt);
         self.update_compass();

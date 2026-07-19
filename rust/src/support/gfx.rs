@@ -22,8 +22,13 @@ impl TexCache {
         if let Some(t) = self.map.get(path) {
             return t.clone();
         }
+        // Генерируем мип-мапы: убирает мерцание/алиасинг вдали и на мелких
+        // спрайтах, и оживляет фильтры с мип-мапами у окружения.
         let tex = Image::load_from_file(path)
-            .and_then(|img| ImageTexture::create_from_image(&img))
+            .and_then(|mut img| {
+                img.generate_mipmaps();
+                ImageTexture::create_from_image(&img)
+            })
             .map(|t| t.upcast::<Texture2D>());
         self.map.insert(path.to_string(), tex.clone());
         tex
@@ -141,7 +146,7 @@ pub fn make_billboard(
     sp.set_pixel_size(pixel_size);
     sp.set_billboard_mode(BillboardMode::ENABLED);
     sp.set_alpha_cut_mode(AlphaCutMode::DISCARD);
-    sp.set_texture_filter(TextureFilter::NEAREST);
+    sp.set_texture_filter(TextureFilter::LINEAR_WITH_MIPMAPS);
     sp.set_texture(&tex);
     Some(sp)
 }
@@ -156,7 +161,7 @@ pub fn make_flat_sprite(
     sp.set_rotation(Vector3::new(0.0, rot_y, 0.0));
     sp.set_pixel_size(pixel_size);
     sp.set_alpha_cut_mode(AlphaCutMode::DISCARD);
-    sp.set_texture_filter(TextureFilter::NEAREST);
+    sp.set_texture_filter(TextureFilter::LINEAR_WITH_MIPMAPS);
     sp.set_texture(&tex);
     Some(sp)
 }

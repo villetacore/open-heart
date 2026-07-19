@@ -5,7 +5,7 @@ use godot::classes::{
     BoxShape3D, CollisionShape3D, Image, ImageTexture, MeshInstance3D, BoxMesh,
     OmniLight3D, Sprite3D, StandardMaterial3D, StaticBody3D, Texture2D,
 };
-use godot::classes::base_material_3d::{BillboardMode, TextureParam, TextureFilter, Feature};
+use godot::classes::base_material_3d::{BillboardMode, TextureParam, TextureFilter, Feature, Flags};
 use godot::classes::sprite_base_3d::AlphaCutMode;
 use std::collections::HashMap;
 
@@ -30,10 +30,18 @@ impl TexCache {
     }
 }
 
+/// Мировой размер одного повтора текстуры (м). Квадратные тексели на всех
+/// гранях достигаются triplanar-проекцией — параметр `uv` в make_box больше
+/// не используется для масштаба (оставлен для совместимости вызовов).
+pub const TEXEL_M: f32 = 3.0;
+
 /// Текстурированный (или цветной) бокс со столкновением.
+///
+/// Текстуры кладутся мировым triplanar-маппингом: одинаковый квадратный тексель
+/// на полу/стене/потолке независимо от пропорций бокса, и бесшовно между боксами.
 pub fn make_box(
     pos: Vector3, size: Vector3, color: Color,
-    tex: Option<&Gd<Texture2D>>, uv: f32,
+    tex: Option<&Gd<Texture2D>>, _uv: f32,
 ) -> Gd<StaticBody3D> {
     let mut body = StaticBody3D::new_alloc();
     body.set_position(pos);
@@ -47,7 +55,9 @@ pub fn make_box(
     if let Some(t) = tex {
         mat.set_albedo(Color::WHITE);
         mat.set_texture(TextureParam::ALBEDO, t);
-        mat.set_uv1_scale(Vector3::new(uv, uv, 1.0));
+        mat.set_uv1_scale(Vector3::splat(1.0 / TEXEL_M));
+        mat.set_flag(Flags::UV1_USE_TRIPLANAR, true);
+        mat.set_flag(Flags::UV1_USE_WORLD_TRIPLANAR, true);
         mat.set_texture_filter(TextureFilter::NEAREST_WITH_MIPMAPS_ANISOTROPIC);
     } else {
         mat.set_albedo(color);

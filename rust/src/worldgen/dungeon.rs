@@ -76,11 +76,16 @@ pub struct DungeonPlan {
 
 // ── Комната ───────────────────────────────────────────────────────────────────
 
+/// Форма комнаты в пределах её bounding-box (разнообразит «простые прямоугольники»).
+#[derive(Clone, Copy, PartialEq)]
+enum Shape { Rect, Round, Octagon, Cross }
+
 #[derive(Clone, Copy)]
 struct Room {
     x: i32, z: i32, w: i32, h: i32,
-    floor_y: f32,   // высота пола: 0.0 | 0.8 | 1.6
+    floor_y: f32,   // высота пола: 0.0 | 0.8
     wall_h:  f32,   // высота стен над полом: 2.4 | 3.4 | 4.8 | 5.5
+    shape:   Shape,
 }
 
 impl Room {
@@ -88,6 +93,38 @@ impl Room {
     fn overlaps(&self, o: &Room, pad: i32) -> bool {
         self.x - pad < o.x + o.w && self.x + self.w + pad > o.x &&
         self.z - pad < o.z + o.h && self.z + self.h + pad > o.z
+    }
+
+    /// Входит ли клетка (i,j) в форму комнаты. Центр и центральные ось/ряд всегда
+    /// внутри — коридоры цепляются к центру, форма не должна их отрезать.
+    fn contains(&self, i: i32, j: i32) -> bool {
+        if i < self.x || j < self.z || i >= self.x + self.w || j >= self.z + self.h {
+            return false;
+        }
+        let (li, lj) = (i - self.x, j - self.z);
+        let (cx, cz) = ((self.w - 1) as f32 * 0.5, (self.h - 1) as f32 * 0.5);
+        match self.shape {
+            Shape::Rect => true,
+            Shape::Round => {
+                let (rx, rz) = ((self.w as f32) * 0.5, (self.h as f32) * 0.5);
+                let dx = (li as f32 - cx) / rx;
+                let dz = (lj as f32 - cz) / rz;
+                dx * dx + dz * dz <= 1.05
+            }
+            Shape::Octagon => {
+                // срез углов треугольниками размера c
+                let c = (self.w.min(self.h)) / 3;
+                let far_i = self.w - 1 - li;
+                let far_j = self.h - 1 - lj;
+                (li + lj) >= c && (far_i + lj) >= c
+                    && (li + far_j) >= c && (far_i + far_j) >= c
+            }
+            Shape::Cross => {
+                let in_col = li >= self.w / 3 && li < self.w - self.w / 3;
+                let in_row = lj >= self.h / 3 && lj < self.h - self.h / 3;
+                in_col || in_row
+            }
+        }
     }
 }
 
@@ -138,12 +175,24 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
         let x = rng.range(2, GRID as i32 - w - 3);
         let z = rng.range(2, GRID as i32 - h - 3);
         let wall_h = CEIL_LEVELS[rng.below(5) as usize];
-        let r = Room { x, z, w, h, floor_y: 0.0, wall_h };
+        // Форма: крупные комнаты разнообразим, мелкие оставляем прямоугольными
+        let shape = if w >= 6 && h >= 6 {
+            match rng.below(5) {
+                0 => Shape::Round,
+                1 => Shape::Octagon,
+                2 => Shape::Cross,
+                _ => Shape::Rect,
+            }
+        } else {
+            Shape::Rect
+        };
+        let r = Room { x, z, w, h, floor_y: 0.0, wall_h, shape };
         if !rooms.iter().any(|o| r.overlaps(o, 2)) {
             rooms.push(r);
         }
     }
     let n = rooms.len();
+    rooms[0].shape = Shape::Rect;   // стартовая комната — чистый прямоугольник
 
     // Боссовая комната — самая дальняя от входа, всегда высокий потолок
     let (e_cx, e_cz) = rooms[0].center();
@@ -230,12 +279,13 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
     let mut is_room = vec![false; GRID * GRID];
     let mut is_ramp = vec![false; GRID * GRID];
 
-    // Фаза A: комнаты
+    // Фаза A: комнаты (по форме архетипа)
     for r in &rooms {
         for j in r.z..r.z + r.h {
             for i in r.x..r.x + r.w {
                 let ii = i as usize; let jj = j as usize;
                 if ii < 1 || jj < 1 || ii >= GRID-1 || jj >= GRID-1 { continue; }
+                if !r.contains(i, j) { continue; }
                 let idx = jj * GRID + ii;
                 floor[idx]   = true;
                 fh[idx]      = r.floor_y;
@@ -494,22 +544,26 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
 
         // Лужа лавы (только в несунутых комнатах)
         if !is_boss_room && k != 0 && rng.chance(0.35) && r.w >= 5 && r.h >= 5 {
-            let lp = cell_at(cx + rng.range(-1, 1), cz + rng.range(-1, 1), r.floor_y);
-            let slab = make_glow_slab(
-                lp + Vector3::new(0.0, 0.03, 0.0),
-                Vector3::new(CELL * 1.6, 0.06, CELL * 1.6),
-                t_lava.as_ref(),
-                Color::from_rgba(0.9, 0.25, 0.45, 1.0), 1.0,
-            );
-            root.add_child(&slab);
-            let ll = make_light(lp + Vector3::new(0.0, 0.8, 0.0),
-                                Color::from_rgba(1.0, 0.3, 0.5, 1.0), 1.1, 6.0);
-            root.add_child(&ll);
+            let (lx, lz) = (cx + rng.range(-1, 1), cz + rng.range(-1, 1));
+            if r.contains(lx, lz) {
+                let lp = cell_at(lx, lz, r.floor_y);
+                let slab = make_glow_slab(
+                    lp + Vector3::new(0.0, 0.03, 0.0),
+                    Vector3::new(CELL * 1.6, 0.06, CELL * 1.6),
+                    t_lava.as_ref(),
+                    Color::from_rgba(0.9, 0.25, 0.45, 1.0), 1.0,
+                );
+                root.add_child(&slab);
+                let ll = make_light(lp + Vector3::new(0.0, 0.8, 0.0),
+                                    Color::from_rgba(1.0, 0.3, 0.5, 1.0), 1.1, 6.0);
+                root.add_child(&ll);
+            }
         }
 
         // Колонны в больших комнатах
         if r.w >= 6 && r.h >= 6 && rng.chance(0.6) {
             for (dx, dz) in [(-2i32, -2i32), (2, 2), (-2, 2), (2, -2)] {
+                if !r.contains(cx + dx, cz + dz) { continue; }
                 let p = cell_at(cx + dx, cz + dz, r.floor_y);
                 let col = make_box(p + Vector3::new(0.0, r.wall_h * 0.5, 0.0),
                                    Vector3::new(0.7, r.wall_h, 0.7),
@@ -518,8 +572,9 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
             }
         }
 
-        // Поднятая платформа внутри больших комнат (тактическая геометрия)
-        if r.w >= 7 && r.h >= 7 && rng.chance(0.55) && r.floor_y < 1.6 {
+        // Поднятая платформа — только в прямоугольных комнатах (в фигурных
+        // выпирала бы в пустоту).
+        if r.shape == Shape::Rect && r.w >= 7 && r.h >= 7 && rng.chance(0.55) {
             let plat_y = r.floor_y + 0.8;
             let pw = rng.range(2, (r.w - 3).max(2)) as f32 * CELL;
             let ph = rng.range(2, (r.h - 3).max(2)) as f32 * CELL;
@@ -588,12 +643,33 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
         let (cx, cz) = centers[k];
         reachable.get(cz as usize * GRID + cx as usize).copied().unwrap_or(false)
     };
+    // Спавн-точки: клетка должна быть достижимым полом (в фигурных комнатах углы —
+    // пустота). snap ищет ближайшую годную клетку; spawn_at даёт мировую позицию
+    // на реальной высоте пола этой клетки.
+    let cell_ok = |i: i32, j: i32| -> bool {
+        is_floor(i, j)
+            && reachable.get(j as usize * GRID + i as usize).copied().unwrap_or(false)
+    };
+    let snap = |i: i32, j: i32| -> (i32, i32) {
+        if cell_ok(i, j) { return (i, j); }
+        for rad in 1..=3 {
+            for dj in -rad..=rad {
+                for di in -rad..=rad {
+                    if cell_ok(i + di, j + dj) { return (i + di, j + dj); }
+                }
+            }
+        }
+        (i, j)
+    };
+    let spawn_at = |i: i32, j: i32| -> Vector3 {
+        let (si, sj) = snap(i, j);
+        cell_at(si, sj, get_fh(si, sj))
+    };
 
     for (k, r) in rooms.iter().enumerate() {
         if k == 0 { continue; }
         if !room_reachable(k) { continue; }
         let (cx, cz) = r.center();
-        let fy = r.floor_y;
         let is_boss_room = k == boss_idx;
 
         if is_boss_room {
@@ -604,14 +680,14 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
             for (gi, guard) in st.boss_guards.iter().enumerate() {
                 let d = if gi % 2 == 0 { -2 - (gi as i32 / 2) } else { 2 + (gi as i32 / 2) };
                 enemies.push(EnemySpawn { kind: guard.clone(),
-                    pos: cell_at(cx + d, cz, fy), mult, is_boss: false,
+                    pos: spawn_at(cx + d, cz), mult, is_boss: false,
                     affixes: Vec::new() });
             }
             // награда рядком за алтарём: центр, слева, справа, дальше наружу
             for (ii, item) in st.boss_items.iter().enumerate() {
                 let k = (ii as i32 + 1) / 2;
                 let dx = if ii % 2 == 0 { k } else { -k };
-                items.push((item.clone(), cell_at(cx + dx, cz + 1, fy)));
+                items.push((item.clone(), spawn_at(cx + dx, cz + 1)));
             }
             continue;
         }
@@ -640,8 +716,8 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
             }
             enemies.push(EnemySpawn {
                 kind: kind.clone(),
-                pos: cell_at((px + ox).clamp(r.x + 1, r.x + r.w - 2),
-                             (pz + oz).clamp(r.z + 1, r.z + r.h - 2), fy),
+                pos: spawn_at((px + ox).clamp(r.x + 1, r.x + r.w - 2),
+                              (pz + oz).clamp(r.z + 1, r.z + r.h - 2)),
                 mult, is_boss: false, affixes,
             });
         }
@@ -651,7 +727,7 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
             if rng.chance(*chance) {
                 let t = AmmoType::from_idx(rng.below(4) as usize);
                 let (sx, sz) = ammo_spots[ai % ammo_spots.len()];
-                ammo.push((t, t.pack_size(), cell_at(sx, sz, fy)));
+                ammo.push((t, t.pack_size(), spawn_at(sx, sz)));
             }
         }
         // Предметы комнаты — таблица room_items из loot.json
@@ -662,7 +738,7 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
         for (li, entry) in cfg.loot.room_items.iter().enumerate() {
             if rng.chance(entry.chance) {
                 let (sx, sz) = item_spots[li % item_spots.len()];
-                items.push((entry.id.clone(), cell_at(sx, sz, fy)));
+                items.push((entry.id.clone(), spawn_at(sx, sz)));
             }
         }
     }
@@ -674,11 +750,10 @@ pub fn generate(depth: u32, seed: u64, cache: &mut TexCache, cfg: &GameConfig) -
     if rooms.len() > 2 && !cache_pool.is_empty() {
         let wk = 1 + rng.below((rooms.len() - 1) as u32) as usize;
         let (cx, cz) = rooms[wk].center();
-        let fy = rooms[wk].floor_y;
         let w = *rng.pick(&cache_pool);
-        weapons.push((w, cell_at(cx, cz.max(1), fy)));
+        weapons.push((w, spawn_at(cx, cz.max(1))));
         if let Some((t, _)) = crate::weapon::weapon_def(w).ammo {
-            ammo.push((t, t.pack_size(), cell_at(cx + 1, cz, fy)));
+            ammo.push((t, t.pack_size(), spawn_at(cx + 1, cz)));
         }
     }
 

@@ -114,8 +114,7 @@ impl Game3D {
 
         // урон-флэш
         let mut df = Panel::new_alloc();
-        df.set_position(Vector2::ZERO);
-        df.set_size(Vector2::new(HUD_W, HUD_H));
+        df.set_anchors_preset(godot::classes::control::LayoutPreset::FULL_RECT);
         df.add_theme_stylebox_override("panel",
             &make_style(Color::from_rgba(0.8, 0.0, 0.0, 0.0), Color::TRANSPARENT_BLACK, 0));
         df.set_visible(false);
@@ -125,8 +124,7 @@ impl Game3D {
         // FP-оружие (низ по центру)
         {
             let mut wr = TextureRect::new_alloc();
-            wr.set_position(Vector2::new(HUD_W * 0.5 - 260.0, HUD_H - 560.0));
-            wr.set_size(Vector2::new(520.0, 560.0));
+            place(&wr, 0.5, 1.0, HUD_W * 0.5 - 260.0, HUD_H - 560.0, 520.0, 560.0);
             wr.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
             wr.set_stretch_mode(godot::classes::texture_rect::StretchMode::SCALE);
             wr.set_texture_filter(godot::classes::canvas_item::TextureFilter::NEAREST);
@@ -138,8 +136,7 @@ impl Game3D {
         // прицел
         let mut cross = Label::new_alloc();
         cross.set_text("+");
-        cross.set_position(Vector2::new(HUD_W * 0.5 - 8.0, HUD_H * 0.5 - 12.0));
-        cross.set_size(Vector2::new(16.0, 24.0));
+        place(&cross, 0.5, 0.5, HUD_W * 0.5 - 8.0, HUD_H * 0.5 - 12.0, 16.0, 24.0);
         cross.set_horizontal_alignment(HorizontalAlignment::CENTER);
         cross.add_theme_font_size_override("font_size", 20);
         cross.add_theme_color_override("font_color", C_MAIN);
@@ -148,8 +145,7 @@ impl Game3D {
 
         // таргетинг
         let mut tgt = Label::new_alloc();
-        tgt.set_position(Vector2::new(HUD_W * 0.5 - 200.0, HUD_H * 0.5 - 46.0));
-        tgt.set_size(Vector2::new(400.0, 24.0));
+        place(&tgt, 0.5, 0.5, HUD_W * 0.5 - 200.0, HUD_H * 0.5 - 46.0, 400.0, 24.0);
         tgt.set_horizontal_alignment(HorizontalAlignment::CENTER);
         tgt.add_theme_font_size_override("font_size", 13);
         tgt.add_theme_color_override("font_color", C_RED);
@@ -160,8 +156,7 @@ impl Game3D {
         // компас
         let mut cmp = Label::new_alloc();
         cmp.set_text("N");
-        cmp.set_position(Vector2::new(HUD_W * 0.5 - 40.0, 10.0));
-        cmp.set_size(Vector2::new(80.0, 30.0));
+        place(&cmp, 0.5, 0.0, HUD_W * 0.5 - 40.0, 10.0, 80.0, 30.0);
         cmp.set_horizontal_alignment(HorizontalAlignment::CENTER);
         cmp.add_theme_font_size_override("font_size", 18);
         cmp.add_theme_color_override("font_color", C_CYAN);
@@ -170,8 +165,7 @@ impl Game3D {
 
         // локация
         let mut ll = Label::new_alloc();
-        ll.set_position(Vector2::new(HUD_W * 0.5 - 300.0, 40.0));
-        ll.set_size(Vector2::new(600.0, 26.0));
+        place(&ll, 0.5, 0.0, HUD_W * 0.5 - 300.0, 40.0, 600.0, 26.0);
         ll.set_horizontal_alignment(HorizontalAlignment::CENTER);
         ll.add_theme_font_size_override("font_size", 14);
         ll.add_theme_color_override("font_color", C_DIM);
@@ -182,8 +176,7 @@ impl Game3D {
         if let Some(tex) = self.cache.get("res://assets/ui/ui_heart.png") {
             let mut ic = TextureRect::new_alloc();
             ic.set_texture(&tex);
-            ic.set_position(Vector2::new(24.0, HUD_H - 100.0));
-            ic.set_size(Vector2::new(34.0, 34.0));
+            place(&ic, 0.0, 1.0, 24.0, HUD_H - 100.0, 34.0, 34.0);
             ic.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
             ic.set_stretch_mode(godot::classes::texture_rect::StretchMode::SCALE);
             ic.set_texture_filter(godot::classes::canvas_item::TextureFilter::NEAREST);
@@ -194,8 +187,7 @@ impl Game3D {
         if let Some(tex) = self.cache.get("res://assets/ui/ui_ammo.png") {
             let mut ic = TextureRect::new_alloc();
             ic.set_texture(&tex);
-            ic.set_position(Vector2::new(HUD_W - 404.0, HUD_H - 66.0));
-            ic.set_size(Vector2::new(36.0, 36.0));
+            place(&ic, 1.0, 1.0, HUD_W - 404.0, HUD_H - 66.0, 36.0, 36.0);
             ic.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
             ic.set_stretch_mode(godot::classes::texture_rect::StretchMode::SCALE);
             ic.set_texture_filter(godot::classes::canvas_item::TextureFilter::NEAREST);
@@ -204,22 +196,19 @@ impl Game3D {
 
         // HP бар
         let mut hp_bg = Panel::new_alloc();
-        hp_bg.set_position(Vector2::new(24.0, HUD_H - 58.0));
-        hp_bg.set_size(Vector2::new(222.0, 26.0));
+        place(&hp_bg, 0.0, 1.0, 24.0, HUD_H - 58.0, 222.0, 26.0);
         hp_bg.add_theme_stylebox_override("panel", &make_style(
             Color::from_rgba(0.08, 0.01, 0.01, 0.92), Color::from_rgba(0.35, 0.08, 0.08, 1.0), 1));
         layer.add_child(&hp_bg);
 
         let mut hp_fg = Panel::new_alloc();
-        hp_fg.set_position(Vector2::new(26.0, HUD_H - 56.0));
-        hp_fg.set_size(Vector2::new(218.0, 22.0));
+        place(&hp_fg, 0.0, 1.0, 26.0, HUD_H - 56.0, 218.0, 22.0);
         hp_fg.add_theme_stylebox_override("panel", &make_style(C_RED, Color::TRANSPARENT_BLACK, 0));
         layer.add_child(&hp_fg);
         self.hp_bar_fg = Some(hp_fg);
 
         let mut hp_lbl = Label::new_alloc();
-        hp_lbl.set_position(Vector2::new(24.0, HUD_H - 84.0));
-        hp_lbl.set_size(Vector2::new(220.0, 24.0));
+        place(&hp_lbl, 0.0, 1.0, 24.0, HUD_H - 84.0, 220.0, 24.0);
         hp_lbl.add_theme_font_size_override("font_size", 14);
         hp_lbl.add_theme_color_override("font_color", C_RED);
         layer.add_child(&hp_lbl);
@@ -227,8 +216,7 @@ impl Game3D {
 
         // статусы игрока (над HP-баром)
         let mut st_lbl = Label::new_alloc();
-        st_lbl.set_position(Vector2::new(24.0, HUD_H - 112.0));
-        st_lbl.set_size(Vector2::new(360.0, 24.0));
+        place(&st_lbl, 0.0, 1.0, 24.0, HUD_H - 112.0, 360.0, 24.0);
         st_lbl.add_theme_font_size_override("font_size", 16);
         st_lbl.add_theme_color_override("font_color", C_CYAN);
         layer.add_child(&st_lbl);
@@ -236,22 +224,19 @@ impl Game3D {
 
         // XP бар
         let mut xp_bg = Panel::new_alloc();
-        xp_bg.set_position(Vector2::new(24.0, HUD_H - 28.0));
-        xp_bg.set_size(Vector2::new(222.0, 10.0));
+        place(&xp_bg, 0.0, 1.0, 24.0, HUD_H - 28.0, 222.0, 10.0);
         xp_bg.add_theme_stylebox_override("panel", &make_style(
             Color::from_rgba(0.05, 0.03, 0.10, 0.92), Color::from_rgba(0.25, 0.15, 0.4, 1.0), 1));
         layer.add_child(&xp_bg);
 
         let mut xp_fg = Panel::new_alloc();
-        xp_fg.set_position(Vector2::new(25.0, HUD_H - 27.0));
-        xp_fg.set_size(Vector2::new(0.0, 8.0));
+        place(&xp_fg, 0.0, 1.0, 25.0, HUD_H - 27.0, 0.0, 8.0);
         xp_fg.add_theme_stylebox_override("panel", &make_style(C_XP, Color::TRANSPARENT_BLACK, 0));
         layer.add_child(&xp_fg);
         self.xp_bar_fg = Some(xp_fg);
 
         let mut xp_lbl = Label::new_alloc();
-        xp_lbl.set_position(Vector2::new(252.0, HUD_H - 34.0));
-        xp_lbl.set_size(Vector2::new(260.0, 22.0));
+        place(&xp_lbl, 0.0, 1.0, 252.0, HUD_H - 34.0, 260.0, 22.0);
         xp_lbl.add_theme_font_size_override("font_size", 13);
         xp_lbl.add_theme_color_override("font_color", C_XP);
         layer.add_child(&xp_lbl);
@@ -259,8 +244,7 @@ impl Game3D {
 
         // Патроны и оружие (низ справа)
         let mut am = Label::new_alloc();
-        am.set_position(Vector2::new(HUD_W - 360.0, HUD_H - 64.0));
-        am.set_size(Vector2::new(336.0, 34.0));
+        place(&am, 1.0, 1.0, HUD_W - 360.0, HUD_H - 64.0, 336.0, 34.0);
         am.set_horizontal_alignment(HorizontalAlignment::RIGHT);
         am.add_theme_font_size_override("font_size", 26);
         am.add_theme_color_override("font_color", C_GOLD);
@@ -268,8 +252,7 @@ impl Game3D {
         self.ammo_label = Some(am);
 
         let mut wn = Label::new_alloc();
-        wn.set_position(Vector2::new(HUD_W - 360.0, HUD_H - 92.0));
-        wn.set_size(Vector2::new(336.0, 24.0));
+        place(&wn, 1.0, 1.0, HUD_W - 360.0, HUD_H - 92.0, 336.0, 24.0);
         wn.set_horizontal_alignment(HorizontalAlignment::RIGHT);
         wn.add_theme_font_size_override("font_size", 14);
         wn.add_theme_color_override("font_color", C_DIM);
@@ -278,8 +261,7 @@ impl Game3D {
 
         // подсказка
         let mut hint = Label::new_alloc();
-        hint.set_position(Vector2::new(HUD_W * 0.5 - 280.0, HUD_H - 130.0));
-        hint.set_size(Vector2::new(560.0, 28.0));
+        place(&hint, 0.5, 1.0, HUD_W * 0.5 - 280.0, HUD_H - 130.0, 560.0, 28.0);
         hint.set_horizontal_alignment(HorizontalAlignment::CENTER);
         hint.add_theme_font_size_override("font_size", 16);
         hint.add_theme_color_override("font_color", C_GOLD);
@@ -289,8 +271,7 @@ impl Game3D {
 
         // инвентарь (строка)
         let mut inv = Label::new_alloc();
-        inv.set_position(Vector2::new(HUD_W - 460.0, 10.0));
-        inv.set_size(Vector2::new(448.0, 24.0));
+        place(&inv, 1.0, 0.0, HUD_W - 460.0, 10.0, 448.0, 24.0);
         inv.set_horizontal_alignment(HorizontalAlignment::RIGHT);
         inv.add_theme_font_size_override("font_size", 13);
         inv.add_theme_color_override("font_color", C_DIM);
@@ -299,8 +280,7 @@ impl Game3D {
 
         // квесты
         let mut ql = Label::new_alloc();
-        ql.set_position(Vector2::new(24.0, 44.0));
-        ql.set_size(Vector2::new(360.0, 150.0));
+        place(&ql, 0.0, 0.0, 24.0, 44.0, 360.0, 150.0);
         ql.add_theme_font_size_override("font_size", 13);
         ql.add_theme_color_override("font_color", C_DIM);
         ql.set_autowrap_mode(godot::classes::text_server::AutowrapMode::WORD);
@@ -309,8 +289,7 @@ impl Game3D {
 
         // флэш
         let mut flash = Label::new_alloc();
-        flash.set_position(Vector2::new(HUD_W * 0.5 - 300.0, HUD_H * 0.5 - 110.0));
-        flash.set_size(Vector2::new(600.0, 34.0));
+        place(&flash, 0.5, 0.5, HUD_W * 0.5 - 300.0, HUD_H * 0.5 - 110.0, 600.0, 34.0);
         flash.set_horizontal_alignment(HorizontalAlignment::CENTER);
         flash.add_theme_font_size_override("font_size", 18);
         flash.add_theme_color_override("font_color", C_GOLD);
@@ -323,8 +302,7 @@ impl Game3D {
             let pw = 720.0;
             let ph = 520.0;
             let mut ip = Panel::new_alloc();
-            ip.set_position(Vector2::new((HUD_W - pw) * 0.5, (HUD_H - ph) * 0.5));
-            ip.set_size(Vector2::new(pw, ph));
+            place(&ip, 0.5, 0.5, (HUD_W - pw) * 0.5, (HUD_H - ph) * 0.5, pw, ph);
             ip.add_theme_stylebox_override("panel", &make_style(C_UI_BG, C_BORDER, 2));
             ip.set_visible(false);
 
@@ -362,8 +340,7 @@ impl Game3D {
             let pw = 900.0;
             let ph = 640.0;
             let mut pp = Panel::new_alloc();
-            pp.set_position(Vector2::new((HUD_W - pw) * 0.5, (HUD_H - ph) * 0.5));
-            pp.set_size(Vector2::new(pw, ph));
+            place(&pp, 0.5, 0.5, (HUD_W - pw) * 0.5, (HUD_H - ph) * 0.5, pw, ph);
             pp.add_theme_stylebox_override("panel", &make_style(C_UI_BG, C_BORDER, 2));
             pp.set_visible(false);
 
@@ -398,11 +375,18 @@ impl Game3D {
 
         // диалоговая панель
         {
-            let panel_y = HUD_H * 0.60;
-            let panel_h = HUD_H * 0.40;
             let mut panel = Panel::new_alloc();
-            panel.set_position(Vector2::new(0.0, panel_y));
-            panel.set_size(Vector2::new(HUD_W, panel_h));
+            {
+                // низ экрана во всю ширину, нижние 40%
+                use godot::builtin::Side;
+                panel.set_anchor(Side::LEFT,   0.0);
+                panel.set_anchor(Side::RIGHT,  1.0);
+                panel.set_anchor(Side::TOP,    0.60);
+                panel.set_anchor(Side::BOTTOM, 1.0);
+                for s in [Side::LEFT, Side::RIGHT, Side::TOP, Side::BOTTOM] {
+                    panel.set_offset(s, 0.0);
+                }
+            }
             panel.add_theme_stylebox_override("panel", &make_style(C_UI_BG, C_BORDER, 2));
             panel.set_visible(false);
 
@@ -453,8 +437,7 @@ impl Game3D {
             const MAP_Y: f32 = 40.0;
 
             let mut bg = Panel::new_alloc();
-            bg.set_position(Vector2::new(MAP_X - 4.0, MAP_Y - 4.0));
-            bg.set_size(Vector2::new(MAP_SZ + 8.0, MAP_SZ + 8.0));
+            place(&bg, 1.0, 0.0, MAP_X - 4.0, MAP_Y - 4.0, MAP_SZ + 8.0, MAP_SZ + 8.0);
             bg.add_theme_stylebox_override("panel",
                 &make_style(Color::from_rgba(0.02, 0.01, 0.05, 0.88), C_BORDER, 1));
             bg.set_visible(false);
@@ -462,8 +445,7 @@ impl Game3D {
             self.minimap_bg = Some(bg);
 
             let mut mr = TextureRect::new_alloc();
-            mr.set_position(Vector2::new(MAP_X, MAP_Y));
-            mr.set_size(Vector2::new(MAP_SZ, MAP_SZ));
+            place(&mr, 1.0, 0.0, MAP_X, MAP_Y, MAP_SZ, MAP_SZ);
             mr.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
             mr.set_stretch_mode(godot::classes::texture_rect::StretchMode::SCALE);
             mr.set_texture_filter(godot::classes::canvas_item::TextureFilter::NEAREST);
@@ -484,16 +466,14 @@ impl Game3D {
         // экран смерти
         {
             let mut dp = Panel::new_alloc();
-            dp.set_position(Vector2::ZERO);
-            dp.set_size(Vector2::new(HUD_W, HUD_H));
+            dp.set_anchors_preset(godot::classes::control::LayoutPreset::FULL_RECT);
             dp.add_theme_stylebox_override("panel",
                 &make_style(Color::from_rgba(0.3, 0.0, 0.0, 0.88), Color::TRANSPARENT_BLACK, 0));
             dp.set_visible(false);
 
             let mut lbl = Label::new_alloc();
             lbl.set_text(t("msg_died", lang));
-            lbl.set_position(Vector2::new(0.0, HUD_H * 0.4));
-            lbl.set_size(Vector2::new(HUD_W, 60.0));
+            place(&lbl, 0.5, 0.5, 0.0, HUD_H * 0.4, HUD_W, 60.0);
             lbl.set_horizontal_alignment(HorizontalAlignment::CENTER);
             lbl.add_theme_font_size_override("font_size", 56);
             lbl.add_theme_color_override("font_color", C_RED);
@@ -501,8 +481,7 @@ impl Game3D {
 
             let mut sub = Label::new_alloc();
             sub.set_text("E — вернуться в хаб (−25% золота)");
-            sub.set_position(Vector2::new(0.0, HUD_H * 0.4 + 70.0));
-            sub.set_size(Vector2::new(HUD_W, 30.0));
+            place(&sub, 0.5, 0.5, 0.0, HUD_H * 0.4 + 70.0, HUD_W, 30.0);
             sub.set_horizontal_alignment(HorizontalAlignment::CENTER);
             sub.add_theme_font_size_override("font_size", 18);
             sub.add_theme_color_override("font_color", C_DIM);
@@ -515,16 +494,14 @@ impl Game3D {
         // экран паузы
         {
             let mut pp = Panel::new_alloc();
-            pp.set_position(Vector2::ZERO);
-            pp.set_size(Vector2::new(HUD_W, HUD_H));
+            pp.set_anchors_preset(godot::classes::control::LayoutPreset::FULL_RECT);
             pp.add_theme_stylebox_override("panel",
                 &make_style(Color::from_rgba(0.02, 0.01, 0.05, 0.82), Color::TRANSPARENT_BLACK, 0));
             pp.set_visible(false);
 
             let mut title = Label::new_alloc();
             title.set_text("ПАУЗА");
-            title.set_position(Vector2::new(0.0, HUD_H * 0.36));
-            title.set_size(Vector2::new(HUD_W, 60.0));
+            place(&title, 0.5, 0.5, 0.0, HUD_H * 0.36, HUD_W, 60.0);
             title.set_horizontal_alignment(HorizontalAlignment::CENTER);
             title.add_theme_font_size_override("font_size", 52);
             title.add_theme_color_override("font_color", C_PINK);
@@ -532,8 +509,7 @@ impl Game3D {
 
             let mut lines = Label::new_alloc();
             lines.set_text("[ 1 / Esc ]  Продолжить\n\n[ 2 ]  Выйти в главное меню");
-            lines.set_position(Vector2::new(0.0, HUD_H * 0.36 + 90.0));
-            lines.set_size(Vector2::new(HUD_W, 120.0));
+            place(&lines, 0.5, 0.5, 0.0, HUD_H * 0.36 + 90.0, HUD_W, 120.0);
             lines.set_horizontal_alignment(HorizontalAlignment::CENTER);
             lines.add_theme_font_size_override("font_size", 22);
             lines.add_theme_color_override("font_color", C_MAIN);
@@ -541,8 +517,7 @@ impl Game3D {
 
             let mut note = Label::new_alloc();
             note.set_text("Прогресс сохраняется автоматически");
-            note.set_position(Vector2::new(0.0, HUD_H * 0.36 + 230.0));
-            note.set_size(Vector2::new(HUD_W, 30.0));
+            place(&note, 0.5, 0.5, 0.0, HUD_H * 0.36 + 230.0, HUD_W, 30.0);
             note.set_horizontal_alignment(HorizontalAlignment::CENTER);
             note.add_theme_font_size_override("font_size", 14);
             note.add_theme_color_override("font_color", C_DIM);
@@ -566,8 +541,7 @@ impl Game3D {
             let k = 6.0;
             let w = FRAME_W * k;
             let h = def.frame_h * k;
-            wr.set_size(Vector2::new(w, h));
-            wr.set_position(Vector2::new(HUD_W * 0.5 - w * 0.5, HUD_H - h));
+            place(wr, 0.5, 1.0, HUD_W * 0.5 - w * 0.5, HUD_H - h, w, h);
             wr.set_visible(true);
         }
         self.weapon_atlas = Some(at);

@@ -11,16 +11,14 @@ impl Game3D {
         self.base_mut().add_child(&layer);
 
         let mut panel = Panel::new_alloc();
-        panel.set_position(Vector2::ZERO);
-        panel.set_size(Vector2::new(HUD_W, HUD_H));
+        panel.set_anchors_preset(godot::classes::control::LayoutPreset::FULL_RECT);
         panel.add_theme_stylebox_override("panel",
             &make_style(Color::from_rgba(0.02, 0.01, 0.04, 0.97), C_BORDER, 0));
         panel.set_visible(false);
 
         let mut title = Label::new_alloc();
         title.set_text("ВЫБЕРИ КЛАСС");
-        title.set_position(Vector2::new(0.0, 90.0));
-        title.set_size(Vector2::new(HUD_W, 70.0));
+        place(&title, 0.5, 0.0, 0.0, 90.0, HUD_W, 70.0);
         title.set_horizontal_alignment(HorizontalAlignment::CENTER);
         title.add_theme_font_size_override("font_size", 52);
         title.add_theme_color_override("font_color", C_PINK);
@@ -36,8 +34,7 @@ impl Game3D {
 
         for i in 0..3 {
             let mut card = Panel::new_alloc();
-            card.set_position(Vector2::new(x0 + i as f32 * (card_w + gap), y0));
-            card.set_size(Vector2::new(card_w, card_h));
+            place(&card, 0.5, 0.5, x0 + i as f32 * (card_w + gap), y0, card_w, card_h);
             card.add_theme_stylebox_override("panel", &make_style(C_UI_BG, C_BORDER, 2));
 
             let mut key = Label::new_alloc();
@@ -72,8 +69,7 @@ impl Game3D {
 
         let mut hint = Label::new_alloc();
         hint.set_text("Нажми 1, 2 или 3");
-        hint.set_position(Vector2::new(0.0, HUD_H - 120.0));
-        hint.set_size(Vector2::new(HUD_W, 40.0));
+        place(&hint, 0.5, 1.0, 0.0, HUD_H - 120.0, HUD_W, 40.0);
         hint.set_horizontal_alignment(HorizontalAlignment::CENTER);
         hint.add_theme_font_size_override("font_size", 22);
         hint.add_theme_color_override("font_color", C_DIM);

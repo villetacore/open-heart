@@ -545,6 +545,26 @@ fn make_style(bg: Color, border: Color, width: i32) -> Gd<StyleBoxFlat> {
     s
 }
 
+/// Привязать Control к экрану: якорь (ax, ay ∈ {0.0, 0.5, 1.0} — лево/центр/право
+/// и верх/центр/низ) + смещения из дизайн-координат (HUD_W×HUD_H). На 16:9 позиция
+/// идентична исходной, на других соотношениях элемент липнет к своему краю/углу
+/// (работает вместе с display stretch aspect=expand).
+fn place<T>(c: &Gd<T>, ax: f32, ay: f32, x: f32, y: f32, w: f32, h: f32)
+where
+    T: godot::obj::Inherits<godot::classes::Control>,
+{
+    use godot::builtin::Side;
+    let mut c: Gd<godot::classes::Control> = c.clone().upcast();
+    c.set_anchor(Side::LEFT,   ax);
+    c.set_anchor(Side::RIGHT,  ax);
+    c.set_anchor(Side::TOP,    ay);
+    c.set_anchor(Side::BOTTOM, ay);
+    c.set_offset(Side::LEFT,   x - ax * HUD_W);
+    c.set_offset(Side::RIGHT,  x + w - ax * HUD_W);
+    c.set_offset(Side::TOP,    y - ay * HUD_H);
+    c.set_offset(Side::BOTTOM, y + h - ay * HUD_H);
+}
+
 /// Динамический выбор сцены для NPC.
 fn npc_scene_id(npc_id: &str, state: &GameState) -> &'static str {
     match npc_id {

@@ -10,9 +10,11 @@ use godot::classes::{
     Environment, Image, ImageTexture, Input, InputEvent, InputEventKey, Label,
     Node3D, OmniLight3D,
     PanoramaSkyMaterial, Panel, PhysicsRayQueryParameters3D, Sky, Sprite3D,
-    StyleBoxFlat, Texture2D, TextureRect, VBoxContainer, WorldEnvironment, INode3D,
+    ScrollContainer, StyleBoxFlat, Texture2D, TextureRect, VBoxContainer,
+    WorldEnvironment, INode3D,
 };
 use godot::classes::environment::{AmbientSource, BgMode, ToneMapper};
+use godot::classes::base_material_3d::TextureFilter;
 use godot::classes::image::Format;
 use godot::global::HorizontalAlignment;
 
@@ -317,11 +319,13 @@ const SFX_WALK: [&str; 2] = [
     "res://assets/sounds/An Evil Robot Is Walking1.wav",
 ];
 
-const NPC_IDLE_FRAMES: [(f32, f32, f32, f32); 2] = [
+const NPC_IDLE_FRAMES: [(f32, f32, f32, f32); 4] = [
     (0.0,   0.0, 128.0, 256.0),
     (128.0, 0.0, 128.0, 256.0),
+    (256.0, 0.0, 128.0, 256.0),
+    (384.0, 0.0, 128.0, 256.0),
 ];
-const IDLE_FPS: f32 = 3.0;
+const IDLE_FPS: f32 = 5.0;
 
 const C_UI_BG:  Color = Color::from_rgba(0.04, 0.03, 0.07, 0.94);
 const C_BORDER: Color = Color::from_rgba(0.65, 0.30, 0.52, 1.0);

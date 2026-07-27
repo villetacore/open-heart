@@ -65,14 +65,25 @@ struct AbilityRt {
 
 // ── Спрайтшит 512×256: 4 кадра по 128×256 (idle×2, walk×2) ───────────────────
 
-const IDLE_FRAMES: [(f32, f32, f32, f32); 2] = [
+const IDLE_FRAMES: [(f32, f32, f32, f32); 8] = [
     (0.0,   0.0, 128.0, 256.0),
     (128.0, 0.0, 128.0, 256.0),
-];
-const WALK_FRAMES: [(f32, f32, f32, f32); 2] = [
     (256.0, 0.0, 128.0, 256.0),
     (384.0, 0.0, 128.0, 256.0),
+    (512.0, 0.0, 128.0, 256.0),
+    (640.0, 0.0, 128.0, 256.0),
+    (768.0, 0.0, 128.0, 256.0),
+    (896.0, 0.0, 128.0, 256.0),
 ];
+
+fn animation_frame(row: usize, frame: usize) -> (f32, f32, f32, f32) {
+    (
+        (frame % 8) as f32 * 128.0,
+        row as f32 * 256.0,
+        128.0,
+        256.0,
+    )
+}
 
 /// Путь спрайт-листа по имени (без префикса пути): "grunt" → enemy_grunt.png.
 fn enemy_tex(sprite: &str) -> String {
@@ -171,6 +182,8 @@ pub struct Enemy {
     anim_timer:       f32,
     anim_frame:       usize,
     hurt_flash:       f32,
+    alert_anim:       f32,
+    pub death_timer:  f32,
 }
 
 impl Enemy {
@@ -179,7 +192,7 @@ impl Enemy {
         &mut self,
         id: &str, hp: f32, speed: f32, damage: f32,
         atk_range: f32, cooldown: f32, chase: f32, patrol: f32,
-        color: Color, spawn: Vector3, xp: f32, mult: f32, is_boss: bool,
+        _color: Color, spawn: Vector3, xp: f32, mult: f32, is_boss: bool,
         resist: [f32; 4], sprite: &str, scale: f32, behavior: Behavior,
     ) {
         self.behavior = behavior;
@@ -195,12 +208,13 @@ impl Enemy {
         self.spawn_pos     = spawn;
         self.patrol_target = spawn;
         self.alive         = true;
-        self.pending_color = color;
+        self.death_timer   = 0.0;
+        self.pending_color = Color::WHITE;
         self.tex_path      = enemy_tex(if sprite.is_empty() { id } else { sprite });
         self.xp_value      = xp * mult;
         self.is_boss       = is_boss;
         self.resist        = resist;
-        self.vis_scale     = if is_boss { scale.max(1.35) } else { scale.max(0.5) };
+        self.vis_scale     = if is_boss { scale.max(1.35) } else { 1.0 };
         self.spawn_mult    = mult;
     }
 
@@ -218,11 +232,6 @@ impl Enemy {
             if let Some([dmg, r]) = a.death_blast {
                 // урон взрыва масштабируется силой врага, как и остальной урон
                 self.death_blast = Some((dmg * self.spawn_mult, r));
-            }
-            if let Some(t) = a.tint {
-                // подмешиваем цвет аффикса — элиту видно издалека
-                let tint = Color::from_rgba(t[0], t[1], t[2], 1.0);
-                self.pending_color = self.pending_color.lerp(tint, 0.6);
             }
             if !self.elite_prefix.is_empty() {
                 self.elite_prefix.push(' ');
@@ -289,6 +298,7 @@ impl Enemy {
             self.hp    = 0.0;
             self.state = EState::Dead;
             self.alive = false;
+            self.death_timer = 0.8;
         }
     }
 
@@ -300,6 +310,7 @@ impl Enemy {
             * self.statuses.vuln_mult();
         self.hp -= dealt;
         self.hurt_flash = 0.15;
+        self.alert_anim = 0.7;
         // проснуться при уроне (и не отпускать поводок, даже если игрок далеко)
         self.alert_timer = 6.0;
         if self.state == EState::Patrol { self.state = EState::Chase; }
@@ -313,6 +324,7 @@ impl Enemy {
             self.hp    = 0.0;
             self.state = EState::Dead;
             self.alive = false;
+            self.death_timer = 0.8;
         }
         dealt
     }
@@ -337,6 +349,7 @@ impl Enemy {
         self.alert_timer = 6.0;
         if self.state == EState::Patrol {
             self.state = EState::Chase;
+            self.alert_anim = 0.7;
             return true;
         }
         false
@@ -560,6 +573,8 @@ impl ICharacterBody3D for Enemy {
             anim_timer: 0.0,
             anim_frame: 0,
             hurt_flash: 0.0,
+            alert_anim: 0.0,
+            death_timer: 0.0,
             vis_scale: 1.0,
         }
     }
@@ -606,8 +621,21 @@ impl ICharacterBody3D for Enemy {
     }
 
     fn physics_process(&mut self, delta: f64) {
-        if !self.alive || self.frozen || self.state == EState::Dead { return; }
         let dt = delta as f32;
+        if self.state == EState::Dead {
+            self.death_timer = (self.death_timer - dt).max(0.0);
+            self.anim_timer += dt;
+            if self.anim_timer >= 0.1 {
+                self.anim_timer = 0.0;
+                self.anim_frame = (self.anim_frame + 1).min(7);
+                let (x, y, w, h) = animation_frame(7, self.anim_frame);
+                if let Some(ref mut sp) = self.sprite {
+                    sp.set_region_rect(Rect2::new(Vector2::new(x, y), Vector2::new(w, h)));
+                }
+            }
+            return;
+        }
+        if !self.alive || self.frozen { return; }
 
         // Статусы: DoT-урон, истечение таймеров. Тикают до всего остального,
         // чтобы горение/кровь добивали даже стоящего/оглушённого врага.
@@ -644,6 +672,7 @@ impl ICharacterBody3D for Enemy {
         self.los_timer -= dt;
         self.path_timer -= dt;
         self.alert_timer -= dt;
+        self.alert_anim = (self.alert_anim - dt).max(0.0);
         if self.los_timer <= 0.0 && dist < self.chase_range * 2.0 {
             self.los_timer = 0.18;
             self.los_cached = self.has_los(player_pos);
@@ -823,13 +852,24 @@ impl ICharacterBody3D for Enemy {
 
         // анимация
         let is_moving = vel.length_squared() > 0.1;
-        let fps    = if is_moving { 7.0 } else { 2.0 };
-        let frames = if is_moving { &WALK_FRAMES } else { &IDLE_FRAMES };
+        let row = if self.hurt_flash > 0.0 {
+            5
+        } else if self.alert_anim > 0.0 {
+            6
+        } else if self.state == EState::Attack {
+            4
+        } else if is_moving {
+            let side = to_player.cross(vel.normalized()).y;
+            if side > 0.25 { 2 } else if side < -0.25 { 3 } else { 1 }
+        } else {
+            0
+        };
+        let fps = if row == 0 { 6.0 } else { 10.0 };
         self.anim_timer += dt;
         if self.anim_timer >= 1.0 / fps {
             self.anim_timer = 0.0;
-            self.anim_frame = (self.anim_frame + 1) % frames.len();
-            let (x, y, w, h) = frames[self.anim_frame];
+            self.anim_frame = (self.anim_frame + 1) % 8;
+            let (x, y, w, h) = animation_frame(row, self.anim_frame);
             if let Some(ref mut sp) = self.sprite {
                 sp.set_region_rect(Rect2::new(Vector2::new(x, y), Vector2::new(w, h)));
             }

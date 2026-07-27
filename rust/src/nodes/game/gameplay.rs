@@ -238,7 +238,22 @@ impl Game3D {
 
         let mut near_item: Option<usize> = None;
         let mut best_i = PICKUP_R;
-        for (i, wi) in self.world_items.iter().enumerate() {
+        for (i, wi) in self.world_items.iter_mut().enumerate() {
+            let mut position = wi.node.get_position();
+            let base_y = if matches!(wi.payload, Payload::Weapon(_)) { 0.65 } else { 0.55 };
+            position.y = base_y + (self.game_time * 2.4 + i as f32 * 0.73).sin() * 0.10;
+            wi.node.set_position(position);
+            if !matches!(wi.payload, Payload::Weapon(_)) {
+                if let Some(child) = wi.node.get_child(0) {
+                    if let Ok(mut sprite) = child.try_cast::<Sprite3D>() {
+                        let frame = ((self.game_time * 4.0 + i as f32 * 0.31) as usize) % 2;
+                        sprite.set_region_rect(Rect2::new(
+                            Vector2::new(frame as f32 * 64.0, 0.0),
+                            Vector2::new(64.0, 64.0),
+                        ));
+                    }
+                }
+            }
             let d = (player_pos - wi.node.get_global_position()).length();
             if d < best_i { best_i = d; near_item = Some(i); }
         }

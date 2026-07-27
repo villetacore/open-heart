@@ -222,12 +222,28 @@ impl WeaponRaw {
             Some(s) => DmgType::from_id(s)
                 .ok_or_else(|| format!("weapon '{}': unknown dmg_type '{}'", self.id, s))?,
         };
+        let mut idle_frames: Vec<usize> =
+            self.idle_frames.into_iter().map(|frame| frame as usize).collect();
+        let mut fire_frames: Vec<usize> =
+            self.fire_frames.into_iter().map(|frame| frame as usize).collect();
+        if self.sheet.contains("/sprites/weapons_fp/") {
+            if idle_frames.len() <= 1 {
+                idle_frames = vec![0, 1, 2, 3, 2, 1, 0, 1];
+            }
+            fire_frames = match id {
+                WeaponId::Sword => vec![0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0],
+                WeaponId::Pistol | WeaponId::Shotgun =>
+                    vec![4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0],
+                WeaponId::Rocket => vec![4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0],
+                _ => vec![0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0],
+            };
+        }
         Ok(WeaponDef {
             id, name_ru: self.name_ru, damage: self.damage, dmg_type, cooldown: self.cooldown,
             range: self.range, kind, ammo, auto: self.auto, sheet: self.sheet,
             frame_h: self.frame_h,
-            idle_frames: self.idle_frames.into_iter().map(|f| f as usize).collect(),
-            fire_frames: self.fire_frames.into_iter().map(|f| f as usize).collect(),
+            idle_frames,
+            fire_frames,
             fire_fps: self.fire_fps,
             status: self.status.map(|s| (s.id, s.chance)),
         })

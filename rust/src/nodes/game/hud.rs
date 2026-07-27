@@ -328,13 +328,17 @@ impl Game3D {
             title.add_theme_color_override("font_color", C_PINK);
             ip.add_child(&title);
 
+            let mut scroll = ScrollContainer::new_alloc();
+            scroll.set_position(Vector2::new(24.0, 60.0));
+            scroll.set_size(Vector2::new(pw - 48.0, ph - 110.0));
+            ip.add_child(&scroll);
+
             let mut il = Label::new_alloc();
-            il.set_position(Vector2::new(24.0, 60.0));
-            il.set_size(Vector2::new(pw - 48.0, ph - 110.0));
+            il.set_custom_minimum_size(Vector2::new(pw - 76.0, 0.0));
             il.add_theme_font_size_override("font_size", 15);
             il.add_theme_color_override("font_color", C_MAIN);
             il.set_autowrap_mode(godot::classes::text_server::AutowrapMode::WORD);
-            ip.add_child(&il);
+            scroll.add_child(&il);
 
             let mut hint_i = Label::new_alloc();
             hint_i.set_text(t("inv_close", lang));
@@ -366,13 +370,17 @@ impl Game3D {
             title.add_theme_color_override("font_color", C_XP);
             pp.add_child(&title);
 
+            let mut scroll = ScrollContainer::new_alloc();
+            scroll.set_position(Vector2::new(24.0, 54.0));
+            scroll.set_size(Vector2::new(pw - 48.0, ph - 100.0));
+            pp.add_child(&scroll);
+
             let mut pl = Label::new_alloc();
-            pl.set_position(Vector2::new(24.0, 54.0));
-            pl.set_size(Vector2::new(pw - 48.0, ph - 100.0));
+            pl.set_custom_minimum_size(Vector2::new(pw - 76.0, 0.0));
             pl.add_theme_font_size_override("font_size", 14);
             pl.add_theme_color_override("font_color", C_MAIN);
             pl.set_autowrap_mode(godot::classes::text_server::AutowrapMode::WORD);
-            pp.add_child(&pl);
+            scroll.add_child(&pl);
 
             let mut hint_p = Label::new_alloc();
             hint_p.set_text("[ 1–8 ] купить перк   ·   [ P / Esc ] закрыть");
@@ -614,21 +622,33 @@ impl Game3D {
         }
 
         // позиция: бо́б при ходьбе + провал при смене
-        let moving = self.player.as_ref()
+        let (moving, sprinting) = self.player.as_ref()
             .and_then(|p| p.clone().try_cast::<Player>().ok())
-            .map(|p| p.bind().moving)
-            .unwrap_or(false);
+            .map(|p| {
+                let player = p.bind();
+                (player.moving, player.sprinting)
+            })
+            .unwrap_or((false, false));
         let k = 6.0;
         let h = def.frame_h * k;
         let w = FRAME_W * k;
-        let bob = if moving { (self.game_time * 9.0).sin() * 10.0 } else { (self.game_time * 2.0).sin() * 3.0 };
+        let bob_speed = if sprinting { 13.0 } else { 9.0 };
+        let bob_amount = if sprinting { 17.0 } else { 10.0 };
+        let bob = if moving {
+            (self.game_time * bob_speed).sin() * bob_amount
+        } else {
+            (self.game_time * 2.0).sin() * 3.0
+        };
         let dip = match self.weapon_anim {
             WeaponAnim::Switch(t) => (t / 0.22) * 240.0,
             _ => 0.0,
         };
         if let Some(ref mut wr) = self.weapon_rect {
             wr.set_position(Vector2::new(
-                HUD_W * 0.5 - w * 0.5 + if moving { (self.game_time * 4.5).sin() * 14.0 } else { 0.0 },
+                HUD_W * 0.5 - w * 0.5 + if moving {
+                    (self.game_time * bob_speed * 0.5).sin()
+                        * if sprinting { 22.0 } else { 14.0 }
+                } else { 0.0 },
                 HUD_H - h + 10.0 + bob + dip,
             ));
         }

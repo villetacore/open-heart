@@ -25,9 +25,17 @@ impl Game3D {
 
         self.shoot_cd = def.cooldown * self.loadout.cd_mult;
         self.arsenal.consume(cur);
-        self.weapon_anim = WeaponAnim::Fire(0);
+        let fire_frame = if def.auto {
+            match self.weapon_anim {
+                WeaponAnim::Fire(frame) => (frame + 1) % def.fire_frames.len(),
+                WeaponAnim::Idle | WeaponAnim::Switch(_) => 0,
+            }
+        } else {
+            0
+        };
+        self.weapon_anim = WeaponAnim::Fire(fire_frame);
         self.anim_timer = 0.0;
-        self.set_weapon_frame(def.fire_frames[0]);
+        self.set_weapon_frame(def.fire_frames[fire_frame]);
         self.flash_muzzle();
 
         // звук выстрела/удара
@@ -271,7 +279,8 @@ impl Game3D {
         let mut i = 0;
         while i < self.enemies.len() {
             let alive = self.enemies[i].bind().alive;
-            if !alive {
+            let death_finished = self.enemies[i].bind().death_timer <= 0.0;
+            if !alive && death_finished {
                 let pos = self.enemies[i].get_global_position();
                 let xp = self.enemies[i].bind().xp_value;
                 let is_boss = self.enemies[i].bind().is_boss;

@@ -77,6 +77,7 @@ impl Game3D {
                 if let Some(mut sprite) = make_billboard(&mut self.cache, path,
                                                          cfg.pos + Vector3::new(0.0, 1.28, 0.0), PIXEL_SZ) {
                     sprite.set_region_enabled(true);
+                    sprite.set_texture_filter(TextureFilter::NEAREST);
                     let (x, y, w, h) = NPC_IDLE_FRAMES[0];
                     sprite.set_region_rect(Rect2::new(Vector2::new(x, y), Vector2::new(w, h)));
                     sprite.set_modulate(cfg.color);
@@ -102,6 +103,7 @@ impl Game3D {
                 if let Some(mut sprite) = make_billboard(&mut self.cache, &path,
                         Vector3::new(nc.pos[0], 1.28, nc.pos[1]), PIXEL_SZ) {
                     sprite.set_region_enabled(true);
+                    sprite.set_texture_filter(TextureFilter::NEAREST);
                     let (x, y, w, h) = NPC_IDLE_FRAMES[0];
                     sprite.set_region_rect(Rect2::new(Vector2::new(x, y), Vector2::new(w, h)));
                     if let Some(c) = nc.color {
@@ -393,7 +395,14 @@ impl Game3D {
     pub(super) fn make_pickup_node(&mut self, tex_path: &str, pos: Vector3, px: f32) -> Gd<Node3D> {
         let mut node = Node3D::new_alloc();
         node.set_position(pos + Vector3::new(0.0, 0.55, 0.0));
-        if let Some(sp) = make_billboard(&mut self.cache, tex_path, Vector3::ZERO, px) {
+        if let Some(mut sp) = make_billboard(&mut self.cache, tex_path, Vector3::ZERO, px) {
+            if tex_path.contains("/sprites/items/")
+                || tex_path.contains("/sprites/pickups/")
+            {
+                sp.set_region_enabled(true);
+                sp.set_texture_filter(TextureFilter::NEAREST);
+                sp.set_region_rect(Rect2::new(Vector2::ZERO, Vector2::new(64.0, 64.0)));
+            }
             node.add_child(&sp);
         }
         self.base_mut().add_child(&node);
@@ -450,6 +459,7 @@ impl Game3D {
         node.set_position(pos + Vector3::new(0.0, 0.65, 0.0));
         if let Some(mut sp) = make_billboard(&mut self.cache, &def.sheet, Vector3::ZERO, 0.012) {
             sp.set_region_enabled(true);
+            sp.set_texture_filter(TextureFilter::NEAREST);
             sp.set_region_rect(Rect2::new(Vector2::ZERO, Vector2::new(FRAME_W, def.frame_h)));
             node.add_child(&sp);
         }

@@ -153,6 +153,25 @@ impl Game3D {
                 lines.push(String::new());
                 lines.push(format!("[ E ] — {}", t("inv_use", &lang)));
             }
+            lines.push(String::new());
+            lines.push("━━━━━━━━━━  КВЕСТЫ  ━━━━━━━━━━".to_string());
+            let mut has_quests = false;
+            for quest in state.quests.quests.iter()
+                .filter(|quest| quest.state == crate::quest::QuestState::Active)
+            {
+                has_quests = true;
+                lines.push(format!("◆ {}", quest.title));
+                lines.push(format!("    {}", quest.description));
+            }
+            for quest in state.quests.quests.iter()
+                .filter(|quest| quest.state == crate::quest::QuestState::Completed)
+            {
+                has_quests = true;
+                lines.push(format!("✓ {}  [завершено]", quest.title));
+            }
+            if !has_quests {
+                lines.push("Активных заданий нет.".to_string());
+            }
             lines.join("\n")
         } else { String::new() };
         if let Some(ref mut lbl) = self.inv_list { lbl.set_text(&text); }

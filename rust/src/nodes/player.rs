@@ -18,6 +18,9 @@ pub const MAX_HP: f32 = 100.0;
 pub struct Player {
     base:    Base<CharacterBody3D>,
     cam:     Option<Gd<Camera3D>>,
+    cam_base_pos: Vector3,
+    base_fov: f32,
+    move_time: f32,
     yaw:     f32,
     pitch:   f32,
     pub hp:      f32,
@@ -30,18 +33,23 @@ pub struct Player {
     pub dead:    bool,
     pub frozen:  bool,   // ввод отключён (меню выбора класса и т.п.)
     pub moving:  bool,   // для покачивания оружия
+    pub sprinting: bool,
 }
 
 #[godot_api]
 impl ICharacterBody3D for Player {
     fn init(base: Base<CharacterBody3D>) -> Self {
-        Self { base, cam: None, yaw: 0.0, pitch: 0.0,
+        Self { base, cam: None, cam_base_pos: Vector3::ZERO, base_fov: 75.0,
+               move_time: 0.0, yaw: 0.0, pitch: 0.0,
                hp: MAX_HP, max_hp: MAX_HP, speed: 5.0, speed_mult: 1.0,
-               stunned: false, dead: false, frozen: false, moving: false }
+               stunned: false, dead: false, frozen: false, moving: false,
+               sprinting: false }
     }
 
     fn ready(&mut self) {
         let cam = self.base().get_node_as::<Camera3D>("Camera3D");
+        self.cam_base_pos = cam.get_position();
+        self.base_fov = cam.get_fov();
         self.cam = Some(cam);
         self.base_mut().add_to_group("player");
         Input::singleton().set_mouse_mode(MouseMode::CAPTURED);
@@ -50,6 +58,7 @@ impl ICharacterBody3D for Player {
     fn physics_process(&mut self, delta: f64) {
         if self.dead || self.frozen {
             self.moving = false;
+            self.sprinting = false;
             return;
         }
         let input = Input::singleton();
@@ -75,7 +84,8 @@ impl ICharacterBody3D for Player {
             }
         }
 
-        let sprint = if input.is_action_pressed("sprint") { SPRINT_MULT } else { 1.0 };
+        self.sprinting = input.is_action_pressed("sprint") && dir.length_squared() > 0.001;
+        let sprint = if self.sprinting { SPRINT_MULT } else { 1.0 };
 
         if dir.length_squared() > 0.001 { dir = dir.normalized(); }
         self.moving = dir.length_squared() > 0.001;
@@ -83,6 +93,25 @@ impl ICharacterBody3D for Player {
         vel.z = dir.z * self.speed * sprint * self.speed_mult;
         self.base_mut().set_velocity(vel);
         self.base_mut().move_and_slide();
+
+        self.move_time += dt * if self.sprinting { 13.0 } else { 9.0 };
+        if let Some(ref mut cam) = self.cam {
+            let target_fov = self.base_fov + if self.sprinting { 7.0 } else { 0.0 };
+            let current_fov = cam.get_fov();
+            cam.set_fov(current_fov.lerp(target_fov, (dt * 8.0).min(1.0)));
+            let amount = if self.moving {
+                if self.sprinting { 0.055 } else { 0.032 }
+            } else {
+                0.0
+            };
+            let target = self.cam_base_pos + Vector3::new(
+                self.move_time.sin() * amount * 0.55,
+                (self.move_time * 2.0).sin().abs() * amount,
+                0.0,
+            );
+            let current_position = cam.get_position();
+            cam.set_position(current_position.lerp(target, (dt * 12.0).min(1.0)));
+        }
     }
 
     fn unhandled_input(&mut self, event: Gd<InputEvent>) {

@@ -282,7 +282,9 @@ pub fn build_map(def: &MapDef, cache: &mut TexCache) -> BuiltMap {
                 body.add_child(&col);
                 root.add_child(&body);
             }
-            other => godot::global::godot_warn!("map block: unknown shape '{other}'"),
+            other => {
+                godot::global::godot_warn!("map block: unknown shape '{other}'")
+            }
         }
     }
 

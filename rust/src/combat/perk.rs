@@ -73,7 +73,9 @@ impl PerkMods {
             "cd"        => self.cd_mult       *= e.mult.powi(r),
             "lifesteal" => self.lifesteal_add += e.add * rank as f32,
             "ammo"      => self.ammo_add      += e.add * rank as f32,
-            other       => godot::global::godot_warn!("perk effect: unknown stat '{}'", other),
+            other => {
+                godot::global::godot_warn!("perk effect: unknown stat '{}'", other)
+            }
         }
     }
 }

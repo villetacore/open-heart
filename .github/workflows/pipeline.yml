@@ -188,16 +188,20 @@ jobs:
         shell: pwsh
         working-directory: godot
         run: |
-          & C:\Godot\godot.exe --headless --import
-          if ($LASTEXITCODE -ne 0) { throw "Godot import failed with exit code $LASTEXITCODE" }
+          $process = Start-Process C:\Godot\godot.exe `
+            -ArgumentList '--headless --import' `
+            -Wait -PassThru -NoNewWindow
+          if ($process.ExitCode -ne 0) { throw "Godot import failed with exit code $($process.ExitCode)" }
 
       - name: Godot export (Windows)
         shell: pwsh
         working-directory: godot
         run: |
           New-Item -ItemType Directory -Force dist\windows | Out-Null
-          & C:\Godot\godot.exe --headless --export-release "Windows Desktop" "dist\windows\OpenHeart.exe"
-          if ($LASTEXITCODE -ne 0) { throw "Godot export failed with exit code $LASTEXITCODE" }
+          $process = Start-Process C:\Godot\godot.exe `
+            -ArgumentList '--headless --export-release "Windows Desktop" "dist\windows\OpenHeart.exe"' `
+            -Wait -PassThru -NoNewWindow
+          if ($process.ExitCode -ne 0) { throw "Godot export failed with exit code $($process.ExitCode)" }
           if (-not (Test-Path dist\windows\OpenHeart.exe)) { throw "Export produced no .exe" }
 
       - uses: actions/upload-artifact@v4
@@ -443,7 +447,8 @@ jobs:
           mkdir -p ../godot/bin/web
           cargo +nightly build -Z build-std=std,panic_abort \
             --release --target wasm32-unknown-emscripten
-          cp target/wasm32-unknown-emscripten/release/libopenheart.so \
+          test -f target/wasm32-unknown-emscripten/release/openheart.wasm
+          cp target/wasm32-unknown-emscripten/release/openheart.wasm \
              ../godot/bin/web/libopenheart.wasm
 
       - name: Install Godot ${{ env.GODOT_VER }}

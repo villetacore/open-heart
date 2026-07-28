@@ -188,18 +188,16 @@ jobs:
         shell: pwsh
         working-directory: godot
         run: |
-          $p = Start-Process C:\Godot\godot.exe -ArgumentList "--headless","--import" -Wait -PassThru -NoNewWindow
-          Write-Host "Import exit: $($p.ExitCode)"
+          & C:\Godot\godot.exe --headless --import
+          if ($LASTEXITCODE -ne 0) { throw "Godot import failed with exit code $LASTEXITCODE" }
 
       - name: Godot export (Windows)
         shell: pwsh
         working-directory: godot
         run: |
           New-Item -ItemType Directory -Force dist\windows | Out-Null
-          $p = Start-Process C:\Godot\godot.exe `
-            -ArgumentList "--headless","--export-release","Windows Desktop","dist\windows\OpenHeart.exe" `
-            -Wait -PassThru -NoNewWindow
-          Write-Host "Export exit: $($p.ExitCode)"
+          & C:\Godot\godot.exe --headless --export-release "Windows Desktop" "dist\windows\OpenHeart.exe"
+          if ($LASTEXITCODE -ne 0) { throw "Godot export failed with exit code $LASTEXITCODE" }
           if (-not (Test-Path dist\windows\OpenHeart.exe)) { throw "Export produced no .exe" }
 
       - uses: actions/upload-artifact@v4
@@ -419,19 +417,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Emscripten должен совпадать с версией, которой собран Godot 4.7.
-      # 3.1.64 — рекомендованная godot-rust для Godot 4.3+/4.x.
+      # Keep this pair aligned with godot-rust's upstream Web CI.
       - name: Install Emscripten
-        uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: 3.1.64
-          actions-cache-folder: emsdk-cache
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git \
+            --depth 1 --branch 4.0.13 --single-branch "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install 3.1.74
+          "$RUNNER_TEMP/emsdk/emsdk" activate 3.1.74
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          echo "$PATH" >> "$GITHUB_PATH"
 
-      # godot 0.5.4 requires Rust 1.94. Keep LLVM compatible with Emscripten
-      # 3.1.64; a floating nightly started passing unsupported Binaryen flags.
       - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2026-03-06
           targets: wasm32-unknown-emscripten
           components: rust-src
 
@@ -444,7 +441,7 @@ jobs:
         run: |
           emcc --version
           mkdir -p ../godot/bin/web
-          cargo +nightly-2026-03-06 build -Z build-std=std,panic_abort \
+          cargo +nightly build -Z build-std=std,panic_abort \
             --release --target wasm32-unknown-emscripten
           cp target/wasm32-unknown-emscripten/release/libopenheart.so \
              ../godot/bin/web/libopenheart.wasm

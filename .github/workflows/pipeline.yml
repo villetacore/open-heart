@@ -144,7 +144,6 @@ jobs:
     needs: tag
     if: needs.tag.outputs.skip != 'true'
     runs-on: windows-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -169,7 +168,9 @@ jobs:
           $base = "https://github.com/godotengine/godot/releases/download/$env:GODOT_VER"
           curl.exe -fsSL --retry 3 -o godot.zip "$base/Godot_v$($env:GODOT_VER)_win64.exe.zip"
           Expand-Archive godot.zip -DestinationPath C:\Godot -Force
-          $exe = Get-ChildItem C:\Godot -Recurse -Filter "*.exe" | Select-Object -First 1
+          $exe = Get-ChildItem C:\Godot -Recurse -Filter "*.exe" |
+            Where-Object { $_.Name -notmatch "_console\.exe$" } |
+            Select-Object -First 1
           if ($null -eq $exe) { throw "Godot exe not found in archive" }
           Copy-Item $exe.FullName C:\Godot\godot.exe -Force
           curl.exe -fsSL --retry 3 -o tpl.zip "$base/Godot_v$($env:GODOT_VER)_export_templates.tpz"
@@ -214,7 +215,6 @@ jobs:
     needs: tag
     if: needs.tag.outputs.skip != 'true'
     runs-on: ubuntu-24.04
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -269,7 +269,6 @@ jobs:
     needs: tag
     if: needs.tag.outputs.skip != 'true'
     runs-on: macos-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -333,7 +332,6 @@ jobs:
     needs: tag
     if: needs.tag.outputs.skip != 'true'
     runs-on: ubuntu-24.04
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -418,7 +416,6 @@ jobs:
     needs: tag
     if: needs.tag.outputs.skip != 'true'
     runs-on: ubuntu-24.04
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -430,8 +427,11 @@ jobs:
           version: 3.1.64
           actions-cache-folder: emsdk-cache
 
+      # godot 0.5.4 requires Rust 1.94. Keep LLVM compatible with Emscripten
+      # 3.1.64; a floating nightly started passing unsupported Binaryen flags.
       - uses: dtolnay/rust-toolchain@nightly
         with:
+          toolchain: nightly-2026-03-06
           targets: wasm32-unknown-emscripten
           components: rust-src
 
@@ -444,7 +444,7 @@ jobs:
         run: |
           emcc --version
           mkdir -p ../godot/bin/web
-          cargo +nightly build -Z build-std=std,panic_abort \
+          cargo +nightly-2026-03-06 build -Z build-std=std,panic_abort \
             --release --target wasm32-unknown-emscripten
           cp target/wasm32-unknown-emscripten/release/libopenheart.so \
              ../godot/bin/web/libopenheart.wasm
@@ -488,14 +488,13 @@ jobs:
   publish:
     name: "Publish Release"
     needs: [tag, build-windows, build-linux, build-macos, build-android, build-web]
-    if: ${{ always() && needs.tag.result == 'success' && needs.tag.outputs.skip != 'true' }}
+    if: ${{ needs.tag.outputs.skip != 'true' }}
     runs-on: ubuntu-24.04
     steps:
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-        continue-on-error: true
 
       - name: Package artifacts
         run: |

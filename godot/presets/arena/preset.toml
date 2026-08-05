@@ -1,0 +1,8 @@
+schema_version = 2
+id = "arena"
+name_ru = "Кровавая арена"
+desc_ru = "Внутренний тестовый режим, скрытый из обычного меню."
+author = "OpenHeart"
+version = 1
+enabled = false
+tags = ["internal", "arena"]

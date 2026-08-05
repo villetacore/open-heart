@@ -233,6 +233,45 @@
       "color_r": 1.0,
       "color_g": 0.84,
       "color_b": 0.2
+    },
+    {
+      "id": "drone_core",
+      "name_ru": "Ядро дрона",
+      "name_en": "Drone Core",
+      "desc_ru": "Пульсирующий источник энергии старого города",
+      "desc_en": "A pulsing power source from the old city",
+      "value": 65.0,
+      "category": "currency",
+      "heal": null,
+      "color_r": 0.15,
+      "color_g": 0.85,
+      "color_b": 1.0
+    },
+    {
+      "id": "void_relic",
+      "name_ru": "Реликвия пустоты",
+      "name_en": "Void Relic",
+      "desc_ru": "Запечатанный осколок запретного алтаря",
+      "desc_en": "A sealed shard from a forbidden altar",
+      "value": 180.0,
+      "category": "key",
+      "heal": null,
+      "color_r": 0.65,
+      "color_g": 0.2,
+      "color_b": 1.0
+    },
+    {
+      "id": "combat_injector",
+      "name_ru": "Боевой инъектор",
+      "name_en": "Combat Injector",
+      "desc_ru": "Экстренно восстанавливает 65 HP",
+      "desc_en": "Emergency restoration of 65 HP",
+      "value": 0.0,
+      "category": "consumable",
+      "heal": 65.0,
+      "color_r": 1.0,
+      "color_g": 0.2,
+      "color_b": 0.55
     }
   ]
 }

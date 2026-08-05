@@ -2,36 +2,79 @@
   "themes": [
     {
       "name_ru": "Катакомбы Сердец",
+      "name_en": "Catacombs of Hearts",
       "wall": "dtile_00", "accent": "dtile_06", "floor": "dtile_02",
       "ceil": "dtile_65", "lava": "dtile_74",
       "light": [1.0, 0.45, 0.72]
     },
     {
       "name_ru": "Неоновый Подвал",
+      "name_en": "Neon Undercroft",
       "wall": "dtile_05", "accent": "dtile_33", "floor": "dtile_19",
       "ceil": "dtile_72", "lava": "dtile_21",
       "light": [0.62, 0.38, 0.95]
     },
     {
       "name_ru": "Алтарь Боли",
+      "name_en": "Altar of Pain",
       "wall": "dtile_30", "accent": "dtile_63", "floor": "dtile_58",
       "ceil": "dtile_68", "lava": "liquid_red",
       "light": [0.95, 0.18, 0.22]
+    },
+    {
+      "name_ru": "Затопленный архив",
+      "name_en": "Flooded Archive",
+      "wall": "dtile_12", "accent": "dtile_44", "floor": "dtile_09",
+      "ceil": "dtile_71", "lava": "dtile_21",
+      "light": [0.18, 0.7, 0.95]
+    },
+    {
+      "name_ru": "Собор Пустоты",
+      "name_en": "Cathedral of the Void",
+      "wall": "dtile_48", "accent": "dtile_63", "floor": "dtile_58",
+      "ceil": "dtile_68", "lava": "liquid_red",
+      "light": [0.58, 0.2, 0.92]
     }
   ],
   "pools": [
     { "min_depth": 1, "enemies": ["grunt", "fast", "cultist"] },
-    { "min_depth": 2, "enemies": ["grunt", "fast", "cultist", "heavy", "sniper"] }
+    { "min_depth": 2, "enemies": ["grunt", "fast", "cultist", "heavy", "sniper", "spark_drone", "blood_hound"] },
+    { "min_depth": 3, "enemies": ["heavy", "sniper", "pyro_cultist", "shade", "golem", "spark_drone", "blood_hound"] },
+    { "min_depth": 4, "enemies": ["royal_guard", "reaper", "phantom", "void_priest", "blood_hound", "spark_drone"] }
+  ],
+  "room_archetypes": [
+    { "id": "service_cell", "shape": "rect", "role": "safe", "decor": "sanctuary", "weight": 10, "min_size": 4, "max_size": 6, "wall_height": 2.4, "hazard_chance": 0.0, "hazard_dps": 0.0, "hazard_radius": 0.0, "hazard_kind": "blood", "event_chance": 0.35, "focal_pattern":"altar", "focal_color":[0.3,1.0,0.72], "focal_scale":0.75, "focal_height":1.2 },
+    { "id": "ritual_rotunda", "shape": "round", "role": "ritual", "decor": "crystals", "weight": 13, "min_size": 7, "max_size": 10, "wall_height": 4.8, "hazard_chance": 0.8, "hazard_dps": 22.0, "hazard_radius": 3.4, "hazard_kind": "void", "event_chance": 0.3, "focal_pattern":"ring", "focal_color":[0.92,0.18,1.0], "focal_scale":1.35, "focal_height":2.4 },
+    { "id": "octagonal_vault", "shape": "octagon", "role": "treasure", "decor": "archive", "weight": 11, "min_size": 6, "max_size": 9, "wall_height": 3.4, "hazard_chance": 0.15, "hazard_dps": 12.0, "hazard_radius": 2.0, "hazard_kind": "electric", "event_chance": 0.4, "focal_pattern":"well", "focal_color":[1.0,0.76,0.18], "focal_scale":1.05, "focal_height":1.0 },
+    { "id": "cross_shrine", "shape": "cross", "role": "ambush", "decor": "ossuary", "weight": 13, "min_size": 7, "max_size": 10, "wall_height": 5.5, "hazard_chance": 0.55, "hazard_dps": 18.0, "hazard_radius": 2.8, "hazard_kind": "blood", "event_chance": 0.35, "focal_pattern":"cross", "focal_color":[1.0,0.12,0.22], "focal_scale":1.2, "focal_height":1.5 },
+    { "id": "combat_gallery", "shape": "rect", "role": "gallery", "decor": "pipes", "weight": 16, "min_size": 7, "max_size": 11, "wall_height": 4.8, "hazard_chance": 0.25, "hazard_dps": 15.0, "hazard_radius": 2.4, "hazard_kind": "electric", "event_chance": 0.2, "focal_pattern":"aisle", "focal_color":[0.3,0.7,1.0], "focal_scale":1.15, "focal_height":0.8 },
+    { "id": "tight_crypt", "shape": "rect", "role": "arena", "decor": "ossuary", "weight": 14, "min_size": 4, "max_size": 5, "wall_height": 3.4, "hazard_chance": 0.35, "hazard_dps": 17.0, "hazard_radius": 2.2, "hazard_kind": "embers", "event_chance": 0.15, "focal_pattern":"spire", "focal_color":[1.0,0.18,0.28], "focal_scale":0.7, "focal_height":1.4 },
+    { "id": "flooded_conduit", "shape": "cross", "role": "gallery", "decor": "pipes", "weight": 9, "min_size": 7, "max_size": 10, "wall_height": 3.4, "hazard_chance": 0.7, "hazard_dps": 16.0, "hazard_radius": 3.0, "hazard_kind": "electric", "event_chance": 0.22, "focal_pattern":"aisle", "focal_color":[0.12,0.82,1.0], "focal_scale":1.25, "focal_height":0.7 },
+    { "id": "collapsed_nave", "shape": "octagon", "role": "arena", "decor": "sanctuary", "weight": 8, "min_size": 7, "max_size": 11, "wall_height": 5.5, "hazard_chance": 0.45, "hazard_dps": 20.0, "hazard_radius": 2.6, "hazard_kind": "embers", "event_chance": 0.2, "focal_pattern":"gate", "focal_color":[1.0,0.4,0.12], "focal_scale":1.35, "focal_height":2.8 },
+    { "id": "ossuary_ring", "shape": "round", "role": "ambush", "decor": "ossuary", "weight": 8, "min_size": 6, "max_size": 9, "wall_height": 3.4, "hazard_chance": 0.5, "hazard_dps": 19.0, "hazard_radius": 2.7, "hazard_kind": "blood", "event_chance": 0.32, "focal_pattern":"ring", "focal_color":[0.94,0.12,0.26], "focal_scale":1.05, "focal_height":1.2 },
+    { "id": "silent_archive", "shape": "rect", "role": "treasure", "decor": "archive", "weight": 7, "min_size": 7, "max_size": 10, "wall_height": 4.8, "hazard_chance": 0.3, "hazard_dps": 14.0, "hazard_radius": 2.4, "hazard_kind": "void", "event_chance": 0.45, "focal_pattern":"archive", "focal_color":[0.62,0.36,1.0], "focal_scale":1.2, "focal_height":2.1 },
+    { "id": "generator_pit", "shape": "octagon", "role": "arena", "decor": "machinery", "weight": 9, "min_size": 6, "max_size": 9, "wall_height": 4.8, "hazard_chance": 0.65, "hazard_dps": 21.0, "hazard_radius": 3.1, "hazard_kind": "electric", "event_chance": 0.28, "focal_pattern":"well", "focal_color":[0.12,0.9,1.0], "focal_scale":1.1, "focal_height":1.8 },
+    { "id": "pilgrim_rest", "shape": "cross", "role": "safe", "decor": "sanctuary", "weight": 7, "min_size": 6, "max_size": 8, "wall_height": 3.4, "hazard_chance": 0.0, "hazard_dps": 0.0, "hazard_radius": 0.0, "hazard_kind": "blood", "event_chance": 0.5, "focal_pattern":"altar", "focal_color":[0.42,1.0,0.68], "focal_scale":1.0, "focal_height":1.4 },
+    { "id": "vertical_cistern", "shape": "cross", "role": "traversal", "decor": "pipes", "weight": 9, "min_size": 8, "max_size": 11, "wall_height": 5.5, "hazard_chance": 0.28, "hazard_dps": 15.0, "hazard_radius": 2.2, "hazard_kind": "electric", "event_chance": 0.3, "focal_pattern":"spire", "focal_color":[0.12,0.7,1.0], "focal_scale":1.3, "focal_height":3.2 },
+    { "id": "relay_lock", "shape": "octagon", "role": "puzzle", "decor": "machinery", "weight": 8, "min_size": 7, "max_size": 10, "wall_height": 4.8, "hazard_chance": 0.2, "hazard_dps": 14.0, "hazard_radius": 2.0, "hazard_kind": "electric", "event_chance": 0.45, "focal_pattern":"cross", "focal_color":[0.18,1.0,0.64], "focal_scale":1.15, "focal_height":1.5 },
+    { "id": "memory_tableau", "shape": "round", "role": "story", "decor": "archive", "weight": 7, "min_size": 7, "max_size": 10, "wall_height": 4.8, "hazard_chance": 0.0, "hazard_dps": 0.0, "hazard_radius": 0.0, "hazard_kind": "void", "event_chance": 0.6, "focal_pattern":"archive", "focal_color":[0.76,0.56,1.0], "focal_scale":1.3, "focal_height":2.4 },
+    { "id": "heart_antechamber", "shape": "rect", "role": "antechamber", "decor": "sanctuary", "weight": 8, "min_size": 7, "max_size": 10, "wall_height": 5.5, "hazard_chance": 0.18, "hazard_dps": 16.0, "hazard_radius": 2.0, "hazard_kind": "blood", "event_chance": 0.35, "focal_pattern":"gate", "focal_color":[1.0,0.24,0.5], "focal_scale":1.25, "focal_height":3.0 }
   ],
   "settings": {
-    "boss": "brute",
-    "boss_mult": 1.25,
-    "boss_guards": ["cultist", "cultist"],
-    "boss_items": ["ancient_ruby", "gold_stack", "heart_1up"],
-    "mult_per_depth": 0.18,
+    "boss": "heart_tyrant",
+    "boss_mult": 1.12,
+    "boss_guards": ["void_priest", "blood_hound", "blood_hound"],
+    "boss_items": ["void_relic", "ancient_ruby", "combat_injector", "heart_1up"],
+    "boss_roster": [
+      { "min_depth": 1, "boss": "crypt_warden", "mult": 1.0, "guards": ["grunt", "fast"], "items": ["medkit", "ancient_ruby"] },
+      { "min_depth": 2, "boss": "blood_oracle", "mult": 1.04, "guards": ["cultist", "pyro_cultist"], "items": ["void_relic", "combat_injector"] },
+      { "min_depth": 3, "boss": "archive_sentinel", "mult": 1.08, "guards": ["royal_guard", "spark_drone"], "items": ["ancient_ruby", "void_relic", "combat_injector"] },
+      { "min_depth": 4, "boss": "heart_tyrant", "mult": 1.12, "guards": ["void_priest", "blood_hound", "blood_hound"], "items": ["void_relic", "ancient_ruby", "combat_injector", "heart_1up"] }
+    ],
+    "mult_per_depth": 0.2,
     "weapon_cache": ["shotgun", "rifle", "nailgun", "plasma", "rocket"],
-    "elite_chance": 0.08,
-    "elite_per_depth": 0.03,
-    "elite_affixes_max": 2
+    "elite_chance": 0.12,
+    "elite_per_depth": 0.04,
+    "elite_affixes_max": 3
   }
 }

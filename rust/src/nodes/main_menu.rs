@@ -1,15 +1,14 @@
 //! Главное меню: New Game / Continue / Settings / Quit.
 //! Кнопки — Label-узлы с ручным обнаружением клика через unhandled_input.
 
-use godot::prelude::*;
-use godot::classes::{
-    Control, IControl, InputEvent, InputEventKey, InputEventMouseButton, Label,
-    Panel, StyleBoxFlat,
-};
-use godot::global::{HorizontalAlignment, Key, MouseButton};
 use crate::locale::t;
 use crate::save;
 use crate::settings::Settings;
+use godot::classes::{
+    Control, IControl, InputEvent, InputEventKey, InputEventMouseButton, Label, Panel, StyleBoxFlat,
+};
+use godot::global::{HorizontalAlignment, Key, MouseButton};
+use godot::prelude::*;
 
 const W: f32 = 1920.0;
 const H: f32 = 1080.0;
@@ -21,36 +20,56 @@ const BTN_X: f32 = (W - BTN_W) * 0.5;
 #[class(base = Control)]
 pub struct MainMenu {
     base: Base<Control>,
-    settings:      Settings,
+    settings: Settings,
     show_settings: bool,
 
     // Ректы кнопок для hit-теста
-    r_new:      Rect2,
-    r_cont:     Rect2,
-    r_preset:   Rect2,
+    r_new: Rect2,
+    r_cont: Rect2,
+    r_preset: Rect2,
     r_settings: Rect2,
-    r_quit:     Rect2,
-    r_back:     Rect2,
+    r_quit: Rect2,
+    r_back: Rect2,
 
     // Строки настроек: кликабельный рект + что он меняет, и параллельно label-ы
-    set_rows:   Vec<(Rect2, SetKind)>,
+    set_rows: Vec<(Rect2, SetKind)>,
     set_labels: Vec<Gd<Label>>,
 
     // Дочерние узлы которые нам нужно обновлять
+    lbl_subtitle: Option<Gd<Label>>,
+    lbl_new: Option<Gd<Label>>,
     lbl_continue: Option<Gd<Label>>,
-    lbl_preset:   Option<Gd<Label>>,
+    lbl_preset: Option<Gd<Label>>,
     lbl_preset_desc: Option<Gd<Label>>,
+    lbl_settings: Option<Gd<Label>>,
+    lbl_quit: Option<Gd<Label>>,
+    lbl_controls: Option<Gd<Label>>,
     panel_settings: Option<Gd<Panel>>,
+    settings_title: Option<Gd<Label>>,
+    settings_hint: Option<Gd<Label>>,
+    settings_back: Option<Gd<Label>>,
 
-    presets:     Vec<String>,
-    preset_idx:  usize,
+    presets: Vec<String>,
+    preset_idx: usize,
 }
 
 /// Что меняет строка настроек (клик — шаг/переключение).
 #[derive(Clone, Copy, PartialEq)]
 enum SetKind {
-    Lang, Difficulty, Fullscreen, Vsync, Fov, PostFx, PostIntensity,
-    Glow, Shadows, ScreenShake, MasterVol, MusicVol, SfxVol, Sens,
+    Lang,
+    Difficulty,
+    Fullscreen,
+    Vsync,
+    Fov,
+    PostFx,
+    PostIntensity,
+    Glow,
+    Shadows,
+    ScreenShake,
+    MasterVol,
+    MusicVol,
+    SfxVol,
+    Sens,
 }
 
 // ── Утилиты ───────────────────────────────────────────────────────────────────
@@ -60,22 +79,107 @@ fn btn_rect(y: f32) -> Rect2 {
 }
 
 /// Название строки настройки.
-fn set_name(kind: SetKind) -> &'static str {
+fn set_name(kind: SetKind, lang: &str) -> &'static str {
+    let en = lang == "en";
     match kind {
-        SetKind::Lang          => "Язык",
-        SetKind::Difficulty    => "Сложность",
-        SetKind::Fullscreen    => "Полный экран",
-        SetKind::Vsync         => "Верт. синхронизация",
-        SetKind::Fov           => "Поле зрения (FOV)",
-        SetKind::PostFx        => "Пост-эффекты",
-        SetKind::PostIntensity => "Интенсивность эффектов",
-        SetKind::Glow          => "Свечение (bloom)",
-        SetKind::Shadows       => "Тени + SSAO",
-        SetKind::ScreenShake   => "Тряска экрана",
-        SetKind::MasterVol     => "Общая громкость",
-        SetKind::MusicVol      => "Музыка",
-        SetKind::SfxVol        => "Звуки",
-        SetKind::Sens          => "Чувствительность мыши",
+        SetKind::Lang => {
+            if en {
+                "Language"
+            } else {
+                "Язык"
+            }
+        }
+        SetKind::Difficulty => {
+            if en {
+                "Difficulty"
+            } else {
+                "Сложность"
+            }
+        }
+        SetKind::Fullscreen => {
+            if en {
+                "Fullscreen"
+            } else {
+                "Полный экран"
+            }
+        }
+        SetKind::Vsync => {
+            if en {
+                "Vertical sync"
+            } else {
+                "Верт. синхронизация"
+            }
+        }
+        SetKind::Fov => {
+            if en {
+                "Field of view (FOV)"
+            } else {
+                "Поле зрения (FOV)"
+            }
+        }
+        SetKind::PostFx => {
+            if en {
+                "Post-processing"
+            } else {
+                "Пост-эффекты"
+            }
+        }
+        SetKind::PostIntensity => {
+            if en {
+                "Effect intensity"
+            } else {
+                "Интенсивность эффектов"
+            }
+        }
+        SetKind::Glow => {
+            if en {
+                "Glow (bloom)"
+            } else {
+                "Свечение (bloom)"
+            }
+        }
+        SetKind::Shadows => {
+            if en {
+                "Shadows + SSAO"
+            } else {
+                "Тени + SSAO"
+            }
+        }
+        SetKind::ScreenShake => {
+            if en {
+                "Screen shake"
+            } else {
+                "Тряска экрана"
+            }
+        }
+        SetKind::MasterVol => {
+            if en {
+                "Master volume"
+            } else {
+                "Общая громкость"
+            }
+        }
+        SetKind::MusicVol => {
+            if en {
+                "Music"
+            } else {
+                "Музыка"
+            }
+        }
+        SetKind::SfxVol => {
+            if en {
+                "Sound effects"
+            } else {
+                "Звуки"
+            }
+        }
+        SetKind::Sens => {
+            if en {
+                "Mouse sensitivity"
+            } else {
+                "Чувствительность мыши"
+            }
+        }
     }
 }
 
@@ -91,8 +195,12 @@ fn make_style(bg: Color, border: Color, w: i32) -> Gd<StyleBoxFlat> {
 
 fn add_label(
     parent: &mut Gd<Control>,
-    text: &str, pos: Vector2, size: Vector2,
-    font_size: i32, color: Color, align: HorizontalAlignment,
+    text: &str,
+    pos: Vector2,
+    size: Vector2,
+    font_size: i32,
+    color: Color,
+    align: HorizontalAlignment,
 ) -> Gd<Label> {
     let mut lbl = Label::new_alloc();
     lbl.set_text(text);
@@ -114,33 +222,42 @@ impl IControl for MainMenu {
             base,
             settings: Settings::default(),
             show_settings: false,
-            r_new:      btn_rect(0.0),
-            r_cont:     btn_rect(0.0),
-            r_preset:   btn_rect(0.0),
+            r_new: btn_rect(0.0),
+            r_cont: btn_rect(0.0),
+            r_preset: btn_rect(0.0),
             r_settings: btn_rect(0.0),
-            r_quit:     btn_rect(0.0),
-            r_back:     btn_rect(0.0),
-            set_rows:   Vec::new(),
+            r_quit: btn_rect(0.0),
+            r_back: btn_rect(0.0),
+            set_rows: Vec::new(),
             set_labels: Vec::new(),
-            lbl_continue:   None,
-            lbl_preset:     None,
+            lbl_subtitle: None,
+            lbl_new: None,
+            lbl_continue: None,
+            lbl_preset: None,
             lbl_preset_desc: None,
+            lbl_settings: None,
+            lbl_quit: None,
+            lbl_controls: None,
             panel_settings: None,
-            presets:    Vec::new(),
+            settings_title: None,
+            settings_hint: None,
+            settings_back: None,
+            presets: Vec::new(),
             preset_idx: 0,
         }
     }
 
     fn ready(&mut self) {
         self.settings = Settings::load();
-        self.settings.apply_global();   // окно/vsync/громкость из сохранённых настроек
+        self.settings.apply_global(); // окно/vsync/громкость из сохранённых настроек
         self.presets = crate::content::discover_presets();
-        self.preset_idx = self.presets.iter()
+        self.preset_idx = self
+            .presets
+            .iter()
             .position(|p| *p == self.settings.preset)
             .unwrap_or(0);
-        self.base_mut().set_anchors_preset(
-            godot::classes::control::LayoutPreset::FULL_RECT
-        );
+        self.base_mut()
+            .set_anchors_preset(godot::classes::control::LayoutPreset::FULL_RECT);
 
         let lang = self.settings.lang.clone();
         self.build_background();
@@ -152,26 +269,35 @@ impl IControl for MainMenu {
     fn input(&mut self, event: Gd<InputEvent>) {
         // F11 — переключить полный экран (в меню и на экране настроек)
         if let Ok(k) = event.clone().try_cast::<InputEventKey>() {
-            if k.is_pressed() && !k.is_echo()
-                && k.get_physical_keycode() == Key::F11 {
+            if k.is_pressed() && !k.is_echo() && k.get_physical_keycode() == Key::F11 {
                 self.settings.fullscreen = !self.settings.fullscreen;
                 self.settings.apply_video();
                 self.settings.save();
-                if self.show_settings { self.refresh_set_labels(); }
+                if self.show_settings {
+                    self.refresh_set_labels();
+                }
             }
             return;
         }
-        let Ok(mb) = event.try_cast::<InputEventMouseButton>() else { return };
-        if !mb.is_pressed() { return; }
+        let Ok(mb) = event.try_cast::<InputEventMouseButton>() else {
+            return;
+        };
+        if !mb.is_pressed() {
+            return;
+        }
         let btn = mb.get_button_index();
-        if btn != MouseButton::LEFT && btn != MouseButton::RIGHT { return; }
+        if btn != MouseButton::LEFT && btn != MouseButton::RIGHT {
+            return;
+        }
         let dir = if btn == MouseButton::RIGHT { -1.0 } else { 1.0 };
         let raw = mb.get_position();
         // Scale from actual viewport pixels to our 1920×1080 design space
         let sz = self.base().get_size();
         let pos = if sz.x > 0.0 && sz.y > 0.0 {
             Vector2::new(raw.x * W / sz.x, raw.y * H / sz.y)
-        } else { raw };
+        } else {
+            raw
+        };
 
         if self.show_settings {
             self.handle_settings_click(pos, dir);
@@ -190,8 +316,11 @@ impl MainMenu {
         panel.set_size(Vector2::new(W, H));
         panel.add_theme_stylebox_override(
             "panel",
-            &make_style(Color::from_rgba(0.03, 0.01, 0.05, 1.0),
-                        Color::from_rgba(0.1, 0.05, 0.15, 1.0), 0),
+            &make_style(
+                Color::from_rgba(0.03, 0.01, 0.05, 1.0),
+                Color::from_rgba(0.1, 0.05, 0.15, 1.0),
+                0,
+            ),
         );
         self.base_mut().add_child(&panel);
     }
@@ -199,26 +328,34 @@ impl MainMenu {
     fn build_main_panel(&mut self, lang: &str) {
         // Заголовок
         add_label(
-            &mut self.base_mut(), t("menu_title", lang),
-            Vector2::new(0.0, H * 0.18), Vector2::new(W, 80.0),
-            64, Color::from_rgba(1.0, 0.55, 0.8, 1.0),
+            &mut self.base_mut(),
+            t("menu_title", lang),
+            Vector2::new(0.0, H * 0.18),
+            Vector2::new(W, 80.0),
+            64,
+            Color::from_rgba(1.0, 0.55, 0.8, 1.0),
             HorizontalAlignment::CENTER,
         );
 
         // Подзаголовок
-        add_label(
-            &mut self.base_mut(), "DOOM-style Action-RPG — открытый мир и процедурные данжи",
-            Vector2::new(0.0, H * 0.18 + 88.0), Vector2::new(W, 30.0),
-            18, Color::from_rgba(0.55, 0.44, 0.66, 1.0),
+        let subtitle = add_label(
+            &mut self.base_mut(),
+            t("menu_subtitle", lang),
+            Vector2::new(0.0, H * 0.18 + 88.0),
+            Vector2::new(W, 30.0),
+            18,
+            Color::from_rgba(0.55, 0.44, 0.66, 1.0),
             HorizontalAlignment::CENTER,
         );
+        self.lbl_subtitle = Some(subtitle);
 
         let btn_start_y = H * 0.42;
         let gap = BTN_H + 20.0;
 
         // Кнопка «Новая игра»
         self.r_new = btn_rect(btn_start_y);
-        self.make_btn(t("menu_new", lang), self.r_new);
+        let new_label = self.make_btn(t("menu_new", lang), self.r_new);
+        self.lbl_new = Some(new_label);
 
         // Кнопка «Продолжить»
         self.r_cont = btn_rect(btn_start_y + gap);
@@ -233,8 +370,11 @@ impl MainMenu {
 
         // Кнопка «Пресет» (циклическое переключение установленных игр-пресетов)
         self.r_preset = btn_rect(btn_start_y + gap * 2.0);
-        let lblp = self.make_btn_colored("Пресет: …", self.r_preset,
-                                         Color::from_rgba(1.0, 0.72, 0.9, 1.0));
+        let lblp = self.make_btn_colored(
+            &format!("{}: …", t("menu_preset", lang)),
+            self.r_preset,
+            Color::from_rgba(1.0, 0.72, 0.9, 1.0),
+        );
         self.lbl_preset = Some(lblp);
         let mut desc = Label::new_alloc();
         desc.set_position(Vector2::new(0.0, btn_start_y + gap * 2.0 + BTN_H - 4.0));
@@ -247,32 +387,43 @@ impl MainMenu {
 
         // Кнопка «Настройки»
         self.r_settings = btn_rect(btn_start_y + gap * 3.0);
-        self.make_btn(t("menu_settings", lang), self.r_settings);
+        let settings_label = self.make_btn(t("menu_settings", lang), self.r_settings);
+        self.lbl_settings = Some(settings_label);
 
         // Кнопка «Выход»
         self.r_quit = btn_rect(btn_start_y + gap * 4.0);
-        self.make_btn(t("menu_quit", lang), self.r_quit);
+        let quit_label = self.make_btn(t("menu_quit", lang), self.r_quit);
+        self.lbl_quit = Some(quit_label);
 
         // Подсказка внизу
-        add_label(
-            &mut self.base_mut(), "WASD — движение  |  ЛКМ — выстрел  |  E — взаимодействие  |  I — инвентарь",
-            Vector2::new(0.0, H - 40.0), Vector2::new(W, 30.0),
-            13, Color::from_rgba(0.38, 0.32, 0.48, 1.0),
+        let controls = add_label(
+            &mut self.base_mut(),
+            t("menu_controls", lang),
+            Vector2::new(0.0, H - 40.0),
+            Vector2::new(W, 30.0),
+            13,
+            Color::from_rgba(0.38, 0.32, 0.48, 1.0),
             HorizontalAlignment::CENTER,
         );
+        self.lbl_controls = Some(controls);
     }
 
     fn build_settings_panel(&mut self, lang: &str) {
-        let pw = 760.0; let ph = 860.0;
-        let px = (W - pw) * 0.5; let py = (H - ph) * 0.5;
+        let pw = 760.0;
+        let ph = 860.0;
+        let px = (W - pw) * 0.5;
+        let py = (H - ph) * 0.5;
 
         let mut panel = Panel::new_alloc();
         panel.set_position(Vector2::new(px, py));
         panel.set_size(Vector2::new(pw, ph));
         panel.add_theme_stylebox_override(
             "panel",
-            &make_style(Color::from_rgba(0.05, 0.02, 0.09, 0.98),
-                        Color::from_rgba(0.65, 0.30, 0.52, 1.0), 2),
+            &make_style(
+                Color::from_rgba(0.05, 0.02, 0.09, 0.98),
+                Color::from_rgba(0.65, 0.30, 0.52, 1.0),
+                2,
+            ),
         );
         panel.set_visible(false);
 
@@ -284,12 +435,23 @@ impl MainMenu {
         title.add_theme_font_size_override("font_size", 26);
         title.add_theme_color_override("font_color", Color::from_rgba(1.0, 0.55, 0.8, 1.0));
         panel.add_child(&title);
+        self.settings_title = Some(title);
 
         const ROWS: [SetKind; 14] = [
-            SetKind::Lang, SetKind::Difficulty, SetKind::Fullscreen, SetKind::Vsync,
-            SetKind::Fov, SetKind::PostFx, SetKind::PostIntensity, SetKind::Glow,
-            SetKind::Shadows, SetKind::ScreenShake, SetKind::MasterVol, SetKind::MusicVol,
-            SetKind::SfxVol, SetKind::Sens,
+            SetKind::Lang,
+            SetKind::Difficulty,
+            SetKind::Fullscreen,
+            SetKind::Vsync,
+            SetKind::Fov,
+            SetKind::PostFx,
+            SetKind::PostIntensity,
+            SetKind::Glow,
+            SetKind::Shadows,
+            SetKind::ScreenShake,
+            SetKind::MasterVol,
+            SetKind::MusicVol,
+            SetKind::SfxVol,
+            SetKind::Sens,
         ];
         let row_h = 46.0;
         let y0 = 80.0;
@@ -298,26 +460,37 @@ impl MainMenu {
         for (i, kind) in ROWS.iter().enumerate() {
             let y = y0 + i as f32 * row_h;
             let mut lbl = Label::new_alloc();
-            lbl.set_text(&format!("{}:   {}", set_name(*kind), self.set_value_str(*kind)));
+            lbl.set_text(&format!(
+                "{}:   {}",
+                set_name(*kind, lang),
+                self.set_value_str(*kind)
+            ));
             lbl.set_position(Vector2::new(36.0, y));
             lbl.set_size(Vector2::new(pw - 72.0, row_h - 8.0));
             lbl.add_theme_font_size_override("font_size", 18);
             lbl.add_theme_color_override("font_color", Color::from_rgba(0.9, 0.85, 1.0, 1.0));
             panel.add_child(&lbl);
-            let rect = Rect2::new(Vector2::new(px + 24.0, py + y - 4.0),
-                                  Vector2::new(pw - 48.0, row_h - 2.0));
+            let rect = Rect2::new(
+                Vector2::new(px + 24.0, py + y - 4.0),
+                Vector2::new(pw - 48.0, row_h - 2.0),
+            );
             self.set_rows.push((rect, *kind));
             self.set_labels.push(lbl);
         }
 
         let mut hint = Label::new_alloc();
-        hint.set_text("клик — изменить / переключить   ·   ПКМ — уменьшить");
+        hint.set_text(if lang == "en" {
+            "click — change / toggle   ·   RMB — decrease"
+        } else {
+            "клик — изменить / переключить   ·   ПКМ — уменьшить"
+        });
         hint.set_position(Vector2::new(0.0, ph - 96.0));
         hint.set_size(Vector2::new(pw, 26.0));
         hint.set_horizontal_alignment(HorizontalAlignment::CENTER);
         hint.add_theme_font_size_override("font_size", 13);
         hint.add_theme_color_override("font_color", Color::from_rgba(0.55, 0.5, 0.65, 1.0));
         panel.add_child(&hint);
+        self.settings_hint = Some(hint);
 
         // Кнопка «Назад»
         self.r_back = Rect2::new(
@@ -332,6 +505,7 @@ impl MainMenu {
         btn_back.add_theme_font_size_override("font_size", 18);
         btn_back.add_theme_color_override("font_color", Color::from_rgba(0.8, 0.7, 0.95, 1.0));
         panel.add_child(&btn_back);
+        self.settings_back = Some(btn_back);
 
         self.base_mut().add_child(&panel);
         self.panel_settings = Some(panel);
@@ -340,46 +514,74 @@ impl MainMenu {
     /// Текущее значение настройки строкой.
     fn set_value_str(&self, kind: SetKind) -> String {
         let s = &self.settings;
-        let on = |b: bool| if b { "вкл" } else { "выкл" };
+        let on = |b: bool| match (b, s.lang == "en") {
+            (true, true) => "on",
+            (false, true) => "off",
+            (true, false) => "вкл",
+            (false, false) => "выкл",
+        };
         match kind {
-            SetKind::Lang          => if s.lang == "en" { "English".into() } else { "Русский".into() },
-            SetKind::Difficulty    => s.difficulty_ru().to_string(),
-            SetKind::Fullscreen    => on(s.fullscreen).into(),
-            SetKind::Vsync         => on(s.vsync).into(),
-            SetKind::Fov           => format!("{:.0}°", s.fov),
-            SetKind::PostFx        => on(s.post_fx).into(),
+            SetKind::Lang => {
+                if s.lang == "en" {
+                    "English".into()
+                } else {
+                    "Русский".into()
+                }
+            }
+            SetKind::Difficulty => s.difficulty_name(&s.lang).to_string(),
+            SetKind::Fullscreen => on(s.fullscreen).into(),
+            SetKind::Vsync => on(s.vsync).into(),
+            SetKind::Fov => format!("{:.0}°", s.fov),
+            SetKind::PostFx => on(s.post_fx).into(),
             SetKind::PostIntensity => format!("{:.0}%", s.post_intensity * 100.0),
-            SetKind::Glow          => on(s.glow).into(),
-            SetKind::Shadows       => on(s.shadows).into(),
-            SetKind::ScreenShake   => on(s.screen_shake).into(),
-            SetKind::MasterVol     => format!("{:.0}%", s.master_vol * 100.0),
-            SetKind::MusicVol      => format!("{:.0}%", s.music_vol * 100.0),
-            SetKind::SfxVol        => format!("{:.0}%", s.sfx_vol * 100.0),
-            SetKind::Sens          => format!("{:.4}", s.mouse_sens),
+            SetKind::Glow => on(s.glow).into(),
+            SetKind::Shadows => on(s.shadows).into(),
+            SetKind::ScreenShake => on(s.screen_shake).into(),
+            SetKind::MasterVol => format!("{:.0}%", s.master_vol * 100.0),
+            SetKind::MusicVol => format!("{:.0}%", s.music_vol * 100.0),
+            SetKind::SfxVol => format!("{:.0}%", s.sfx_vol * 100.0),
+            SetKind::Sens => format!("{:.4}", s.mouse_sens),
         }
     }
 
     /// Изменить настройку (dir: +1 клик ЛКМ, −1 ПКМ), сохранить и применить.
     fn step_setting(&mut self, kind: SetKind, dir: f32) {
         match kind {
-            SetKind::Lang => self.settings.lang =
-                if self.settings.lang == "ru" { "en".into() } else { "ru".into() },
-            SetKind::Difficulty    => self.settings.cycle_difficulty(),
-            SetKind::Fullscreen    => self.settings.fullscreen = !self.settings.fullscreen,
-            SetKind::Vsync         => self.settings.vsync = !self.settings.vsync,
-            SetKind::Fov           => self.settings.fov = (self.settings.fov + dir * 5.0).clamp(60.0, 110.0),
-            SetKind::PostFx        => self.settings.post_fx = !self.settings.post_fx,
-            SetKind::PostIntensity => self.settings.post_intensity = (self.settings.post_intensity + dir * 0.1).clamp(0.0, 2.0),
-            SetKind::Glow          => self.settings.glow = !self.settings.glow,
-            SetKind::Shadows       => self.settings.shadows = !self.settings.shadows,
-            SetKind::ScreenShake   => self.settings.screen_shake = !self.settings.screen_shake,
-            SetKind::MasterVol     => self.settings.master_vol = (self.settings.master_vol + dir * 0.1).clamp(0.0, 1.0),
-            SetKind::MusicVol      => self.settings.music_vol  = (self.settings.music_vol  + dir * 0.1).clamp(0.0, 1.0),
-            SetKind::SfxVol        => self.settings.sfx_vol    = (self.settings.sfx_vol    + dir * 0.1).clamp(0.0, 1.0),
-            SetKind::Sens          => self.settings.mouse_sens = (self.settings.mouse_sens + dir * 0.0005).clamp(0.0005, 0.01),
+            SetKind::Lang => {
+                self.settings.lang = if self.settings.lang == "ru" {
+                    "en".into()
+                } else {
+                    "ru".into()
+                }
+            }
+            SetKind::Difficulty => self.settings.cycle_difficulty(),
+            SetKind::Fullscreen => self.settings.fullscreen = !self.settings.fullscreen,
+            SetKind::Vsync => self.settings.vsync = !self.settings.vsync,
+            SetKind::Fov => self.settings.fov = (self.settings.fov + dir * 5.0).clamp(60.0, 110.0),
+            SetKind::PostFx => self.settings.post_fx = !self.settings.post_fx,
+            SetKind::PostIntensity => {
+                self.settings.post_intensity =
+                    (self.settings.post_intensity + dir * 0.1).clamp(0.0, 2.0)
+            }
+            SetKind::Glow => self.settings.glow = !self.settings.glow,
+            SetKind::Shadows => self.settings.shadows = !self.settings.shadows,
+            SetKind::ScreenShake => self.settings.screen_shake = !self.settings.screen_shake,
+            SetKind::MasterVol => {
+                self.settings.master_vol = (self.settings.master_vol + dir * 0.1).clamp(0.0, 1.0)
+            }
+            SetKind::MusicVol => {
+                self.settings.music_vol = (self.settings.music_vol + dir * 0.1).clamp(0.0, 1.0)
+            }
+            SetKind::SfxVol => {
+                self.settings.sfx_vol = (self.settings.sfx_vol + dir * 0.1).clamp(0.0, 1.0)
+            }
+            SetKind::Sens => {
+                self.settings.mouse_sens =
+                    (self.settings.mouse_sens + dir * 0.0005).clamp(0.0005, 0.01)
+            }
         }
         self.settings.save();
-        self.settings.apply_global();   // окно/vsync/громкость сразу
+        self.settings.apply_global(); // окно/vsync/громкость сразу
         self.refresh_set_labels();
     }
 
@@ -387,8 +589,50 @@ impl MainMenu {
     fn refresh_set_labels(&mut self) {
         for i in 0..self.set_labels.len() {
             let kind = self.set_rows[i].1;
-            let text = format!("{}:   {}", set_name(kind), self.set_value_str(kind));
+            let text = format!(
+                "{}:   {}",
+                set_name(kind, &self.settings.lang),
+                self.set_value_str(kind)
+            );
             self.set_labels[i].set_text(&text);
+        }
+        let lang = self.settings.lang.as_str();
+        if let Some(ref mut label) = self.settings_title {
+            label.set_text(t("set_title", lang));
+        }
+        if let Some(ref mut label) = self.settings_hint {
+            label.set_text(if lang == "en" {
+                "click — change / toggle   ·   RMB — decrease"
+            } else {
+                "клик — изменить / переключить   ·   ПКМ — уменьшить"
+            });
+        }
+        if let Some(ref mut label) = self.settings_back {
+            label.set_text(t("set_back", lang));
+        }
+        self.refresh_main_labels();
+        self.refresh_preset_label();
+    }
+
+    fn refresh_main_labels(&mut self) {
+        let lang = self.settings.lang.as_str();
+        if let Some(label) = self.lbl_subtitle.as_mut() {
+            label.set_text(t("menu_subtitle", lang));
+        }
+        if let Some(label) = self.lbl_new.as_mut() {
+            label.set_text(t("menu_new", lang));
+        }
+        if let Some(label) = self.lbl_continue.as_mut() {
+            label.set_text(t("menu_continue", lang));
+        }
+        if let Some(label) = self.lbl_settings.as_mut() {
+            label.set_text(t("menu_settings", lang));
+        }
+        if let Some(label) = self.lbl_quit.as_mut() {
+            label.set_text(t("menu_quit", lang));
+        }
+        if let Some(label) = self.lbl_controls.as_mut() {
+            label.set_text(t("menu_controls", lang));
         }
     }
 
@@ -412,22 +656,42 @@ impl MainMenu {
             }
         } else if self.r_settings.contains_point(pos) {
             self.show_settings = true;
-            if let Some(ref mut p) = self.panel_settings { p.set_visible(true); }
+            if let Some(ref mut p) = self.panel_settings {
+                p.set_visible(true);
+            }
         } else if self.r_quit.contains_point(pos) {
             self.base().get_tree().quit();
         }
     }
 
     fn refresh_preset_label(&mut self) {
-        let id = self.presets.get(self.preset_idx).cloned().unwrap_or_else(|| "core".into());
+        let id = self
+            .presets
+            .get(self.preset_idx)
+            .cloned()
+            .unwrap_or_else(|| "core".into());
         let info = crate::content::preset_info(&id);
         let multi = self.presets.len() > 1;
         if let Some(ref mut l) = self.lbl_preset {
             let arrow = if multi { "  ▸" } else { "" };
-            l.set_text(&format!("Пресет: {}{}", info.name_ru, arrow));
+            let name = if self.settings.lang == "en" && !info.name_en.is_empty() {
+                &info.name_en
+            } else {
+                &info.name_ru
+            };
+            l.set_text(&format!(
+                "{}: {}{}",
+                t("menu_preset", &self.settings.lang),
+                name,
+                arrow
+            ));
         }
         if let Some(ref mut d) = self.lbl_preset_desc {
-            d.set_text(&info.desc_ru);
+            d.set_text(if self.settings.lang == "en" && !info.desc_en.is_empty() {
+                &info.desc_en
+            } else {
+                &info.desc_ru
+            });
         }
     }
 
@@ -435,10 +699,14 @@ impl MainMenu {
         if self.r_back.contains_point(pos) {
             self.settings.save();
             self.show_settings = false;
-            if let Some(ref mut p) = self.panel_settings { p.set_visible(false); }
+            if let Some(ref mut p) = self.panel_settings {
+                p.set_visible(false);
+            }
             return;
         }
-        let hit = self.set_rows.iter()
+        let hit = self
+            .set_rows
+            .iter()
             .find(|(r, _)| r.contains_point(pos))
             .map(|(_, k)| *k);
         if let Some(kind) = hit {
@@ -466,5 +734,71 @@ impl MainMenu {
 
     fn load_scene(&mut self, path: &str) {
         self.base().get_tree().change_scene_to_file(path);
+    }
+}
+
+#[cfg(debug_assertions)]
+#[godot_api]
+impl MainMenu {
+    #[func]
+    fn runtime_smoke_localization(&mut self) -> VarDictionary {
+        let original = self.settings.lang.clone();
+        self.settings.lang = "ru".into();
+        self.refresh_set_labels();
+        let ru = self.main_labels_match("ru");
+        let ru_subtitle = self
+            .lbl_subtitle
+            .as_ref()
+            .map(|label| label.get_text().to_string())
+            .unwrap_or_default();
+
+        self.settings.lang = "en".into();
+        self.refresh_set_labels();
+        let en = self.main_labels_match("en");
+        let en_subtitle = self
+            .lbl_subtitle
+            .as_ref()
+            .map(|label| label.get_text().to_string())
+            .unwrap_or_default();
+        let settings_localized = self.set_labels.iter().enumerate().all(|(index, label)| {
+            label
+                .get_text()
+                .to_string()
+                .starts_with(set_name(self.set_rows[index].1, "en"))
+        });
+
+        self.settings.lang = original;
+        self.refresh_set_labels();
+        let mut snapshot = VarDictionary::new();
+        snapshot.set("ru", ru);
+        snapshot.set("en", en);
+        snapshot.set("changed", ru_subtitle != en_subtitle);
+        snapshot.set("settings", settings_localized);
+        snapshot
+    }
+
+    fn main_labels_match(&self, lang: &str) -> bool {
+        [
+            self.lbl_subtitle
+                .as_ref()
+                .is_some_and(|label| label.get_text().to_string() == t("menu_subtitle", lang)),
+            self.lbl_new
+                .as_ref()
+                .is_some_and(|label| label.get_text().to_string() == t("menu_new", lang)),
+            self.lbl_continue
+                .as_ref()
+                .is_some_and(|label| label.get_text().to_string() == t("menu_continue", lang)),
+            self.lbl_settings
+                .as_ref()
+                .is_some_and(|label| label.get_text().to_string() == t("menu_settings", lang)),
+            self.lbl_quit
+                .as_ref()
+                .is_some_and(|label| label.get_text().to_string() == t("menu_quit", lang)),
+            self.lbl_controls
+                .as_ref()
+                .is_some_and(|label| label.get_text().to_string() == t("menu_controls", lang)),
+        ]
+        .into_iter()
+        .all(|matches| matches)
     }
 }

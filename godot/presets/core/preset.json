@@ -1,7 +1,10 @@
 {
   "id": "core",
   "name_ru": "Неоновое Сердце",
+  "name_en": "Neon Heart",
   "desc_ru": "Основная кампания: хаб-квартал, пустоши и процедурные данжи.",
+  "desc_en": "Main campaign: the hub quarter, wastelands and procedural dungeons.",
   "author": "OpenHeart",
-  "version": 1
+  "version": 2,
+  "enabled": true
 }

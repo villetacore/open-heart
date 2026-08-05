@@ -1,0 +1,364 @@
+[
+    /*[0]*/ {
+        "branch": "survival",
+        "cost": 1.0,
+        "desc_en": "+15 maximum HP per rank.",
+        "desc_ru": "+15 к максимуму HP за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 15.0,
+                "stat": "max_hp",
+            },
+        ],
+        "id": "thick_skin",
+        "max_ranks": 3.0,
+        "name_en": "Thick Skin",
+        "name_ru": "Толстая кожа",
+        "requires": [],
+        "tier": 1.0,
+    },
+    /*[1]*/ {
+        "branch": "survival",
+        "cost": 1.0,
+        "desc_en": "+5% movement speed per rank.",
+        "desc_ru": "+5% скорость бега за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "mult": 1.05,
+                "stat": "speed",
+            },
+        ],
+        "id": "adrenaline",
+        "max_ranks": 2.0,
+        "name_en": "Adrenaline",
+        "name_ru": "Адреналин",
+        "requires": [
+            /*[0]*/ "thick_skin:1",
+        ],
+        "tier": 2.0,
+    },
+    /*[2]*/ {
+        "branch": "survival",
+        "cost": 1.0,
+        "desc_en": "+5% lifesteal per rank.",
+        "desc_ru": "+5% вампиризма за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.05,
+                "stat": "lifesteal",
+            },
+        ],
+        "id": "vampirism",
+        "max_ranks": 3.0,
+        "name_en": "Vampirism",
+        "name_ru": "Вампиризм",
+        "requires": [
+            /*[0]*/ "thick_skin:1",
+        ],
+        "tier": 2.0,
+    },
+    /*[3]*/ {
+        "branch": "survival",
+        "cost": 2.0,
+        "desc_en": "+25 maximum HP per rank.",
+        "desc_ru": "+25 к максимуму HP за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 25.0,
+                "stat": "max_hp",
+            },
+        ],
+        "id": "juggernaut",
+        "max_ranks": 2.0,
+        "name_en": "Juggernaut",
+        "name_ru": "Джаггернаут",
+        "requires": [
+            /*[0]*/ "thick_skin:2",
+        ],
+        "tier": 3.0,
+    },
+    /*[4]*/ {
+        "branch": "offense",
+        "cost": 1.0,
+        "desc_en": "+6% damage per rank.",
+        "desc_ru": "+6% урона за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.06,
+                "stat": "dmg",
+            },
+        ],
+        "id": "sharpshooter",
+        "max_ranks": 3.0,
+        "name_en": "Sharpshooter",
+        "name_ru": "Меткач",
+        "requires": [],
+        "tier": 1.0,
+    },
+    /*[5]*/ {
+        "branch": "offense",
+        "cost": 1.0,
+        "desc_en": "+5% damage per rank.",
+        "desc_ru": "+5% урона за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.05,
+                "stat": "dmg",
+            },
+        ],
+        "id": "overkill",
+        "max_ranks": 2.0,
+        "name_en": "Overkill",
+        "name_ru": "Оверкилл",
+        "requires": [],
+        "tier": 1.0,
+    },
+    /*[6]*/ {
+        "branch": "offense",
+        "cost": 1.0,
+        "desc_en": "Reduces weapon cooldown by 6% per rank.",
+        "desc_ru": "-6% кулдаун оружия за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "mult": 0.94,
+                "stat": "cd",
+            },
+        ],
+        "id": "rapid_fire",
+        "max_ranks": 3.0,
+        "name_en": "Rapid Fire",
+        "name_ru": "Скорострельность",
+        "requires": [
+            /*[0]*/ "sharpshooter:1",
+        ],
+        "tier": 2.0,
+    },
+    /*[7]*/ {
+        "branch": "offense",
+        "cost": 2.0,
+        "desc_en": "+10% damage per rank.",
+        "desc_ru": "+10% урона за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.1,
+                "stat": "dmg",
+            },
+        ],
+        "id": "executioner",
+        "max_ranks": 2.0,
+        "name_en": "Executioner",
+        "name_ru": "Палач",
+        "requires": [
+            /*[0]*/ "sharpshooter:2",
+        ],
+        "tier": 3.0,
+    },
+    /*[8]*/ {
+        "branch": "utility",
+        "cost": 1.0,
+        "desc_en": "+6% movement speed per rank.",
+        "desc_ru": "+6% скорость бега за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "mult": 1.06,
+                "stat": "speed",
+            },
+        ],
+        "id": "fleet_footed",
+        "max_ranks": 3.0,
+        "name_en": "Fleet Footed",
+        "name_ru": "Лёгкая поступь",
+        "requires": [],
+        "tier": 1.0,
+    },
+    /*[9]*/ {
+        "branch": "utility",
+        "cost": 1.0,
+        "desc_en": "+15% ammunition capacity per rank.",
+        "desc_ru": "+15% к лимиту боезапаса за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.15,
+                "stat": "ammo",
+            },
+        ],
+        "id": "scavenger",
+        "max_ranks": 3.0,
+        "name_en": "Scavenger",
+        "name_ru": "Собиратель",
+        "requires": [],
+        "tier": 1.0,
+    },
+    /*[10]*/ {
+        "branch": "utility",
+        "cost": 1.0,
+        "desc_en": "Reduces weapon cooldown by 5% per rank.",
+        "desc_ru": "-5% кулдаун оружия за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "mult": 0.95,
+                "stat": "cd",
+            },
+        ],
+        "id": "quick_hands",
+        "max_ranks": 2.0,
+        "name_en": "Quick Hands",
+        "name_ru": "Ловкие руки",
+        "requires": [
+            /*[0]*/ "fleet_footed:1",
+        ],
+        "tier": 2.0,
+    },
+    /*[11]*/ {
+        "branch": "utility",
+        "cost": 2.0,
+        "desc_en": "+25% ammunition capacity per rank.",
+        "desc_ru": "+25% к лимиту боезапаса за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.25,
+                "stat": "ammo",
+            },
+        ],
+        "id": "deep_pockets",
+        "max_ranks": 2.0,
+        "name_en": "Deep Pockets",
+        "name_ru": "Глубокие карманы",
+        "requires": [
+            /*[0]*/ "scavenger:2",
+        ],
+        "tier": 3.0,
+    },
+    /*[12]*/ {
+        "branch": "survival",
+        "cost": 1.0,
+        "desc_en": "+10% movement speed and +10 HP.",
+        "desc_ru": "+10% скорость бега и +10 HP.",
+        "effects": [
+            /*[0]*/ {
+                "mult": 1.1,
+                "stat": "speed",
+            },
+            /*[1]*/ {
+                "add": 10.0,
+                "stat": "max_hp",
+            },
+        ],
+        "id": "second_wind",
+        "max_ranks": 1.0,
+        "name_en": "Second Wind",
+        "name_ru": "Второе дыхание",
+        "requires": [
+            /*[0]*/ "thick_skin:1",
+        ],
+        "tier": 2.0,
+    },
+    /*[13]*/ {
+        "branch": "survival",
+        "cost": 2.0,
+        "desc_en": "+20 HP and 4% faster weapon actions per rank.",
+        "desc_ru": "+20 HP и −4% кулдаун за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 20.0,
+                "stat": "max_hp",
+            },
+            /*[1]*/ {
+                "mult": 0.96,
+                "stat": "cd",
+            },
+        ],
+        "id": "iron_will",
+        "max_ranks": 2.0,
+        "name_en": "Iron Will",
+        "name_ru": "Железная воля",
+        "requires": [
+            /*[0]*/ "adrenaline:1",
+        ],
+        "tier": 3.0,
+    },
+    /*[14]*/ {
+        "branch": "offense",
+        "cost": 1.0,
+        "desc_en": "+8% damage and -10 HP per rank.",
+        "desc_ru": "+8% урона, −10 HP за ранг. Стекло и ярость.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.08,
+                "stat": "dmg",
+            },
+            /*[1]*/ {
+                "add": -10.0,
+                "stat": "max_hp",
+            },
+        ],
+        "id": "berserk_rage",
+        "max_ranks": 2.0,
+        "name_en": "Berserk Rage",
+        "name_ru": "Ярость",
+        "requires": [
+            /*[0]*/ "overkill:1",
+        ],
+        "tier": 2.0,
+    },
+    /*[15]*/ {
+        "branch": "offense",
+        "cost": 2.0,
+        "desc_en": "+12% damage per rank.",
+        "desc_ru": "+12% урона за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.12,
+                "stat": "dmg",
+            },
+        ],
+        "id": "heavy_rounds",
+        "max_ranks": 2.0,
+        "name_en": "Heavy Rounds",
+        "name_ru": "Тяжёлые заряды",
+        "requires": [
+            /*[0]*/ "rapid_fire:2",
+        ],
+        "tier": 3.0,
+    },
+    /*[16]*/ {
+        "branch": "utility",
+        "cost": 1.0,
+        "desc_en": "+20% ammunition capacity per rank.",
+        "desc_ru": "+20% лимита боезапаса за ранг.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.2,
+                "stat": "ammo",
+            },
+        ],
+        "id": "packrat",
+        "max_ranks": 2.0,
+        "name_en": "Pack Rat",
+        "name_ru": "Хомяк",
+        "requires": [
+            /*[0]*/ "scavenger:1",
+        ],
+        "tier": 2.0,
+    },
+    /*[17]*/ {
+        "branch": "utility",
+        "cost": 2.0,
+        "desc_en": "+4% lifesteal with every weapon per rank.",
+        "desc_ru": "+4% вампиризма за ранг (любое оружие).",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.04,
+                "stat": "lifesteal",
+            },
+        ],
+        "id": "leech_rounds",
+        "max_ranks": 2.0,
+        "name_en": "Leech Rounds",
+        "name_ru": "Пиявочные пули",
+        "requires": [
+            /*[0]*/ "quick_hands:1",
+        ],
+        "tier": 3.0,
+    },
+]

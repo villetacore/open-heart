@@ -10,14 +10,19 @@ use crate::config::StatusCfg;
 use crate::weapon::DmgType;
 
 #[derive(Clone, Copy, PartialEq)]
-pub enum StatusKind { Dot, Slow, Stun, Vulnerable }
+pub enum StatusKind {
+    Dot,
+    Slow,
+    Stun,
+    Vulnerable,
+}
 
 impl StatusKind {
     pub fn from_id(s: &str) -> Option<Self> {
         Some(match s {
-            "dot"        => Self::Dot,
-            "slow"       => Self::Slow,
-            "stun"       => Self::Stun,
+            "dot" => Self::Dot,
+            "slow" => Self::Slow,
+            "stun" => Self::Stun,
             "vulnerable" => Self::Vulnerable,
             _ => return None,
         })
@@ -25,19 +30,19 @@ impl StatusKind {
 }
 
 struct Active {
-    id:          String,
-    name_ru:     String,
-    kind:        StatusKind,
-    remaining:   f32,
+    id: String,
+    name_ru: String,
+    kind: StatusKind,
+    remaining: f32,
     // dot
-    damage:      f32,
-    dmg_type:    DmgType,
+    damage: f32,
+    dmg_type: DmgType,
     tick_period: f32,
-    tick_timer:  f32,
+    tick_timer: f32,
     // slow / vulnerable
-    amount:      f32,
-    tint:        Option<Color>,
-    icon:        String,
+    amount: f32,
+    tint: Option<Color>,
+    icon: String,
 }
 
 #[derive(Default)]
@@ -46,9 +51,18 @@ pub struct StatusSet {
 }
 
 impl StatusSet {
-    pub fn new() -> Self { Self { active: Vec::new() } }
-    pub fn is_empty(&self) -> bool { self.active.is_empty() }
-    pub fn clear(&mut self) { self.active.clear(); }
+    pub fn new() -> Self {
+        Self { active: Vec::new() }
+    }
+    pub fn is_empty(&self) -> bool {
+        self.active.is_empty()
+    }
+    pub fn has(&self, id: &str) -> bool {
+        self.active.iter().any(|status| status.id == id)
+    }
+    pub fn clear(&mut self) {
+        self.active.clear();
+    }
 
     /// Применить статус: у существующего того же вида обновляет длительность
     /// (refresh, не стакается бесконечно), иначе добавляет новый.
@@ -58,7 +72,9 @@ impl StatusSet {
             a.remaining = a.remaining.max(cfg.duration);
             return;
         }
-        let dmg_type = cfg.dmg_type.as_deref()
+        let dmg_type = cfg
+            .dmg_type
+            .as_deref()
             .and_then(DmgType::from_id)
             .unwrap_or(DmgType::Physical);
         let tick_period = cfg.tick.max(0.1);
@@ -97,7 +113,9 @@ impl StatusSet {
 
     /// Множитель скорости (сильнейшее замедление, не складываем; пол — 0.1).
     pub fn slow_mult(&self) -> f32 {
-        let s = self.active.iter()
+        let s = self
+            .active
+            .iter()
             .filter(|a| a.kind == StatusKind::Slow)
             .map(|a| a.amount)
             .fold(0.0f32, f32::max);
@@ -106,7 +124,9 @@ impl StatusSet {
 
     /// Множитель входящего урона (уязвимости складываются).
     pub fn vuln_mult(&self) -> f32 {
-        1.0 + self.active.iter()
+        1.0 + self
+            .active
+            .iter()
             .filter(|a| a.kind == StatusKind::Vulnerable)
             .map(|a| a.amount)
             .sum::<f32>()
@@ -123,8 +143,15 @@ impl StatusSet {
 
     /// Строка для HUD: иконки или названия через пробел.
     pub fn summary(&self) -> String {
-        self.active.iter()
-            .map(|a| if a.icon.is_empty() { a.name_ru.clone() } else { a.icon.clone() })
+        self.active
+            .iter()
+            .map(|a| {
+                if a.icon.is_empty() {
+                    a.name_ru.clone()
+                } else {
+                    a.icon.clone()
+                }
+            })
             .collect::<Vec<_>>()
             .join(" ")
     }

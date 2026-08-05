@@ -12,12 +12,18 @@ impl Game3D {
 
         let mut panel = Panel::new_alloc();
         panel.set_anchors_preset(godot::classes::control::LayoutPreset::FULL_RECT);
-        panel.add_theme_stylebox_override("panel",
-            &make_style(Color::from_rgba(0.02, 0.01, 0.04, 0.97), C_BORDER, 0));
+        panel.add_theme_stylebox_override(
+            "panel",
+            &make_style(Color::from_rgba(0.02, 0.01, 0.04, 0.97), C_BORDER, 0),
+        );
         panel.set_visible(false);
 
         let mut title = Label::new_alloc();
-        title.set_text("ВЫБЕРИ КЛАСС");
+        title.set_text(if self.settings.lang == "en" {
+            "CHOOSE A CLASS"
+        } else {
+            "ВЫБЕРИ КЛАСС"
+        });
         place(&title, 0.5, 0.0, 0.0, 90.0, HUD_W, 70.0);
         title.set_horizontal_alignment(HorizontalAlignment::CENTER);
         title.add_theme_font_size_override("font_size", 52);
@@ -34,7 +40,15 @@ impl Game3D {
 
         for i in 0..3 {
             let mut card = Panel::new_alloc();
-            place(&card, 0.5, 0.5, x0 + i as f32 * (card_w + gap), y0, card_w, card_h);
+            place(
+                &card,
+                0.5,
+                0.5,
+                x0 + i as f32 * (card_w + gap),
+                y0,
+                card_w,
+                card_h,
+            );
             card.add_theme_stylebox_override("panel", &make_style(C_UI_BG, C_BORDER, 2));
 
             let mut key = Label::new_alloc();
@@ -68,7 +82,11 @@ impl Game3D {
         }
 
         let mut hint = Label::new_alloc();
-        hint.set_text("Нажми 1, 2 или 3");
+        hint.set_text(if self.settings.lang == "en" {
+            "Press 1, 2 or 3"
+        } else {
+            "Нажми 1, 2 или 3"
+        });
         place(&hint, 0.5, 1.0, 0.0, HUD_H - 120.0, HUD_W, 40.0);
         hint.set_horizontal_alignment(HorizontalAlignment::CENTER);
         hint.add_theme_font_size_override("font_size", 22);
@@ -80,27 +98,55 @@ impl Game3D {
     }
 
     pub(super) fn open_class_select(&mut self) {
+        let lang = self.settings.lang.clone();
         self.mode = Mode::ClassSelect;
         self.freeze_player(true);
         Input::singleton().set_mouse_mode(godot::classes::input::MouseMode::VISIBLE);
-        if let Some(ref mut t) = self.select_title { t.set_text("ВЫБЕРИ КЛАСС"); }
+        if let Some(ref mut t) = self.select_title {
+            t.set_text(if lang == "en" {
+                "CHOOSE A CLASS"
+            } else {
+                "ВЫБЕРИ КЛАСС"
+            });
+        }
         for (i, c) in classes().iter().enumerate() {
             self.fill_class_card(i, c);
         }
-        if let Some(ref mut p) = self.select_panel { p.set_visible(true); }
+        if let Some(ref mut p) = self.select_panel {
+            p.set_visible(true);
+        }
     }
 
     pub(super) fn fill_class_card(&mut self, i: usize, c: &ClassDef) {
+        let lang = self.settings.lang.as_str();
         if let Some(t) = self.card_titles.get_mut(i) {
-            t.set_text(&c.name_ru);
+            t.set_text(c.name(lang));
         }
         if let Some(b) = self.card_bodies.get_mut(i) {
-            let weapons: Vec<&str> = c.start_weapons.iter()
-                .map(|w| weapon_def(*w).name_ru.as_str()).collect();
+            let weapons: Vec<&str> = c
+                .start_weapons
+                .iter()
+                .map(|w| weapon_def(*w).name(&self.settings.lang))
+                .collect();
+            let labels = if lang == "en" {
+                ("Role", "Speed", "Weapons", "Specializations")
+            } else {
+                ("Роль", "Скорость", "Оружие", "Спеки")
+            };
             b.set_text(&format!(
-                "Роль: {}\n\n{}\n\nHP: {:.0}\nСкорость: {:.1}\nОружие: {}\n\nСпеки:\n• {}\n• {}\n• {}",
-                c.role_ru, c.desc_ru, c.base_hp, c.speed, weapons.join(", "),
-                c.specs[0].name_ru, c.specs[1].name_ru, c.specs[2].name_ru,
+                "{}: {}\n\n{}\n\nHP: {:.0}\n{}: {:.1}\n{}: {}\n\n{}:\n• {}\n• {}\n• {}",
+                labels.0,
+                c.role(lang),
+                c.description(lang),
+                c.base_hp,
+                labels.1,
+                c.speed,
+                labels.2,
+                weapons.join(", "),
+                labels.3,
+                c.specs[0].name(lang),
+                c.specs[1].name(lang),
+                c.specs[2].name(lang),
             ));
         }
     }
@@ -109,16 +155,33 @@ impl Game3D {
         self.mode = Mode::SpecSelect;
         self.class_pick = class_idx;
         let c = &classes()[class_idx];
+        let lang = self.settings.lang.as_str();
         if let Some(ref mut t) = self.select_title {
-            t.set_text(&format!("{} — ВЫБЕРИ СПЕЦИАЛИЗАЦИЮ", c.name_ru));
+            t.set_text(&format!(
+                "{} — {}",
+                c.name(lang),
+                if lang == "en" {
+                    "CHOOSE A SPECIALIZATION"
+                } else {
+                    "ВЫБЕРИ СПЕЦИАЛИЗАЦИЮ"
+                }
+            ));
         }
         for i in 0..3 {
             let s = &c.specs[i];
             if let Some(t) = self.card_titles.get_mut(i) {
-                t.set_text(&s.name_ru);
+                t.set_text(s.name(lang));
             }
             if let Some(b) = self.card_bodies.get_mut(i) {
-                b.set_text(&format!("{}\n\n(Esc — назад к классам)", s.desc_ru));
+                b.set_text(&format!(
+                    "{}\n\n{}",
+                    s.description(lang),
+                    if lang == "en" {
+                        "(Esc — back to classes)"
+                    } else {
+                        "(Esc — назад к классам)"
+                    }
+                ));
             }
         }
     }
@@ -154,14 +217,26 @@ impl Game3D {
             let st = self.state.as_mut().unwrap();
             st.class_idx = Some(class_idx);
             st.spec_idx = spec_idx;
-            st.perk_points += 1;   // стартовое очко перка
+            st.perk_points += 1; // стартовое очко перка
         }
         self.apply_loadout(class_idx, spec_idx, true);
-        if let Some(ref mut p) = self.select_panel { p.set_visible(false); }
+        if let Some(ref mut p) = self.select_panel {
+            p.set_visible(false);
+        }
         self.set_mode_explore();
         self.refresh_weapon_sheet();
         let c = &classes()[class_idx];
-        self.show_flash(&format!("{} / {}. Вперёд!", c.name_ru, c.specs[spec_idx].name_ru));
+        let lang = self.settings.lang.as_str();
+        self.show_flash(&format!(
+            "{} / {}. {}",
+            c.name(lang),
+            c.specs[spec_idx].name(lang),
+            if lang == "en" {
+                "Move out!"
+            } else {
+                "Вперёд!"
+            }
+        ));
         self.update_loc_label();
         self.auto_save();
     }
@@ -174,12 +249,16 @@ impl Game3D {
         self.loadout.max_hp += hearts as f32 * 15.0;
 
         // модификаторы перков и активных синергий
-        let owned_perks = self.state.as_ref().map(|s| s.perks.clone()).unwrap_or_default();
+        let owned_perks = self
+            .state
+            .as_ref()
+            .map(|s| s.perks.clone())
+            .unwrap_or_default();
         let mods = crate::perk::mods_for(&owned_perks);
-        self.loadout.max_hp    += mods.max_hp_add;
-        self.loadout.speed     *= mods.speed_mult;
-        self.loadout.dmg_mult  += mods.dmg_add;
-        self.loadout.cd_mult   *= mods.cd_mult;
+        self.loadout.max_hp += mods.max_hp_add;
+        self.loadout.speed *= mods.speed_mult;
+        self.loadout.dmg_mult += mods.dmg_add;
+        self.loadout.cd_mult *= mods.cd_mult;
         self.loadout.lifesteal += mods.lifesteal_add;
         self.loadout.ammo_mult += mods.ammo_add;
         self.loadout.max_hp = self.loadout.max_hp.max(40.0);
@@ -195,7 +274,8 @@ impl Game3D {
             if let Some(w) = s.extra_weapon {
                 self.arsenal.give_weapon(w);
                 if let Some((t, _)) = weapon_def(w).ammo {
-                    self.arsenal.add_ammo(t, t.pack_size() * 2, self.loadout.ammo_mult);
+                    self.arsenal
+                        .add_ammo(t, t.pack_size() * 2, self.loadout.ammo_mult);
                 }
             }
             for (t, n) in &c.start_ammo {
@@ -209,8 +289,11 @@ impl Game3D {
             if let Ok(mut pl) = p.clone().try_cast::<Player>() {
                 let mut b = pl.bind_mut();
                 b.max_hp = max_hp;
-                if give_kit { b.hp = max_hp; }
-                else { b.hp = b.hp.min(max_hp); }
+                if give_kit {
+                    b.hp = max_hp;
+                } else {
+                    b.hp = b.hp.min(max_hp);
+                }
                 b.speed = speed;
             }
         }

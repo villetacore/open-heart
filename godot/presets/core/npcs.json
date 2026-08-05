@@ -2,6 +2,7 @@
   {
     "id": "vale",
     "name_ru": "Ms. Вейл",
+    "name_en": "Ms. Vale",
     "sprite": "npc_vale",
     "pos": [
       -6.0,
@@ -17,6 +18,7 @@
   {
     "id": "victor",
     "name_ru": "Виктор",
+    "name_en": "Victor",
     "sprite": "npc_victor",
     "pos": [
       6.0,
@@ -32,6 +34,7 @@
   {
     "id": "elena",
     "name_ru": "Елена",
+    "name_en": "Elena",
     "sprite": "npc_elena",
     "pos": [
       -11.0,
@@ -47,6 +50,7 @@
   {
     "id": "sofia",
     "name_ru": "София",
+    "name_en": "Sofia",
     "sprite": "npc_sofia",
     "pos": [
       11.0,
@@ -62,6 +66,7 @@
   {
     "id": "guard",
     "name_ru": "Охранник",
+    "name_en": "Guard",
     "sprite": "npc_guard",
     "pos": [
       -2.5,
@@ -77,6 +82,7 @@
   {
     "id": "merchant",
     "name_ru": "Торговец",
+    "name_en": "Merchant",
     "sprite": "npc_merchant",
     "pos": [
       17.5,
@@ -92,6 +98,7 @@
   {
     "id": "scientist",
     "name_ru": "Учёный",
+    "name_en": "Scientist",
     "sprite": "npc_scientist",
     "pos": [
       -18.0,
@@ -102,11 +109,12 @@
       1.0,
       1.0
     ],
-    "scene": "story"
+    "quest": "drone_blackout"
   },
   {
     "id": "stranger",
     "name_ru": "Незнакомец",
+    "name_en": "Stranger",
     "sprite": "npc_stranger",
     "pos": [
       5.0,
@@ -122,6 +130,7 @@
   {
     "id": "hunter",
     "name_ru": "Охотница Ба",
+    "name_en": "Hunter Ba",
     "sprite": "npc_guard",
     "pos": [
       -8.0,
@@ -137,6 +146,7 @@
   {
     "id": "collector",
     "name_ru": "Коллекционер",
+    "name_en": "Collector",
     "sprite": "npc_merchant",
     "pos": [
       8.0,
@@ -152,6 +162,7 @@
   {
     "id": "warden",
     "name_ru": "Смотритель врат",
+    "name_en": "Gate Warden",
     "sprite": "npc_stranger",
     "pos": [
       -12.0,
@@ -167,6 +178,7 @@
   {
     "id": "medic",
     "name_ru": "Полевой медик",
+    "name_en": "Field Medic",
     "sprite": "npc_scientist",
     "pos": [
       -19.0,

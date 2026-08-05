@@ -1,7 +1,13 @@
 //! Многомерная система статов игрока.
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum StatKind { Intelligence, Charm, Fitness, Reputation, Willpower }
+pub enum StatKind {
+    Intelligence,
+    Charm,
+    Fitness,
+    Reputation,
+    Willpower,
+}
 
 impl StatKind {
     pub fn short(&self) -> &'static str {
@@ -18,10 +24,10 @@ impl StatKind {
     pub fn from_id(s: &str) -> Option<Self> {
         Some(match s.to_ascii_lowercase().as_str() {
             "int" | "intelligence" => Self::Intelligence,
-            "chr" | "charm"        => Self::Charm,
-            "fit" | "fitness"      => Self::Fitness,
-            "rep" | "reputation"   => Self::Reputation,
-            "wil" | "willpower"    => Self::Willpower,
+            "chr" | "charm" => Self::Charm,
+            "fit" | "fitness" => Self::Fitness,
+            "rep" | "reputation" => Self::Reputation,
+            "wil" | "willpower" => Self::Willpower,
             _ => return None,
         })
     }
@@ -39,7 +45,14 @@ pub struct Stats {
 
 impl Stats {
     pub fn new(name: &str) -> Self {
-        Self { name: name.to_string(), intelligence: 5, charm: 5, fitness: 5, reputation: 5, willpower: 5 }
+        Self {
+            name: name.to_string(),
+            intelligence: 5,
+            charm: 5,
+            fitness: 5,
+            reputation: 5,
+            willpower: 5,
+        }
     }
 
     pub fn get(&self, kind: &StatKind) -> i32 {

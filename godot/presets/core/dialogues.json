@@ -25,4 +25,542 @@
     ],
     "choices": []
   }
+  ,
+  {
+    "id": "hunter_shade_progress",
+    "lines": [
+      { "speaker": { "ru": "Охотник", "en": "Hunter" }, "portrait": "hunter", "text": { "ru": "Тень не оставляет следов на земле. Ищи места, где неон гаснет без причины.", "en": "The Shade leaves no tracks. Look for places where the neon dies without a reason." } },
+      { "speaker": { "ru": "Охотник", "en": "Hunter" }, "portrait": "hunter", "text": { "ru": "Не стой перед ней на месте. Заставь её проявиться и бей энергией.", "en": "Never stand still in front of it. Force it to manifest, then strike with energy." } }
+    ]
+  },
+  {
+    "id": "scientist_drone_progress",
+    "lines": [
+      { "speaker": { "ru": "Учёный", "en": "Scientist" }, "portrait": "scientist", "text": { "ru": "Их сеть всё ещё активна. Каждый уничтоженный дрон создаёт короткое слепое окно.", "en": "Their network is still active. Every destroyed drone creates a brief blind window." } },
+      { "speaker": { "ru": "Учёный", "en": "Scientist" }, "portrait": "scientist", "text": { "ru": "Слушай треск перед разрядом — это твой сигнал уйти с линии огня.", "en": "Listen for the crackle before a discharge. That is your cue to leave its firing line." } }
+    ]
+  },
+  {
+    "id": "warden_liturgy_progress",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Ритуал уже начался. Жрецы лечат друг друга, поэтому разрывай строй и добивай одного за раз.", "en": "The ritual has begun. The priests heal one another, so break their formation and finish them one at a time." } },
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Если услышишь хор под камнем — ты близко.", "en": "If you hear a choir beneath the stone, you are close." } }
+    ]
+  },
+  {
+    "id": "hunter_patrol_offer",
+    "lines": [
+      { "speaker": { "ru": "Охотник", "en": "Hunter" }, "portrait": "hunter", "text": { "ru": "После заката стаи проверяют наши границы. Одна победа их не остановит — нужен полный обход квартала.", "en": "After sunset, the packs test our borders. One victory will not stop them; we need a full sweep of the quarter." } },
+      { "speaker": { "ru": "Охотник", "en": "Hunter" }, "portrait": "hunter", "text": { "ru": "Пройди улицы и верхние мосты. Двенадцать целей — достаточно, чтобы остальные залегли на дно.", "en": "Walk the streets and upper bridges. Twelve targets should be enough to make the rest keep their heads down." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Я возьму ночную смену.", "en": "I will take the night shift." }, "effects": [
+        { "kind": "quest", "id": "district_patrol", "title": { "ru": "Ночная смена", "en": "Night Shift" }, "desc": { "ru": "Проведи ночную зачистку квартала. Уничтожь двенадцать любых противников.", "en": "Run a night patrol through the quarter and eliminate any twelve hostiles." } }
+      ] },
+      { "text": { "ru": "Вернусь после подготовки.", "en": "I will return after preparing." } }
+    ]
+  },
+  {
+    "id": "hunter_patrol_progress",
+    "lines": [
+      { "speaker": { "ru": "Охотник", "en": "Hunter" }, "portrait": "hunter", "text": { "ru": "Не гонись за одной стаей. Пройди весь квартал и заставь врагов бояться открытых улиц.", "en": "Do not chase a single pack. Sweep the whole quarter and make them fear the open streets." } },
+      { "speaker": { "ru": "Охотник", "en": "Hunter" }, "portrait": "hunter", "text": { "ru": "Используй верхние мосты — оттуда видно, где собирается следующая группа.", "en": "Use the upper bridges. From there you can see where the next group is gathering." } }
+    ]
+  },
+  {
+    "id": "hunter_patrol_complete",
+    "lines": [
+      { "speaker": { "ru": "Охотник", "en": "Hunter" }, "portrait": "hunter", "text": { "ru": "Улицы стихли. Ты не просто перебил стаю — ты вернул людям ночь.", "en": "The streets have gone quiet. You did more than break a pack; you gave the night back to the people." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Патруль окончен.", "en": "The patrol is complete." }, "effects": [
+        { "kind": "quest_done", "id": "district_patrol" },
+        { "kind": "xp", "value": 360 },
+        { "kind": "gold", "value": 150 }
+      ] }
+    ]
+  },
+  {
+    "id": "medic_relief_offer",
+    "lines": [
+      { "speaker": { "ru": "Медик", "en": "Medic" }, "portrait": "medic", "text": { "ru": "В нижнем убежище закончились запасы. Мне нужны расходники — любые, лишь бы ими можно было пережить ещё одну ночь.", "en": "The lower shelter is out of supplies. I need consumables—anything that can help them survive one more night." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Соберу всё, что найду.", "en": "I will gather what I can." }, "effects": [
+        { "kind": "quest", "id": "relief_supplies", "title": { "ru": "Запасы для убежища", "en": "Shelter Supplies" }, "desc": { "ru": "Собери пять любых расходников для жителей убежища.", "en": "Collect any five consumable supplies for the shelter residents." } }
+      ] },
+      { "text": { "ru": "Сейчас у меня нет места в рюкзаке.", "en": "I have no room in my pack right now." } }
+    ]
+  },
+  {
+    "id": "medic_relief_progress",
+    "lines": [
+      { "speaker": { "ru": "Медик", "en": "Medic" }, "portrait": "medic", "text": { "ru": "Подойдут любые расходники: еда, стимуляторы, аптечки. В убежище используют всё.", "en": "Any consumables will help: food, injectors or medkits. The shelter can use everything." } }
+    ]
+  },
+  {
+    "id": "medic_relief_complete",
+    "lines": [
+      { "speaker": { "ru": "Медик", "en": "Medic" }, "portrait": "medic", "text": { "ru": "Этого хватит, чтобы стабилизировать раненых и собрать аварийные наборы. Сегодня убежище выстоит.", "en": "This is enough to stabilize the wounded and assemble emergency kits. The shelter will hold tonight." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Передать припасы.", "en": "Hand over the supplies." }, "effects": [
+        { "kind": "quest_done", "id": "relief_supplies" },
+        { "kind": "xp", "value": 260 },
+        { "kind": "gold", "value": 110 }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_descent_offer",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Прежде чем говорить о Сердце, мне нужно знать, что ты способен вернуться хотя бы с первого яруса.", "en": "Before we speak of the Heart, I need to know you can return from even the first depth." } },
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Войди через северные врата, осмотрись и запомни путь назад.", "en": "Enter through the northern gate, survey the halls and remember the way back." } }
+    ],
+    "choices": [
+      {
+        "text": { "ru": "Я спущусь.", "en": "I will descend." },
+        "effects": [
+          { "kind": "quest", "id": "first_descent", "title": { "ru": "Первый спуск", "en": "First Descent" }, "desc": { "ru": "Войди в катакомбы через северные врата и вернись с картой первого яруса.", "en": "Enter the catacombs through the northern gate and map the first depth." } }
+        ]
+      },
+      { "text": { "ru": "Мне нужно подготовиться.", "en": "I need to prepare." } }
+    ]
+  },
+  {
+    "id": "warden_descent_progress",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Северные врата отмечены розовым светом. Первый ярус ещё близок к поверхности, но не считай его безопасным.", "en": "The northern gate is marked by pink light. The first depth is close to the surface, but it is not safe." } }
+    ]
+  },
+  {
+    "id": "warden_descent_complete",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Ты вернулся и не привёл тьму за собой. Хорошее начало.", "en": "You returned without bringing the darkness with you. A good beginning." } },
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Теперь мы можем говорить о втором ярусе.", "en": "Now we can speak about the second depth." } }
+    ],
+    "choices": [
+      {
+        "text": { "ru": "Передать карту.", "en": "Hand over the map." },
+        "effects": [
+          { "kind": "quest_done", "id": "first_descent" },
+          { "kind": "xp", "value": 140 },
+          { "kind": "gold", "value": 65 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "warden_depth_two_offer",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Карта первого яруса совпала со старыми записями. Ниже начинается территория стражей.", "en": "Your map of the first depth matches the old records. Below it begins the guardians' domain." } },
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Пробей путь через два яруса. Мне нужно понять, меняются ли коридоры после смерти стража.", "en": "Break through two depths. I need to know whether the halls change after a guardian dies." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Я найду второй ярус.", "en": "I will reach the second depth." }, "effects": [
+        { "kind": "quest", "id": "depth_two", "title": { "ru": "Глубже во тьму", "en": "Deeper into Darkness" }, "desc": { "ru": "Зачисти катакомбы до второго яруса и победи двух стражей.", "en": "Clear the catacombs through depth two and defeat two guardians." } }
+      ] },
+      { "text": { "ru": "Сначала укреплю снаряжение.", "en": "I will reinforce my gear first." } }
+    ]
+  },
+  {
+    "id": "warden_depth_two_progress",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Не доверяй знакомым поворотам. Катакомбы перестраиваются вокруг живых стражей.", "en": "Do not trust familiar turns. The catacombs rebuild themselves around living guardians." } }
+    ]
+  },
+  {
+    "id": "warden_depth_two_complete",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Два стража мертвы, но проходы не закрылись. Значит, их удерживает что-то глубже.", "en": "Two guardians are dead, yet the passages remain open. Something deeper is sustaining them." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Показать обновлённую карту.", "en": "Show the updated map." }, "effects": [
+        { "kind": "quest_done", "id": "depth_two" }, { "kind": "xp", "value": 420 }, { "kind": "gold", "value": 150 }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_liturgy_offer",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Мы расшифровали шум с нижних ярусов. Это не эхо — жрецы пустоты ведут литургию.", "en": "We decoded the noise from the lower depths. It is not an echo—the Void Priests are performing a liturgy." } },
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Уничтожь двух ведущих ритуала, прежде чем хор получит ответ.", "en": "Destroy two ritual leaders before the choir receives an answer." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Я заставлю хор замолчать.", "en": "I will silence the choir." }, "effects": [
+        { "kind": "quest", "id": "void_liturgy", "title": { "ru": "Прерванная литургия", "en": "Interrupted Liturgy" }, "desc": { "ru": "Уничтожь двух жрецов пустоты и сорви ритуал.", "en": "Destroy two Void Priests and break their ritual." } }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_liturgy_complete",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Хор оборвался, но перед смертью жрецы произнесли одно слово: Сердце.", "en": "The choir has stopped, but before dying the priests spoke one word: Heart." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Ритуал сорван.", "en": "The ritual is broken." }, "effects": [
+        { "kind": "quest_done", "id": "void_liturgy" }, { "kind": "xp", "value": 520 }, { "kind": "gold", "value": 260 }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_heart_offer",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Четвёртый ярус отсутствует на всех картах. Там находится не комната, а воля, которая строит катакомбы.", "en": "The fourth depth is absent from every map. What waits there is not a room, but the will that builds the catacombs." } },
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Спустись к Сердцу. Вернись, если оно позволит.", "en": "Descend to the Heart. Return, if it allows you." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Я закончу этот спуск.", "en": "I will finish this descent." }, "effects": [
+        { "kind": "quest", "id": "heart_descent", "title": { "ru": "До самого Сердца", "en": "Into the Heart" }, "desc": { "ru": "Достигни четвёртого яруса и переживи встречу с Сердцем.", "en": "Reach depth four and survive the encounter with the Heart." } }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_heart_progress",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Чем глубже ты спускаешься, тем меньше катакомбы похожи на место. Береги собственные воспоминания.", "en": "The deeper you descend, the less the catacombs resemble a place. Guard your own memories." } }
+    ]
+  },
+  {
+    "id": "warden_heart_complete",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Ты видел Сердце и сохранил своё имя. Теперь город знает, что глубина не всесильна.", "en": "You saw the Heart and kept your name. Now the city knows the depths are not invincible." } },
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Это не конец катакомб. Но это конец их власти над нами.", "en": "This is not the end of the catacombs. It is the end of their power over us." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Город выстоит.", "en": "The city will endure." }, "effects": [
+        { "kind": "quest_done", "id": "heart_descent" }, { "kind": "xp", "value": 900 }, { "kind": "gold", "value": 500 },
+        { "kind": "flag", "flag": "heart_witness" }
+      ] }
+    ]
+  },
+  {
+    "id": "hub_vale_intro",
+    "lines": [
+      { "speaker": { "ru": "Вейл", "en": "Vale" }, "portrait": "vale", "text": { "ru": "Я веду архив квартала. Здания меняют хозяев чаще, чем вывески, а катакомбы — чаще, чем карты.", "en": "I keep the quarter archive. Buildings change owners faster than signs, and the catacombs faster than maps." } },
+      { "speaker": { "ru": "Вейл", "en": "Vale" }, "portrait": "vale", "text": { "ru": "Если вернёшься из глубины, расскажи не только что видел, но и что чувствовал. Пространство там реагирует на страх.", "en": "If you return from below, tell me not only what you saw, but what you felt. Space down there reacts to fear." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Буду запоминать детали.", "en": "I will remember the details." }, "effects": [ { "kind": "flag", "flag": "met_vale" }, { "kind": "rel", "npc": "vale", "value": 6 } ] },
+      { "text": { "ru": "Страх тоже можно картографировать?", "en": "Can fear be mapped too?" }, "requires": { "stat": "int", "min": 7 }, "effects": [ { "kind": "flag", "flag": "met_vale" }, { "kind": "rel", "npc": "vale", "value": 10 } ] }
+    ]
+  },
+  {
+    "id": "hub_vale_repeat",
+    "lines": [
+      { "speaker": { "ru": "Вейл", "en": "Vale" }, "portrait": "vale", "text": { "ru": "Сегодня северный мост короче на три шага. Не спорь — я измерила дважды.", "en": "The northern bridge is three steps shorter today. Do not argue; I measured it twice." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Отметить изменение на карте.", "en": "Mark the change on the map." }, "effects": [ { "kind": "rel", "npc": "vale", "value": 2 }, { "kind": "flash", "text": { "ru": "Архив квартала обновлён.", "en": "The quarter archive has been updated." } } ] },
+      { "text": { "ru": "Может, изменились твои шаги.", "en": "Maybe your stride changed." } }
+    ]
+  },
+  {
+    "id": "hub_victor_intro",
+    "lines": [
+      { "speaker": { "ru": "Виктор", "en": "Victor" }, "portrait": "victor", "text": { "ru": "Я чиню мосты, генераторы и людей, если последние не слишком возражают. Виктор.", "en": "I repair bridges, generators and people, provided the last group does not object too much. Victor." } },
+      { "speaker": { "ru": "Виктор", "en": "Victor" }, "portrait": "victor", "text": { "ru": "На верхнем маршруте безопаснее, но громче. Внизу тише, зато тишина иногда кусается.", "en": "The upper route is safer but louder. Below it is quieter, though the silence sometimes bites." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Покажешь безопасный маршрут?", "en": "Will you show me the safe route?" }, "effects": [ { "kind": "flag", "flag": "met_victor" }, { "kind": "rel", "npc": "victor", "value": 7 } ] },
+      { "text": { "ru": "Предпочитаю кусачую тишину.", "en": "I prefer biting silence." }, "effects": [ { "kind": "flag", "flag": "met_victor" }, { "kind": "rel", "npc": "victor", "value": 3 } ] }
+    ]
+  },
+  {
+    "id": "hub_victor_repeat",
+    "lines": [
+      { "speaker": { "ru": "Виктор", "en": "Victor" }, "portrait": "victor", "text": { "ru": "Если услышишь три коротких удара по трубе — уходи с улицы. Это не ремонт, это сигнал стаи.", "en": "If you hear three short knocks on a pipe, leave the street. That is not maintenance; it is a pack signal." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Спасибо за предупреждение.", "en": "Thanks for the warning." }, "effects": [ { "kind": "rel", "npc": "victor", "value": 2 } ] },
+      { "text": { "ru": "А четыре удара?", "en": "What about four knocks?" }, "effects": [ { "kind": "flash", "text": { "ru": "«Это уже я ругаюсь на генератор».", "en": "“That is just me swearing at the generator.”" } } ] }
+    ]
+  },
+  {
+    "id": "hub_elena_intro",
+    "lines": [
+      { "speaker": { "ru": "Елена", "en": "Elena" }, "portrait": "elena", "text": { "ru": "Я слушаю радиошум катакомб. Большая часть — помехи. Остальное слишком похоже на речь.", "en": "I listen to radio noise from the catacombs. Most of it is interference. The rest sounds too much like speech." } },
+      { "speaker": { "ru": "Елена", "en": "Elena" }, "portrait": "elena", "text": { "ru": "Елена. Если найдёшь работающий передатчик, не включай его внизу.", "en": "Elena. If you find a working transmitter, do not activate it below." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Что говорит сигнал?", "en": "What does the signal say?" }, "requires": { "stat": "int", "min": 7 }, "effects": [ { "kind": "flag", "flag": "met_elena" }, { "kind": "rel", "npc": "elena", "value": 9 }, { "kind": "flash", "text": { "ru": "«Пока только повторяет наши имена».", "en": "“So far, it only repeats our names.”" } } ] },
+      { "text": { "ru": "Запомню.", "en": "I will remember." }, "effects": [ { "kind": "flag", "flag": "met_elena" }, { "kind": "rel", "npc": "elena", "value": 4 } ] }
+    ]
+  },
+  {
+    "id": "hub_elena_repeat",
+    "lines": [
+      { "speaker": { "ru": "Елена", "en": "Elena" }, "portrait": "elena", "text": { "ru": "Сегодня сигнал молчит. Мне не нравится, когда он учится быть осторожным.", "en": "The signal is silent today. I do not like it when it learns to be cautious." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Оставить запись своего маршрута.", "en": "Leave a recording of your route." }, "effects": [ { "kind": "rel", "npc": "elena", "value": 3 } ] },
+      { "text": { "ru": "Тишина — хорошая новость.", "en": "Silence is good news." } }
+    ]
+  },
+  {
+    "id": "hub_sofia_intro",
+    "lines": [
+      { "speaker": { "ru": "София", "en": "Sofia" }, "portrait": "sofia", "text": { "ru": "Я распределяю жильё, смены и долги. В квартале всё держится не на стенах, а на том, кто кому откроет дверь.", "en": "I assign housing, shifts and debts. The quarter is held together not by walls, but by who opens a door for whom." } },
+      { "speaker": { "ru": "София", "en": "Sofia" }, "portrait": "sofia", "text": { "ru": "София. Не обещай людям то, что не сможешь принести из глубины.", "en": "Sofia. Do not promise people anything you cannot bring back from below." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Я обещаю только попытку.", "en": "I only promise to try." }, "effects": [ { "kind": "flag", "flag": "met_sofia" }, { "kind": "rel", "npc": "sofia", "value": 8 } ] },
+      { "text": { "ru": "Людям нужны обещания.", "en": "People need promises." }, "requires": { "stat": "chr", "min": 8 }, "effects": [ { "kind": "flag", "flag": "met_sofia" }, { "kind": "rel", "npc": "sofia", "value": 5 } ] }
+    ]
+  },
+  {
+    "id": "hub_sofia_repeat",
+    "lines": [
+      { "speaker": { "ru": "София", "en": "Sofia" }, "portrait": "sofia", "text": { "ru": "После твоих вылазок северное убежище снова оставляет свет на ночь. Это дороже золота.", "en": "Since your expeditions, the northern shelter leaves its lights on at night again. That is worth more than gold." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Пусть знают, что улицы ещё наши.", "en": "Let them know the streets are still ours." }, "effects": [ { "kind": "rel", "npc": "sofia", "value": 3 } ] },
+      { "text": { "ru": "Свет привлекает врагов.", "en": "Light attracts enemies." } }
+    ]
+  },
+  {
+    "id": "hub_guard_intro",
+    "lines": [
+      { "speaker": { "ru": "Охранник Дрейк", "en": "Guard Drake" }, "portrait": "guard", "text": { "ru": "Дрейк, северные врата. Я не запрещаю спускаться — только считаю тех, кто вернулся.", "en": "Drake, north gate. I do not forbid descents; I only count those who return." } },
+      { "speaker": { "ru": "Охранник Дрейк", "en": "Guard Drake" }, "portrait": "guard", "text": { "ru": "Не приводи стаю к воротам. Если преследуют — сделай круг через восточный мост.", "en": "Do not lead a pack to the gate. If pursued, circle through the eastern bridge." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Вернусь один.", "en": "I will return alone." }, "effects": [ { "kind": "flag", "flag": "met_guard" }, { "kind": "rel", "npc": "guard", "value": 6 } ] },
+      { "text": { "ru": "Запиши меня в список вернувшихся.", "en": "Put me on the list of returnees." }, "requires": { "stat": "wil", "min": 7 }, "effects": [ { "kind": "flag", "flag": "met_guard" }, { "kind": "rel", "npc": "guard", "value": 9 } ] }
+    ]
+  },
+  {
+    "id": "hub_guard_repeat",
+    "lines": [
+      { "speaker": { "ru": "Охранник Дрейк", "en": "Guard Drake" }, "portrait": "guard", "text": { "ru": "Врата открыты. Но если услышишь хор — дождись, пока он закончит считать.", "en": "The gate is open. But if you hear a choir, wait until it finishes counting." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Кого оно считает?", "en": "What is it counting?" }, "effects": [ { "kind": "flash", "text": { "ru": "Дрейк не отвечает.", "en": "Drake does not answer." } } ] },
+      { "text": { "ru": "Проверить снаряжение и уйти.", "en": "Check your gear and leave." } }
+    ]
+  },
+  {
+    "id": "hub_merchant_intro",
+    "lines": [
+      { "speaker": { "ru": "Торговец Рук", "en": "Merchant Rook" }, "portrait": "merchant", "text": { "ru": "Рук. Покупаю всё, что не шепчет после полуночи. То, что шепчет, беру за полцены.", "en": "Rook. I buy anything that does not whisper after midnight. Whispering goods are half price." } },
+      { "speaker": { "ru": "Торговец Рук", "en": "Merchant Rook" }, "portrait": "merchant", "text": { "ru": "Патроны слева, лекарства справа, проклятые сувениры под прилавком — не трогать.", "en": "Ammunition on the left, medicine on the right, cursed souvenirs under the counter—do not touch." } }
+    ],
+    "choices": [
+      { "text": { "ru": "У тебя честные цены?", "en": "Are your prices fair?" }, "effects": [ { "kind": "flag", "flag": "met_merchant" }, { "kind": "rel", "npc": "merchant", "value": 4 } ] },
+      { "text": { "ru": "Что именно шепчет?", "en": "What exactly whispers?" }, "requires": { "stat": "chr", "min": 7 }, "effects": [ { "kind": "flag", "flag": "met_merchant" }, { "kind": "rel", "npc": "merchant", "value": 8 } ] }
+    ]
+  },
+  {
+    "id": "hub_merchant_repeat",
+    "lines": [
+      { "speaker": { "ru": "Торговец Рук", "en": "Merchant Rook" }, "portrait": "merchant", "text": { "ru": "Сегодня скидка на всё, что взрывается не сразу. Возврата по очевидным причинам нет.", "en": "Today there is a discount on anything that does not explode immediately. No returns, for obvious reasons." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Осмотреть безопасную полку.", "en": "Inspect the safe shelf." }, "effects": [ { "kind": "rel", "npc": "merchant", "value": 2 } ] },
+      { "text": { "ru": "Лучше не сегодня.", "en": "Not today." } }
+    ]
+  },
+  {
+    "id": "hub_stranger_intro",
+    "lines": [
+      { "speaker": { "ru": "Эхо", "en": "Echo" }, "portrait": "stranger", "text": { "ru": "Здесь меня зовут Эхо. Настоящее имя осталось на ярусе, которого больше нет.", "en": "They call me Echo here. My real name remained on a depth that no longer exists." } },
+      { "speaker": { "ru": "Эхо", "en": "Echo" }, "portrait": "stranger", "text": { "ru": "Сердце запоминает тех, кто смотрит на него. Не позволяй ему закончить твой портрет.", "en": "The Heart remembers those who look at it. Do not let it finish your portrait." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Как остановить его?", "en": "How do I stop it?" }, "requires": { "stat": "wil", "min": 8 }, "effects": [ { "kind": "flag", "flag": "met_stranger" }, { "kind": "rel", "npc": "stranger", "value": 10 }, { "kind": "flash", "text": { "ru": "«Меняйся быстрее, чем оно запоминает».", "en": "“Change faster than it can remember.”" } } ] },
+      { "text": { "ru": "Я не верю в Сердце.", "en": "I do not believe in the Heart." }, "effects": [ { "kind": "flag", "flag": "met_stranger" }, { "kind": "rel", "npc": "stranger", "value": 2 } ] }
+    ]
+  },
+  {
+    "id": "hub_stranger_repeat",
+    "lines": [
+      { "speaker": { "ru": "Эхо", "en": "Echo" }, "portrait": "stranger", "text": { "ru": "Ты изменился после последнего спуска. Хорошо. Значит, портрет уже врёт.", "en": "You changed after the last descent. Good. That means the portrait is already lying." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Спросить о потерянном ярусе.", "en": "Ask about the lost depth." }, "effects": [ { "kind": "rel", "npc": "stranger", "value": 3 }, { "kind": "flash", "text": { "ru": "Эхо рисует дверь, которой нет на карте.", "en": "Echo sketches a door that is absent from every map." } } ] },
+      { "text": { "ru": "Уйти, не оборачиваясь.", "en": "Leave without looking back." } }
+    ]
+  },
+  {
+    "id": "warden_echo_offer",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "После твоего возвращения на старой карте проступило имя: Эхо. Найди его. Он помнит ярус, который Сердце вырезало из города.", "en": "After your return, a name surfaced on an old map: Echo. Find him. He remembers a depth the Heart cut out of the city." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Я найду Эхо.", "en": "I will find Echo." }, "effects": [
+        { "kind": "quest", "id": "echo_contact", "title": { "ru": "Свидетель потерянного яруса", "en": "Witness of the Lost Depth" }, "desc": { "ru": "Найди Эхо и расспроси о потерянном ярусе.", "en": "Find Echo and ask about the lost depth." } }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_echo_progress",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Эхо держится у старого перехода. Не спрашивай его настоящее имя — спроси о двери, которой нет.", "en": "Echo stays near the old crossing. Do not ask his real name; ask about the door that is not there." } }
+    ]
+  },
+  {
+    "id": "warden_echo_complete",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Значит, тайники пережили потерянный ярус. Это меняет наш следующий спуск.", "en": "Then the caches survived the lost depth. That changes our next descent." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Передать слова Эхо.", "en": "Repeat Echo's words." }, "effects": [
+        { "kind": "quest_done", "id": "echo_contact" }, { "kind": "xp", "value": 420 }, { "kind": "gold", "value": 180 }, { "kind": "flag", "flag": "echo_testimony" }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_cache_offer",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "В каждой перестройке катакомб один оружейный тайник остаётся на месте. Найди его и забери то, что Сердце не сумело переварить.", "en": "Whenever the catacombs rearrange, one weapon cache stays fixed. Find it and recover what the Heart failed to digest." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Вернусь с оружием.", "en": "I will return armed." }, "effects": [
+        { "kind": "quest", "id": "forgotten_cache", "title": { "ru": "Оружие забытого яруса", "en": "Arsenal of the Forgotten Depth" }, "desc": { "ru": "Найди любой оружейный тайник в катакомбах.", "en": "Find any weapon cache in the catacombs." } }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_cache_progress",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Ищи комнату, которая выглядит слишком целой. Катакомбы умеют подделывать руины, но плохо подделывают порядок.", "en": "Look for a room that appears too intact. The catacombs can imitate ruins, but they imitate order poorly." } }
+    ]
+  },
+  {
+    "id": "warden_cache_complete",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Сталь ещё помнит прежнего владельца. Пусть теперь она запомнит тебя.", "en": "The steel still remembers its previous owner. Let it remember you now." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Оружие готово.", "en": "The weapon is ready." }, "effects": [
+        { "kind": "quest_done", "id": "forgotten_cache" }, { "kind": "xp", "value": 560 }, { "kind": "gold", "value": 260 }, { "kind": "flag", "flag": "forgotten_arsenal" }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_execution_offer",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Теперь Тиран знает твой страх, но не знает это оружие. Вернись и вынеси Сердцу приговор.", "en": "The Tyrant knows your fear now, but it does not know this weapon. Return and pass sentence on the Heart." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Приговор будет исполнен.", "en": "The sentence will be carried out." }, "effects": [
+        { "kind": "quest", "id": "heart_execution", "title": { "ru": "Приговор Сердцу", "en": "Sentence of the Heart" }, "desc": { "ru": "Уничтожь Тирана Сердца.", "en": "Destroy the Heart Tyrant." } }
+      ] }
+    ]
+  },
+  {
+    "id": "warden_execution_progress",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Не сражайся с Тираном как с животным. Он — привычка катакомб. Сломай ритм, и он потеряет форму.", "en": "Do not fight the Tyrant like an animal. It is a habit of the catacombs. Break its rhythm and it will lose shape." } }
+    ]
+  },
+  {
+    "id": "warden_execution_complete",
+    "lines": [
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Сегодня ворота молчат. Впервые это не угроза, а тишина.", "en": "Tonight the gate is silent. For once, that is not a threat. It is peace." } },
+      { "speaker": { "ru": "Смотритель", "en": "Warden" }, "portrait": "warden", "text": { "ru": "Сердце вырастит нового Тирана. Но теперь город знает, что каждый из них смертен.", "en": "The Heart will grow another Tyrant. But now the city knows every one of them can die." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Мы будем готовы.", "en": "We will be ready." }, "effects": [
+        { "kind": "quest_done", "id": "heart_execution" }, { "kind": "xp", "value": 1250 }, { "kind": "gold", "value": 700 }, { "kind": "flag", "flag": "heart_sentence" }, { "kind": "rel", "npc": "warden", "value": 15 }
+      ] }
+    ]
+  },
+  {
+    "id": "scientist_relay_offer",
+    "lines": [
+      { "speaker": { "ru": "Учёная Елена", "en": "Scientist Elena" }, "portrait": "scientist", "text": { "ru": "Дроны замолчали, и я наконец услышала другой сигнал. В катакомбах стоят тройные реле. Сердце сбивает их порядок, чтобы скрыть маршруты.", "en": "With the drones silent, I can finally hear another signal. Triple relays stand in the catacombs. The Heart scrambles their order to hide its routes." } },
+      { "speaker": { "ru": "Учёная Елена", "en": "Scientist Elena" }, "portrait": "scientist", "text": { "ru": "Синхронизируй две группы. Ошибка обнулит последовательность, поэтому слушай тон каждого узла.", "en": "Synchronize two groups. A mistake resets the sequence, so listen to each node's tone." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Настрою оба реле.", "en": "I will tune both relay groups." }, "effects": [
+        { "kind": "quest", "id": "relay_resonance", "title": { "ru": "Резонанс реле", "en": "Relay Resonance" }, "desc": { "ru": "Реши две головоломки с реле в катакомбах.", "en": "Solve two relay puzzles in the catacombs." } }
+      ] }
+    ]
+  },
+  {
+    "id": "scientist_relay_progress",
+    "lines": [
+      { "speaker": { "ru": "Учёная Елена", "en": "Scientist Elena" }, "portrait": "scientist", "text": { "ru": "Первый узел звучит выше, второй держит ритм, третий замыкает контур. Если начнёшь с конца — всё погаснет.", "en": "The first node sings high, the second holds the rhythm, the third closes the circuit. Start at the end and everything goes dark." } }
+    ]
+  },
+  {
+    "id": "scientist_relay_complete",
+    "lines": [
+      { "speaker": { "ru": "Учёная Елена", "en": "Scientist Elena" }, "portrait": "scientist", "text": { "ru": "Обе группы отвечают. Между импульсами появился голос — не живой, но и не машинный. Теперь мы можем искать его намеренно.", "en": "Both groups are responding. A voice appeared between the pulses—not alive, but not mechanical either. Now we can search for it deliberately." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Передать запись резонанса.", "en": "Hand over the resonance recording." }, "effects": [
+        { "kind": "quest_done", "id": "relay_resonance" }, { "kind": "xp", "value": 480 }, { "kind": "gold", "value": 210 }, { "kind": "flag", "flag": "relay_network_mapped" }
+      ] }
+    ]
+  },
+  {
+    "id": "scientist_archive_offer",
+    "lines": [
+      { "speaker": { "ru": "Учёная Елена", "en": "Scientist Elena" }, "portrait": "scientist", "text": { "ru": "Реле указали на комнаты, где время складывается слоями. Там остаются эхо памяти. Найди два и дай им договорить до конца.", "en": "The relays point to rooms where time folds into layers. Memory echoes remain there. Find two and let them finish speaking." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Принесу оба воспоминания.", "en": "I will recover both memories." }, "effects": [
+        { "kind": "quest", "id": "archive_whispers", "title": { "ru": "Шёпот архива", "en": "Whispers of the Archive" }, "desc": { "ru": "Прослушай два эха памяти в катакомбах.", "en": "Listen to two memory echoes in the catacombs." } }
+      ] }
+    ]
+  },
+  {
+    "id": "scientist_archive_progress",
+    "lines": [
+      { "speaker": { "ru": "Учёная Елена", "en": "Scientist Elena" }, "portrait": "scientist", "text": { "ru": "Эхо прячутся в тихих комнатах без боя. Фиолетовый свет — не ловушка, а след воспоминания.", "en": "Echoes hide in quiet rooms without combat. Violet light is not a trap there; it is the trace of a memory." } }
+    ]
+  },
+  {
+    "id": "scientist_archive_complete",
+    "lines": [
+      { "speaker": { "ru": "Учёная Елена", "en": "Scientist Elena" }, "portrait": "scientist", "text": { "ru": "Записи совпали. Тиран охраняет не Сердце — он охраняет дверь за ним. Я сохраню копии в двух разных архивах.", "en": "The recordings agree. The Tyrant does not guard the Heart; it guards a door behind it. I will keep copies in two separate archives." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Запечатать архивные копии.", "en": "Seal the archive copies." }, "effects": [
+        { "kind": "quest_done", "id": "archive_whispers" }, { "kind": "xp", "value": 620 }, { "kind": "gold", "value": 280 }, { "kind": "flag", "flag": "archive_echoes_recovered" }
+      ] }
+    ]
+  },
+  {
+    "id": "hub_victor_warden_aftermath",
+    "lines": [
+      { "speaker": { "ru": "Виктор", "en": "Victor" }, "portrait": "victor", "text": { "ru": "Печать на площади стала холодной, когда пал Хранитель. Люди впервые идут мимо врат, не ускоряя шаг.", "en": "The seal in the plaza turned cold when the Warden fell. For the first time, people pass the gate without quickening their pace." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Проверим, не изменился ли маршрут патруля.", "en": "Let us see whether the patrol route changed." }, "requires": { "flag": "boss_defeated_crypt_warden", "stat": "fit", "min": 7 }, "effects": [ { "kind": "flag", "flag": "discussed_crypt_warden" }, { "kind": "flag", "flag": "met_victor" }, { "kind": "rel", "npc": "victor", "value": 8 } ] },
+      { "text": { "ru": "Пусть сегодня они идут медленно.", "en": "Let them walk slowly tonight." }, "requires": { "flag": "boss_defeated_crypt_warden" }, "effects": [ { "kind": "flag", "flag": "discussed_crypt_warden" }, { "kind": "flag", "flag": "met_victor" }, { "kind": "rel", "npc": "victor", "value": 4 } ] }
+    ]
+  },
+  {
+    "id": "hub_elena_oracle_aftermath",
+    "lines": [
+      { "speaker": { "ru": "Елена", "en": "Elena" }, "portrait": "scientist", "text": { "ru": "После смерти Оракула помехи сложились в голос. Он повторяет не пророчество, а список прежних жертв.", "en": "After the Oracle died, the interference resolved into a voice. It repeats no prophecy—only a list of former victims." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Сверить имена с архивом.", "en": "Cross-reference the names with the archive." }, "requires": { "flag": "boss_defeated_blood_oracle", "quest_done": "relay_resonance" }, "effects": [ { "kind": "flag", "flag": "discussed_blood_oracle" }, { "kind": "flag", "flag": "met_elena" }, { "kind": "rel", "npc": "elena", "value": 10 }, { "kind": "xp", "value": 80 } ] },
+      { "text": { "ru": "Запиши голос, пока он не исчез.", "en": "Record the voice before it fades." }, "requires": { "flag": "boss_defeated_blood_oracle" }, "effects": [ { "kind": "flag", "flag": "discussed_blood_oracle" }, { "kind": "flag", "flag": "met_elena" }, { "kind": "rel", "npc": "elena", "value": 5 } ] }
+    ]
+  },
+  {
+    "id": "hub_vale_archive_aftermath",
+    "lines": [
+      { "speaker": { "ru": "Вейл", "en": "Vale" }, "portrait": "vale", "text": { "ru": "Страж Архива исчез, и три коридора вернулись на старые карты. Четвёртый появился впервые.", "en": "The Archive Sentinel is gone, and three corridors returned to the old maps. A fourth appeared for the first time." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Нанести новый коридор отдельным слоем.", "en": "Chart the new corridor on a separate layer." }, "requires": { "flag": "boss_defeated_archive_sentinel", "stat": "int", "min": 8 }, "effects": [ { "kind": "flag", "flag": "discussed_archive_sentinel" }, { "kind": "flag", "flag": "met_vale" }, { "kind": "rel", "npc": "vale", "value": 10 } ] },
+      { "text": { "ru": "Сначала отметь его как опасный.", "en": "Mark it as dangerous first." }, "requires": { "flag": "boss_defeated_archive_sentinel" }, "effects": [ { "kind": "flag", "flag": "discussed_archive_sentinel" }, { "kind": "flag", "flag": "met_vale" }, { "kind": "rel", "npc": "vale", "value": 5 } ] }
+    ]
+  },
+  {
+    "id": "hub_stranger_tyrant_aftermath",
+    "lines": [
+      { "speaker": { "ru": "Незнакомец", "en": "Stranger" }, "portrait": "stranger", "text": { "ru": "Ты убил Тирана, но Сердце не замолчало. Оно сменило вопрос: раньше спрашивало, кто войдёт. Теперь — кто останется.", "en": "You killed the Tyrant, but the Heart did not fall silent. It changed the question: once it asked who would enter. Now it asks who will remain." } }
+    ],
+    "choices": [
+      { "text": { "ru": "Я останусь собой.", "en": "I will remain myself." }, "requires": { "flag": "boss_defeated_heart_tyrant", "stat": "wil", "min": 9 }, "effects": [ { "kind": "flag", "flag": "discussed_heart_tyrant" }, { "kind": "flag", "flag": "met_stranger" }, { "kind": "flag", "flag": "heart_answer_self" }, { "kind": "rel", "npc": "stranger", "value": 12 } ] },
+      { "text": { "ru": "Пока ответ не нужен.", "en": "It does not need an answer yet." }, "requires": { "flag": "boss_defeated_heart_tyrant", "not_flag": "heart_answer_self" }, "effects": [ { "kind": "flag", "flag": "discussed_heart_tyrant" }, { "kind": "flag", "flag": "met_stranger" }, { "kind": "rel", "npc": "stranger", "value": 5 } ] }
+    ]
+  }
 ]

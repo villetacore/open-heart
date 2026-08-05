@@ -9,20 +9,20 @@
 use godot::prelude::*;
 
 // ── Доменные папки ────────────────────────────────────────────────────────────
-mod nodes;
-mod worldgen;
 mod combat;
 mod data;
+mod nodes;
 mod state;
 mod support;
+mod worldgen;
 
 // ── Ре-экспорт модулей в корень (сохраняет пути crate::<module>) ───────────────
-pub use nodes::{enemy, game, main_menu, player};
-pub use worldgen::{dungeon, map, nav, world};
 pub use combat::{perk, status, weapon};
 pub use data::{character, classes, config, content, dialogue, item, npc, quest, story};
+pub use nodes::{enemy, game, main_menu, player};
 pub use state::{game_state, save, settings};
 pub use support::{gfx, locale};
+pub use worldgen::{dungeon, map, nav, world};
 
 struct OpenHeart;
 

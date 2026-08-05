@@ -1,6 +1,7 @@
 [
   {
     "id": "thick_skin",
+    "name_en": "Thick Skin", "desc_en": "+15 maximum HP per rank.",
     "branch": "survival",
     "tier": 1.0,
     "max_ranks": 3.0,
@@ -17,6 +18,7 @@
   },
   {
     "id": "adrenaline",
+    "name_en": "Adrenaline", "desc_en": "+5% movement speed per rank.",
     "branch": "survival",
     "tier": 2.0,
     "max_ranks": 2.0,
@@ -35,6 +37,7 @@
   },
   {
     "id": "vampirism",
+    "name_en": "Vampirism", "desc_en": "+5% lifesteal per rank.",
     "branch": "survival",
     "tier": 2.0,
     "max_ranks": 3.0,
@@ -53,6 +56,7 @@
   },
   {
     "id": "juggernaut",
+    "name_en": "Juggernaut", "desc_en": "+25 maximum HP per rank.",
     "branch": "survival",
     "tier": 3.0,
     "max_ranks": 2.0,
@@ -71,6 +75,7 @@
   },
   {
     "id": "sharpshooter",
+    "name_en": "Sharpshooter", "desc_en": "+6% damage per rank.",
     "branch": "offense",
     "tier": 1.0,
     "max_ranks": 3.0,
@@ -87,6 +92,7 @@
   },
   {
     "id": "overkill",
+    "name_en": "Overkill", "desc_en": "+5% damage per rank.",
     "branch": "offense",
     "tier": 1.0,
     "max_ranks": 2.0,
@@ -103,6 +109,7 @@
   },
   {
     "id": "rapid_fire",
+    "name_en": "Rapid Fire", "desc_en": "Reduces weapon cooldown by 6% per rank.",
     "branch": "offense",
     "tier": 2.0,
     "max_ranks": 3.0,
@@ -121,6 +128,7 @@
   },
   {
     "id": "executioner",
+    "name_en": "Executioner", "desc_en": "+10% damage per rank.",
     "branch": "offense",
     "tier": 3.0,
     "max_ranks": 2.0,
@@ -139,6 +147,7 @@
   },
   {
     "id": "fleet_footed",
+    "name_en": "Fleet Footed", "desc_en": "+6% movement speed per rank.",
     "branch": "utility",
     "tier": 1.0,
     "max_ranks": 3.0,
@@ -155,6 +164,7 @@
   },
   {
     "id": "scavenger",
+    "name_en": "Scavenger", "desc_en": "+15% ammunition capacity per rank.",
     "branch": "utility",
     "tier": 1.0,
     "max_ranks": 3.0,
@@ -171,6 +181,7 @@
   },
   {
     "id": "quick_hands",
+    "name_en": "Quick Hands", "desc_en": "Reduces weapon cooldown by 5% per rank.",
     "branch": "utility",
     "tier": 2.0,
     "max_ranks": 2.0,
@@ -189,6 +200,7 @@
   },
   {
     "id": "deep_pockets",
+    "name_en": "Deep Pockets", "desc_en": "+25% ammunition capacity per rank.",
     "branch": "utility",
     "tier": 3.0,
     "max_ranks": 2.0,
@@ -207,6 +219,7 @@
   },
   {
     "id": "second_wind",
+    "name_en": "Second Wind", "desc_en": "+10% movement speed and +10 HP.",
     "branch": "survival",
     "tier": 2.0,
     "max_ranks": 1.0,
@@ -229,6 +242,7 @@
   },
   {
     "id": "iron_will",
+    "name_en": "Iron Will", "desc_en": "+20 HP and 4% faster weapon actions per rank.",
     "branch": "survival",
     "tier": 3.0,
     "max_ranks": 2.0,
@@ -251,6 +265,7 @@
   },
   {
     "id": "berserk_rage",
+    "name_en": "Berserk Rage", "desc_en": "+8% damage and -10 HP per rank.",
     "branch": "offense",
     "tier": 2.0,
     "max_ranks": 2.0,
@@ -273,6 +288,7 @@
   },
   {
     "id": "heavy_rounds",
+    "name_en": "Heavy Rounds", "desc_en": "+12% damage per rank.",
     "branch": "offense",
     "tier": 3.0,
     "max_ranks": 2.0,
@@ -291,6 +307,7 @@
   },
   {
     "id": "packrat",
+    "name_en": "Pack Rat", "desc_en": "+20% ammunition capacity per rank.",
     "branch": "utility",
     "tier": 2.0,
     "max_ranks": 2.0,
@@ -309,6 +326,7 @@
   },
   {
     "id": "leech_rounds",
+    "name_en": "Leech Rounds", "desc_en": "+4% lifesteal with every weapon per rank.",
     "branch": "utility",
     "tier": 3.0,
     "max_ranks": 2.0,

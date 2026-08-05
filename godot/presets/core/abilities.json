@@ -86,5 +86,43 @@
       1.0,
       0.6
     ]
+  },
+  {
+    "id": "shock_fan",
+    "kind": "projectile_burst",
+    "cooldown": 4.2,
+    "telegraph": 0.75,
+    "min_range": 3.0,
+    "max_range": 18.0,
+    "count": 5,
+    "spread": 0.38,
+    "proj_speed": 13.0,
+    "damage": 8.0,
+    "color": [0.2, 0.85, 1.0],
+    "status": { "id": "slow", "chance": 0.35 }
+  },
+  {
+    "id": "execution_charge",
+    "kind": "charge",
+    "cooldown": 5.4,
+    "telegraph": 0.9,
+    "min_range": 5.0,
+    "max_range": 16.0,
+    "speed_mult": 4.0,
+    "duration": 1.1,
+    "damage": 32.0,
+    "color": [1.0, 0.18, 0.35],
+    "status": { "id": "bleed", "chance": 0.8 }
+  },
+  {
+    "id": "summon_shades",
+    "kind": "summon",
+    "cooldown": 12.0,
+    "telegraph": 1.1,
+    "min_range": 4.0,
+    "max_range": 18.0,
+    "minion": "shade",
+    "count": 2,
+    "color": [0.65, 0.25, 1.0]
   }
 ]

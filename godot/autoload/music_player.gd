@@ -70,23 +70,28 @@ func _reshuffle() -> void:
 func _play_current() -> void:
 	if _order.is_empty():
 		return
-	var path: String = TRACKS[_order[_idx]]
-	var stream: AudioStream = load(path) as AudioStream
-	if stream == null:
-		push_warning("Music: не удалось загрузить трек " + path)
-		_on_finished()
-		return
-	# Плейлист сам переключает треки по сигналу finished, поэтому зацикливание
-	# самого потока нужно выключить (иначе finished не сработает).
-	if stream is AudioStreamOggVorbis:
-		(stream as AudioStreamOggVorbis).loop = false
-	_player.stream = stream
-	_player.play()
+	for _attempt in TRACKS.size():
+		var path: String = TRACKS[_order[_idx]]
+		# Читаем исходный OGG напрямую. Это не зависит от версии кэша
+		# `.godot/imported/*.oggvorbisstr` и переживает перенос проекта между Godot.
+		var stream := AudioStreamOggVorbis.load_from_file(path)
+		if stream != null:
+			stream.loop = false
+			_player.stream = stream
+			_player.play()
+			return
+		push_warning("Music: не удалось прочитать OGG " + path)
+		_advance_index()
+	push_warning("Music: ни один трек плейлиста не удалось загрузить")
+	_player.stream = null
 
-func _on_finished() -> void:
+func _advance_index() -> void:
 	_idx += 1
 	if _idx >= _order.size():
 		_reshuffle()
+
+func _on_finished() -> void:
+	_advance_index()
 	_play_current()
 
 ## Публичный API — можно дёргать из других сцен/скриптов.
@@ -109,3 +114,15 @@ func set_enabled(enabled: bool) -> void:
 		_play_current()
 	elif not enabled and _player.playing:
 		_player.stop()
+
+func shutdown() -> void:
+	set_process(false)
+	if _player == null:
+		return
+	_player.stop()
+	_player.stream = null
+	_player.free()
+	_player = null
+
+func _exit_tree() -> void:
+	shutdown()

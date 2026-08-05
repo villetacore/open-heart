@@ -74,11 +74,16 @@ godot -e --path ../godot    # редактор (F5 — играть) | без -e
 
 | Клавиша | Действие | Клавиша | Действие |
 |---|---|---|---|
+| `T` | switch tracked quest objective |  |  |
+| `J` | open bilingual quest journal | `1–5` | track an active journal entry |
 | `WASD` | движение | `E` | взаимодействие / порталы |
 | `Shift` | спринт | `Q` | быстрое лечение |
 | `Space` | прыжок | `I` | инвентарь |
-| `ЛКМ` | огонь | `P` | дерево перков |
+| `ЛКМ` / `ПКМ` | основной / альтернативный огонь | `P` | дерево перков |
 | `1–8` / колесо | смена оружия | `Esc` | отпустить мышь |
+
+Побеждённые стражи дают ядра оружия. В инвентаре (`I`) клавиши `1/2` выбирают одну из двух
+взаимоисключающих ветвей модификаций текущего оружия.
 
 ### Игровой цикл
 
@@ -134,7 +139,7 @@ PR и issue приветствуются — см. **[CONTRIBUTING.md](CONTRIBUT
 **OpenHeart** is a 2.5D first-person action-RPG (DOOM / Forgive Me Father style) built on
 Godot 4.7 with **all game logic in Rust** (gdext/GDExtension) and **all content in JSON**.
 Features: 8 weapons with FP sprite animations, 3 classes × 3 specs, a perk tree with
-synergies, damage types & enemy resistances, procedural multi-height dungeons with a
+synergies, damage types, enemy resistances & data-driven weak points, persistent boss trophies and hub memorials, procedural multi-height dungeons with a
 minimap, JSON-defined multi-tier maps (boxes/ramps/stairs/cylinders/neon), data-driven
 NPCs & quests, an in-Godot **game content editor** plugin, and a **preset system** where
 each preset folder is effectively a separate game selectable from the main menu.

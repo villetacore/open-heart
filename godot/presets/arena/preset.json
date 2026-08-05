@@ -1,7 +1,10 @@
 {
   "id": "arena",
   "name_ru": "Кровавая арена",
+  "name_en": "Blood Arena",
   "desc_ru": "Выживание: тесная арена, толпы врагов, лут дождём. Другая игра — тот же движок.",
+  "desc_en": "Survival: a tight arena, enemy hordes and abundant loot. A different game on the same engine.",
   "author": "OpenHeart",
-  "version": 1
+  "version": 1,
+  "enabled": false
 }

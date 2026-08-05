@@ -1,13 +1,19 @@
 //! Контент визуальной новеллы: сцены, диалоги, история.
 //! Сеттинг: Riverside Academy — элитная закрытая школа с секретами.
 
-use crate::dialogue::{Choice, Effect, Line, Scene};
 use crate::character::StatKind::*;
+use crate::dialogue::{Choice, Effect, Line, Scene};
 use crate::game_state::GameState;
 
-fn l(sp: &str, port: &str, tx: &str) -> Line { Line::new(sp, port, tx) }
-fn n(tx: &str) -> Line { Line::narr(tx) }
-fn c(tx: &str, eff: Vec<Effect>) -> Choice { Choice::simple(tx, eff) }
+fn l(sp: &str, port: &str, tx: &str) -> Line {
+    Line::new(sp, port, tx)
+}
+fn n(tx: &str) -> Line {
+    Line::narr(tx)
+}
+fn c(tx: &str, eff: Vec<Effect>) -> Choice {
+    Choice::simple(tx, eff)
+}
 fn cn(tx: &str, eff: Vec<Effect>, next: &str) -> Choice {
     let mut ch = Choice::simple(tx, eff);
     ch.next = Some(next.to_string());
@@ -26,42 +32,42 @@ fn crn(tx: &str, st: crate::character::StatKind, min: i32, eff: Vec<Effect>, nex
 pub fn get_scene(id: &str, state: &GameState) -> Option<Scene> {
     match id {
         // Виктор
-        "intro_victor"      => Some(intro_victor(state)),
-        "victor_chat_2"     => Some(victor_chat_2(state)),
-        "victor_quest_check"=> Some(victor_quest_check(state)),
-        "victor_chat_end"   => Some(victor_chat_end()),
+        "intro_victor" => Some(intro_victor(state)),
+        "victor_chat_2" => Some(victor_chat_2(state)),
+        "victor_quest_check" => Some(victor_quest_check(state)),
+        "victor_chat_end" => Some(victor_chat_end()),
         // Ms. Вейл
-        "meet_vale"         => Some(meet_vale(state)),
-        "vale_class_chat"   => Some(vale_class_chat()),
-        "vale_office_1"     => Some(vale_office_1(state)),
-        "vale_office_2"     => Some(vale_office_2(state)),
-        "vale_office_deep"  => Some(vale_office_deep(state)),
+        "meet_vale" => Some(meet_vale(state)),
+        "vale_class_chat" => Some(vale_class_chat()),
+        "vale_office_1" => Some(vale_office_1(state)),
+        "vale_office_2" => Some(vale_office_2(state)),
+        "vale_office_deep" => Some(vale_office_deep(state)),
         // Елена
-        "first_elena"       => Some(first_elena()),
-        "elena_library_1"   => Some(elena_library_1(state)),
-        "elena_chat_2"      => Some(elena_chat_2(state)),
+        "first_elena" => Some(first_elena()),
+        "elena_library_1" => Some(elena_library_1(state)),
+        "elena_chat_2" => Some(elena_chat_2(state)),
         "elena_quest_check" => Some(elena_quest_check(state)),
-        "elena_chat_end"    => Some(elena_chat_end()),
+        "elena_chat_end" => Some(elena_chat_end()),
         // София
-        "meet_sofia"        => Some(meet_sofia(state)),
-        "sofia_chat"        => Some(sofia_chat(state)),
-        "sofia_chat_3"      => Some(sofia_chat_3(state)),
+        "meet_sofia" => Some(meet_sofia(state)),
+        "sofia_chat" => Some(sofia_chat(state)),
+        "sofia_chat_3" => Some(sofia_chat_3(state)),
         // Охранник
-        "meet_guard"         => Some(meet_guard(state)),
-        "guard_quest_offer"  => Some(guard_quest_offer()),
-        "guard_quest_check"  => Some(guard_quest_check(state)),
-        "guard_quest_end"    => Some(guard_quest_end()),
+        "meet_guard" => Some(meet_guard(state)),
+        "guard_quest_offer" => Some(guard_quest_offer()),
+        "guard_quest_check" => Some(guard_quest_check(state)),
+        "guard_quest_end" => Some(guard_quest_end()),
         // Торговец
-        "meet_merchant"  => Some(meet_merchant()),
-        "merchant_shop"  => Some(merchant_shop()),
+        "meet_merchant" => Some(meet_merchant()),
+        "merchant_shop" => Some(merchant_shop()),
         "merchant_again" => Some(merchant_again()),
         // Учёный
-        "meet_scientist"           => Some(meet_scientist()),
-        "scientist_quest_offer"    => Some(scientist_quest_offer(state)),
-        "scientist_quest_check"    => Some(scientist_quest_check(state)),
-        "scientist_quest_end"      => Some(scientist_quest_end()),
+        "meet_scientist" => Some(meet_scientist()),
+        "scientist_quest_offer" => Some(scientist_quest_offer(state)),
+        "scientist_quest_check" => Some(scientist_quest_check(state)),
+        "scientist_quest_end" => Some(scientist_quest_end()),
         // Незнакомец
-        "meet_stranger"  => Some(meet_stranger()),
+        "meet_stranger" => Some(meet_stranger()),
         "stranger_again" => Some(stranger_again()),
         _ => None,
     }
@@ -170,16 +176,24 @@ fn victor_quest_check(state: &GameState) -> Scene {
             id: "victor_quest_check".into(),
             lines: vec![
                 l("Виктор", "victor", "Ну как? Нашёл что-нибудь?"),
-                l("Виктор", "victor", "Мне говорили, что ключ где-то на этаже. Осмотрись внимательнее."),
+                l(
+                    "Виктор",
+                    "victor",
+                    "Мне говорили, что ключ где-то на этаже. Осмотрись внимательнее.",
+                ),
             ],
             choices: vec![
-                c("«Продолжаю искать.»", vec![
-                    Effect::Flash("Виктор ждёт. Найди ключ.".into()),
-                ]),
-                c("«Опасно там?»", vec![
-                    Effect::Stat(Intelligence, 1),
-                    Effect::Flash("«Не уверен,» — честно ответил он.".into()),
-                ]),
+                c(
+                    "«Продолжаю искать.»",
+                    vec![Effect::Flash("Виктор ждёт. Найди ключ.".into())],
+                ),
+                c(
+                    "«Опасно там?»",
+                    vec![
+                        Effect::Stat(Intelligence, 1),
+                        Effect::Flash("«Не уверен,» — честно ответил он.".into()),
+                    ],
+                ),
             ],
         }
     }
@@ -190,15 +204,20 @@ fn victor_chat_end() -> Scene {
         id: "victor_chat_end".into(),
         lines: vec![
             n("Виктор выглядит одновременно взволнованным и довольным."),
-            l("Виктор", "victor", "То, что ты сделал — это важнее, чем кажется. В Riverside скрывают много всего."),
+            l(
+                "Виктор",
+                "victor",
+                "То, что ты сделал — это важнее, чем кажется. В Riverside скрывают много всего.",
+            ),
             l("Виктор", "victor", "Я рад, что ты мой сосед. Серьёзно."),
         ],
-        choices: vec![
-            c("«Взаимно.»", vec![
+        choices: vec![c(
+            "«Взаимно.»",
+            vec![
                 Effect::Stat(Reputation, 1),
                 Effect::Flash("Виктор улыбается по-настоящему.".into()),
-            ]),
-        ],
+            ],
+        )],
     }
 }
 
@@ -297,7 +316,9 @@ fn vale_office_1(_state: &GameState) -> Scene {
 fn vale_office_2(state: &GameState) -> Scene {
     let extra = if state.has("impressed_vale_first") {
         " Ты тот, кто удивляет её с первой встречи."
-    } else { "" };
+    } else {
+        ""
+    };
     Scene {
         id: "vale_office_2".into(),
         lines: vec![
@@ -411,23 +432,41 @@ fn elena_library_1(state: &GameState) -> Scene {
         id: "elena_library_1".into(),
         lines: vec![
             n(opener),
-            l("Елена", "elena", "Снова ты. *Вздыхает, но книгу закрывает.* Садись, раз уж пришёл."),
-            l("Елена", "elena", "Я не привыкла к тому, что кто-то... обращает на меня внимание. Не из-за рейтинга."),
-            l("Елена", "elena", "Это раздражает. *Тихо.* Но не так сильно, как должно бы."),
+            l(
+                "Елена",
+                "elena",
+                "Снова ты. *Вздыхает, но книгу закрывает.* Садись, раз уж пришёл.",
+            ),
+            l(
+                "Елена",
+                "elena",
+                "Я не привыкла к тому, что кто-то... обращает на меня внимание. Не из-за рейтинга.",
+            ),
+            l(
+                "Елена",
+                "elena",
+                "Это раздражает. *Тихо.* Но не так сильно, как должно бы.",
+            ),
         ],
         choices: vec![
-            c("«Может, это потому что ты больше, чем твой рейтинг?»", vec![
-                Effect::Flag("elena_lib_1".into()),
-                Effect::Rel("elena".into(), 14),
-                Effect::Stat(Charm, 1),
-                Effect::Flash("Она долго молчала. «Ты странный.»".into()),
-            ]),
-            c("«Давай поработаем вместе. Мне правда нужна помощь с материалом.»", vec![
-                Effect::Flag("elena_lib_1".into()),
-                Effect::Rel("elena".into(), 10),
-                Effect::Stat(Intelligence, 1),
-                Effect::Flash("Елена открыла книгу снова. «Хорошо. Смотри сюда.»".into()),
-            ]),
+            c(
+                "«Может, это потому что ты больше, чем твой рейтинг?»",
+                vec![
+                    Effect::Flag("elena_lib_1".into()),
+                    Effect::Rel("elena".into(), 14),
+                    Effect::Stat(Charm, 1),
+                    Effect::Flash("Она долго молчала. «Ты странный.»".into()),
+                ],
+            ),
+            c(
+                "«Давай поработаем вместе. Мне правда нужна помощь с материалом.»",
+                vec![
+                    Effect::Flag("elena_lib_1".into()),
+                    Effect::Rel("elena".into(), 10),
+                    Effect::Stat(Intelligence, 1),
+                    Effect::Flash("Елена открыла книгу снова. «Хорошо. Смотри сюда.»".into()),
+                ],
+            ),
         ],
     }
 }
@@ -496,14 +535,19 @@ fn elena_quest_check(state: &GameState) -> Scene {
             id: "elena_quest_check".into(),
             lines: vec![
                 l("Елена", "elena", "Нашёл ключ?"),
-                l("Елена", "elena", "Маленький, серебристый. Я теряю голову без него."),
+                l(
+                    "Елена",
+                    "elena",
+                    "Маленький, серебристый. Я теряю голову без него.",
+                ),
             ],
-            choices: vec![
-                c("«Ищу. Найду.»", vec![
+            choices: vec![c(
+                "«Ищу. Найду.»",
+                vec![
                     Effect::Rel("elena".into(), 3),
                     Effect::Flash("Елена кивнула. Ей спокойнее.".into()),
-                ]),
-            ],
+                ],
+            )],
         }
     }
 }
@@ -571,32 +615,53 @@ fn sofia_chat(state: &GameState) -> Scene {
     Scene {
         id: "sofia_chat".into(),
         lines: vec![
-            n(if intimate { "За стойкой, подальше от толпы. София говорит тише, чем обычно." }
-              else { "Она нашла тебя первой. Редкость." }),
-            l("София", "sofia", if intimate {
-                "Знаешь, ты единственный, кто не пытается что-то от меня получить. Это... неожиданно."
+            n(if intimate {
+                "За стойкой, подальше от толпы. София говорит тише, чем обычно."
             } else {
-                "Ты держишься лучше, чем я думала. Riverside ломает таких, как ты."
+                "Она нашла тебя первой. Редкость."
             }),
-            l("София", "sofia", "Вся эта репутация, компания, имидж — это работа. Настоящий вопрос: зачем?"),
+            l(
+                "София",
+                "sofia",
+                if intimate {
+                    "Знаешь, ты единственный, кто не пытается что-то от меня получить. Это... неожиданно."
+                } else {
+                    "Ты держишься лучше, чем я думала. Riverside ломает таких, как ты."
+                },
+            ),
+            l(
+                "София",
+                "sofia",
+                "Вся эта репутация, компания, имидж — это работа. Настоящий вопрос: зачем?",
+            ),
         ],
         choices: vec![
-            cn("«Почему ты вообще так живёшь?»", vec![
-                Effect::Rel("sofia".into(), 10),
-                Effect::Stat(Intelligence, 1),
-                Effect::Flash("«Хороший вопрос. Ответ позже.»".into()),
-            ], "sofia_chat_3"),
-            c("«Все что-то хотят. Я просто честен об этом.»", vec![
-                Effect::Rel("sofia".into(), 12),
-                Effect::Stat(Charm, 1),
-                Effect::Flag("sofia_deep_done".into()),
-                Effect::Flash("Она посмотрела на тебя иначе. «Редкость.»".into()),
-            ]),
-            c("«Ты не такая, какой кажешься снаружи.»", vec![
-                Effect::Rel("sofia".into(), 8),
-                Effect::Flag("sofia_deep_done".into()),
-                Effect::Flash("«Никто не такой,» — ответила она. Тихо.".into()),
-            ]),
+            cn(
+                "«Почему ты вообще так живёшь?»",
+                vec![
+                    Effect::Rel("sofia".into(), 10),
+                    Effect::Stat(Intelligence, 1),
+                    Effect::Flash("«Хороший вопрос. Ответ позже.»".into()),
+                ],
+                "sofia_chat_3",
+            ),
+            c(
+                "«Все что-то хотят. Я просто честен об этом.»",
+                vec![
+                    Effect::Rel("sofia".into(), 12),
+                    Effect::Stat(Charm, 1),
+                    Effect::Flag("sofia_deep_done".into()),
+                    Effect::Flash("Она посмотрела на тебя иначе. «Редкость.»".into()),
+                ],
+            ),
+            c(
+                "«Ты не такая, какой кажешься снаружи.»",
+                vec![
+                    Effect::Rel("sofia".into(), 8),
+                    Effect::Flag("sofia_deep_done".into()),
+                    Effect::Flash("«Никто не такой,» — ответила она. Тихо.".into()),
+                ],
+            ),
         ],
     }
 }
@@ -671,33 +736,47 @@ fn guard_quest_check(state: &GameState) -> Scene {
         Scene {
             id: "guard_quest_check".into(),
             lines: vec![
-                l("Охранник", "guard", "У тебя монеты. Значит, тайник реальный."),
-                l("Охранник", "guard", "Теперь у меня есть всё, что нужно. Спасибо, парень."),
+                l(
+                    "Охранник",
+                    "guard",
+                    "У тебя монеты. Значит, тайник реальный.",
+                ),
+                l(
+                    "Охранник",
+                    "guard",
+                    "Теперь у меня есть всё, что нужно. Спасибо, парень.",
+                ),
             ],
-            choices: vec![
-                c("Передать три монеты Дрейку.", vec![
+            choices: vec![c(
+                "Передать три монеты Дрейку.",
+                vec![
                     Effect::Flag("guard_quest_done".into()),
                     Effect::QuestDone("guard_theft".into()),
                     Effect::Gold(-3),
                     Effect::Gold(80),
                     Effect::Rel("guard".into(), 30),
                     Effect::Stat(crate::character::StatKind::Reputation, 2),
-                    Effect::Flash("Квест выполнен! +77 золота (сдача), +30 к отношениям с Дрейком.".into()),
-                ]),
-            ],
+                    Effect::Flash(
+                        "Квест выполнен! +77 золота (сдача), +30 к отношениям с Дрейком.".into(),
+                    ),
+                ],
+            )],
         }
     } else {
         Scene {
             id: "guard_quest_check".into(),
             lines: vec![
                 l("Охранник", "guard", "Нашёл тайник?"),
-                l("Охранник", "guard", "Три монеты под алтарём арены. Если тайника нет — значит кто-то уже почистил."),
+                l(
+                    "Охранник",
+                    "guard",
+                    "Три монеты под алтарём арены. Если тайника нет — значит кто-то уже почистил.",
+                ),
             ],
-            choices: vec![
-                c("«Ещё ищу.»", vec![
-                    Effect::Flash("Дрейк кивнул. Продолжай.".into()),
-                ]),
-            ],
+            choices: vec![c(
+                "«Ещё ищу.»",
+                vec![Effect::Flash("Дрейк кивнул. Продолжай.".into())],
+            )],
         }
     }
 }
@@ -707,15 +786,24 @@ fn guard_quest_end() -> Scene {
         id: "guard_quest_end".into(),
         lines: vec![
             n("Дрейк выглядит спокойнее. Задание закрыто."),
-            l("Охранник", "guard", "Виновника поймали. Без шума, как я и хотел."),
-            l("Охранник", "guard", "Ты толковый человек. Если понадоблюсь — я здесь."),
+            l(
+                "Охранник",
+                "guard",
+                "Виновника поймали. Без шума, как я и хотел.",
+            ),
+            l(
+                "Охранник",
+                "guard",
+                "Ты толковый человек. Если понадоблюсь — я здесь.",
+            ),
         ],
-        choices: vec![
-            c("«Рад был помочь.»", vec![
+        choices: vec![c(
+            "«Рад был помочь.»",
+            vec![
                 Effect::Rel("guard".into(), 8),
                 Effect::Flash("Дрейк пожал тебе руку. По-настоящему.".into()),
-            ]),
-        ],
+            ],
+        )],
     }
 }
 
@@ -786,15 +874,24 @@ fn merchant_again() -> Scene {
     Scene {
         id: "merchant_again".into(),
         lines: vec![
-            l("Торговец", "merchant", "Снова вы! Всегда рад постоянным клиентам."),
-            l("Торговец", "merchant", "Новинок пока нет, но если принесёте что-то интересное — обменяю по-честному."),
+            l(
+                "Торговец",
+                "merchant",
+                "Снова вы! Всегда рад постоянным клиентам.",
+            ),
+            l(
+                "Торговец",
+                "merchant",
+                "Новинок пока нет, но если принесёте что-то интересное — обменяю по-честному.",
+            ),
         ],
-        choices: vec![
-            c("«Договорились.»", vec![
+        choices: vec![c(
+            "«Договорились.»",
+            vec![
                 Effect::Rel("merchant".into(), 4),
                 Effect::Flash("Гаспар кивнул с довольной миной.".into()),
-            ]),
-        ],
+            ],
+        )],
     }
 }
 
@@ -830,7 +927,9 @@ fn meet_scientist() -> Scene {
 fn scientist_quest_offer(state: &GameState) -> Scene {
     let extra = if state.rel("scientist") >= 15 {
         " Я уже немного вам доверяю, так что скажу прямо."
-    } else { "" };
+    } else {
+        ""
+    };
     Scene {
         id: "scientist_quest_offer".into(),
         lines: vec![
@@ -882,13 +981,16 @@ fn scientist_quest_check(state: &GameState) -> Scene {
             id: "scientist_quest_check".into(),
             lines: vec![
                 l("Учёный", "scientist", "Нашли Незнакомца?"),
-                l("Учёный", "scientist", "Он в тронном зале на севере. Будьте осторожны — там патрулируют враги."),
+                l(
+                    "Учёный",
+                    "scientist",
+                    "Он в тронном зале на севере. Будьте осторожны — там патрулируют враги.",
+                ),
             ],
-            choices: vec![
-                c("«Ещё ищу.»", vec![
-                    Effect::Flash("Профессор Кейн нетерпеливо кивнул.".into()),
-                ]),
-            ],
+            choices: vec![c(
+                "«Ещё ищу.»",
+                vec![Effect::Flash("Профессор Кейн нетерпеливо кивнул.".into())],
+            )],
         }
     }
 }
@@ -898,15 +1000,24 @@ fn scientist_quest_end() -> Scene {
         id: "scientist_quest_end".into(),
         lines: vec![
             n("Профессор Кейн выглядит помолодевшим. Что-то щёлкнуло в его теории."),
-            l("Учёный", "scientist", "Мне нужно написать три статьи немедленно. Вы спасли несколько лет работы."),
-            l("Учёный", "scientist", "Если вам когда-нибудь понадобится что-то знать о Riverside — приходите."),
+            l(
+                "Учёный",
+                "scientist",
+                "Мне нужно написать три статьи немедленно. Вы спасли несколько лет работы.",
+            ),
+            l(
+                "Учёный",
+                "scientist",
+                "Если вам когда-нибудь понадобится что-то знать о Riverside — приходите.",
+            ),
         ],
-        choices: vec![
-            c("«Обязательно приду.»", vec![
+        choices: vec![c(
+            "«Обязательно приду.»",
+            vec![
                 Effect::Rel("scientist".into(), 10),
                 Effect::Flash("Учёный уже уткнулся в записи. Это его лучшая похвала.".into()),
-            ]),
-        ],
+            ],
+        )],
     }
 }
 
@@ -965,20 +1076,37 @@ fn stranger_again() -> Scene {
         id: "stranger_again".into(),
         lines: vec![
             n("Незнакомец стоит на том же месте. Как будто никуда и не уходил."),
-            l("Незнакомец", "stranger", "Ты снова здесь. Значит, вопросы ещё есть."),
-            l("Незнакомец", "stranger", "Хорошо. Ответы появятся сами — если смотреть в правильную сторону."),
+            l(
+                "Незнакомец",
+                "stranger",
+                "Ты снова здесь. Значит, вопросы ещё есть.",
+            ),
+            l(
+                "Незнакомец",
+                "stranger",
+                "Хорошо. Ответы появятся сами — если смотреть в правильную сторону.",
+            ),
         ],
         choices: vec![
-            c("«Я найду ответы.»", vec![
-                Effect::Rel("stranger".into(), 8),
-                Effect::Stat(crate::character::StatKind::Willpower, 1),
-                Effect::Flash("Незнакомец кивнул. Почти с уважением.".into()),
-            ]),
-            c("«Что такое Riverside на самом деле?»", vec![
-                Effect::Rel("stranger".into(), 12),
-                Effect::Stat(crate::character::StatKind::Intelligence, 1),
-                Effect::Flash("«Место, где страх становится силой — или слабостью. Зависит от тебя.»".into()),
-            ]),
+            c(
+                "«Я найду ответы.»",
+                vec![
+                    Effect::Rel("stranger".into(), 8),
+                    Effect::Stat(crate::character::StatKind::Willpower, 1),
+                    Effect::Flash("Незнакомец кивнул. Почти с уважением.".into()),
+                ],
+            ),
+            c(
+                "«Что такое Riverside на самом деле?»",
+                vec![
+                    Effect::Rel("stranger".into(), 12),
+                    Effect::Stat(crate::character::StatKind::Intelligence, 1),
+                    Effect::Flash(
+                        "«Место, где страх становится силой — или слабостью. Зависит от тебя.»"
+                            .into(),
+                    ),
+                ],
+            ),
         ],
     }
 }

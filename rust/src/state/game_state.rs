@@ -1,29 +1,58 @@
 //! Чистое игровое состояние — без зависимостей Godot.
 //! Вся логика переходов и доступных действий здесь.
 
-use std::collections::{HashMap, HashSet};
 use crate::character::{StatKind, Stats};
 use crate::dialogue::Effect;
-use crate::quest::QuestLog;
 use crate::item::Inventory;
+use crate::quest::QuestLog;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum Period { Morning, Afternoon, Evening, Night }
+pub enum Period {
+    Morning,
+    Afternoon,
+    Evening,
+    Night,
+}
 
 impl Period {
     pub fn label(&self) -> &'static str {
-        match self { Self::Morning => "Утро", Self::Afternoon => "День", Self::Evening => "Вечер", Self::Night => "Ночь" }
+        match self {
+            Self::Morning => "Утро",
+            Self::Afternoon => "День",
+            Self::Evening => "Вечер",
+            Self::Night => "Ночь",
+        }
     }
     pub fn icon(&self) -> &'static str {
-        match self { Self::Morning => "🌅", Self::Afternoon => "☀", Self::Evening => "🌆", Self::Night => "🌙" }
+        match self {
+            Self::Morning => "🌅",
+            Self::Afternoon => "☀",
+            Self::Evening => "🌆",
+            Self::Night => "🌙",
+        }
     }
     pub fn next(&self) -> Self {
-        match self { Self::Morning => Self::Afternoon, Self::Afternoon => Self::Evening, Self::Evening => Self::Night, Self::Night => Self::Morning }
+        match self {
+            Self::Morning => Self::Afternoon,
+            Self::Afternoon => Self::Evening,
+            Self::Evening => Self::Night,
+            Self::Night => Self::Morning,
+        }
     }
 }
 
 #[derive(Clone, PartialEq, Debug, Hash, Eq)]
-pub enum Location { Dorm, Hallway, Classroom, Library, Gym, Cafeteria, Park, Office }
+pub enum Location {
+    Dorm,
+    Hallway,
+    Classroom,
+    Library,
+    Gym,
+    Cafeteria,
+    Park,
+    Office,
+}
 
 impl Location {
     pub fn label(&self) -> &'static str {
@@ -65,19 +94,65 @@ pub struct Action {
 
 impl Action {
     fn go(key: &'static str, label: &str, loc: Location) -> Self {
-        Self { key, label: label.to_string(), icon: "🚶", time_cost: false, effects: vec![], scene: None, goto: Some(loc) }
+        Self {
+            key,
+            label: label.to_string(),
+            icon: "🚶",
+            time_cost: false,
+            effects: vec![],
+            scene: None,
+            goto: Some(loc),
+        }
     }
     fn act(key: &'static str, icon: &'static str, label: &str, effects: Vec<Effect>) -> Self {
-        Self { key, label: label.to_string(), icon, time_cost: true, effects, scene: None, goto: None }
+        Self {
+            key,
+            label: label.to_string(),
+            icon,
+            time_cost: true,
+            effects,
+            scene: None,
+            goto: None,
+        }
     }
     fn scene_act(key: &'static str, icon: &'static str, label: &str, scene: &'static str) -> Self {
-        Self { key, label: label.to_string(), icon, time_cost: false, effects: vec![], scene: Some(scene), goto: None }
+        Self {
+            key,
+            label: label.to_string(),
+            icon,
+            time_cost: false,
+            effects: vec![],
+            scene: Some(scene),
+            goto: None,
+        }
     }
-    fn scene_time(key: &'static str, icon: &'static str, label: &str, scene: &'static str, effects: Vec<Effect>) -> Self {
-        Self { key, label: label.to_string(), icon, time_cost: true, effects, scene: Some(scene), goto: None }
+    fn scene_time(
+        key: &'static str,
+        icon: &'static str,
+        label: &str,
+        scene: &'static str,
+        effects: Vec<Effect>,
+    ) -> Self {
+        Self {
+            key,
+            label: label.to_string(),
+            icon,
+            time_cost: true,
+            effects,
+            scene: Some(scene),
+            goto: None,
+        }
     }
     fn end_day(key: &'static str) -> Self {
-        Self { key, label: "Закончить день (спать)".to_string(), icon: "💤", time_cost: true, effects: vec![], scene: None, goto: None }
+        Self {
+            key,
+            label: "Закончить день (спать)".to_string(),
+            icon: "💤",
+            time_cost: true,
+            effects: vec![],
+            scene: None,
+            goto: None,
+        }
     }
 }
 
@@ -93,19 +168,21 @@ pub struct GameState {
     pub inventory: Inventory,
 
     // ── RPG-прогрессия ──
-    pub class_idx: Option<usize>,   // индекс в classes::CLASSES
-    pub spec_idx:  usize,           // специализация внутри класса
-    pub level:     u32,
-    pub xp:        u32,
-    pub dungeon_seed:     u64,      // счётчик сидов для процедурных данжей
+    pub class_idx: Option<usize>, // индекс в classes::CLASSES
+    pub spec_idx: usize,          // специализация внутри класса
+    pub level: u32,
+    pub xp: u32,
+    pub dungeon_seed: u64, // счётчик сидов для процедурных данжей
     pub dungeons_cleared: u32,
-    pub hearts:           u32,      // собранные «сердца жизни» (+15 макс. HP каждое)
-    pub perks:            HashMap<String, u32>, // id перка → купленный ранг
-    pub perk_points:      u32,      // очки на покупку перков
+    pub hearts: u32,                 // собранные «сердца жизни» (+15 макс. HP каждое)
+    pub perks: HashMap<String, u32>, // id перка → купленный ранг
+    pub perk_points: u32,            // очки на покупку перков
     /// Прогресс data-driven квестов (quest_id → счётчик убийств/подборов).
-    pub quest_kills:      HashMap<String, u32>,
+    pub quest_kills: HashMap<String, u32>,
     /// Пресет, с которым начата эта игра.
-    pub preset:           String,
+    pub preset: String,
+    pub weapon_mods: [u8; 8],
+    pub weapon_mod_cores: u32,
 }
 
 impl GameState {
@@ -144,11 +221,17 @@ impl GameState {
             perk_points: 0,
             quest_kills: HashMap::new(),
             preset: "core".into(),
+            weapon_mods: [0; 8],
+            weapon_mod_cores: 0,
         }
     }
 
-    pub fn add_heart(&mut self) { self.hearts += 1; }
-    pub fn stat_hearts(&self) -> u32 { self.hearts }
+    pub fn add_heart(&mut self) {
+        self.hearts += 1;
+    }
+    pub fn stat_hearts(&self) -> u32 {
+        self.hearts
+    }
 
     /// Начислить опыт; вернуть количество полученных уровней. Каждый уровень даёт очко перка.
     pub fn add_xp(&mut self, amount: u32) -> u32 {
@@ -163,40 +246,91 @@ impl GameState {
         gained
     }
 
-    pub fn rel(&self, npc: &str) -> i32 { *self.relations.get(npc).unwrap_or(&0) }
-    pub fn has(&self, flag: &str) -> bool { self.flags.contains(flag) }
-    pub fn stat(&self, k: &StatKind) -> i32 { self.stats.get(k) }
+    pub fn rel(&self, npc: &str) -> i32 {
+        *self.relations.get(npc).unwrap_or(&0)
+    }
+    pub fn has(&self, flag: &str) -> bool {
+        self.flags.contains(flag)
+    }
+    pub fn stat(&self, k: &StatKind) -> i32 {
+        self.stats.get(k)
+    }
 
     /// Применить список эффектов, вернуть строки для флэш-сообщений.
-    pub fn apply(&mut self, effects: &[Effect]) -> Vec<String> {
+    pub fn apply(&mut self, effects: &[Effect], lang: &str) -> Vec<String> {
         let mut msgs = Vec::new();
         for e in effects {
             match e {
                 Effect::Stat(k, v) => {
                     self.stats.modify(k, *v);
-                    if *v != 0 { msgs.push(format!("{:+} {}", v, k.short())); }
+                    if *v != 0 {
+                        msgs.push(format!("{:+} {}", v, k.short()));
+                    }
                 }
                 Effect::Rel(id, v) => {
                     let r = self.relations.entry(id.clone()).or_insert(0);
                     *r = (*r + v).clamp(0, 100);
-                    if *v != 0 { msgs.push(format!("{:+} к отношениям ({})", v, id)); }
+                    if *v != 0 {
+                        msgs.push(if lang == "en" {
+                            format!("{:+} relationship ({})", v, id)
+                        } else {
+                            format!("{:+} к отношениям ({})", v, id)
+                        });
+                    }
                 }
-                Effect::Flag(f) => { self.flags.insert(f.clone()); }
-                Effect::UnFlag(f) => { self.flags.remove(f); }
-                Effect::Gold(v) => { self.gold += v; msgs.push(format!("{:+} зол.", v)); }
+                Effect::Flag(f) => {
+                    self.flags.insert(f.clone());
+                }
+                Effect::UnFlag(f) => {
+                    self.flags.remove(f);
+                }
+                Effect::Gold(v) => {
+                    self.gold += v;
+                    msgs.push(format!(
+                        "{:+} {}",
+                        v,
+                        if lang == "en" { "gold" } else { "зол." }
+                    ));
+                }
                 Effect::Xp(v) => {
                     let gained = self.add_xp(*v);
                     msgs.push(format!("+{} XP", v));
-                    if gained > 0 { msgs.push(format!("УРОВЕНЬ {}!", self.level)); }
+                    if gained > 0 {
+                        msgs.push(format!(
+                            "{} {}!",
+                            if lang == "en" {
+                                "LEVEL"
+                            } else {
+                                "УРОВЕНЬ"
+                            },
+                            self.level
+                        ));
+                    }
                 }
-                Effect::Flash(m) => msgs.push(m.clone()),
+                Effect::Item { id, name, qty } => {
+                    let name = crate::dialogue::localized(name, lang);
+                    self.inventory
+                        .add(crate::item::Item::new(id, &name, "", *qty));
+                    msgs.push(format!("+{} {}", qty, name));
+                }
+                Effect::Flash(m) => msgs.push(crate::dialogue::localized(m, lang)),
                 Effect::Quest { id, title, desc } => {
-                    self.quests.add(id, title, desc);
-                    msgs.push(format!("Новый квест: «{}»", title));
+                    let title = crate::dialogue::localized(title, lang);
+                    let desc = crate::dialogue::localized(desc, lang);
+                    self.quests.add(id, &title, &desc);
+                    msgs.push(if lang == "en" {
+                        format!("New quest: \"{title}\"")
+                    } else {
+                        format!("Новый квест: «{title}»")
+                    });
                 }
                 Effect::QuestDone(id) => {
                     self.quests.complete(id);
-                    msgs.push("Квест выполнен!".into());
+                    msgs.push(if lang == "en" {
+                        "Quest completed!".into()
+                    } else {
+                        "Квест выполнен!".into()
+                    });
                 }
             }
         }
@@ -210,86 +344,197 @@ impl GameState {
             self.day += 1;
             self.location = Location::Dorm;
             true
-        } else { false }
+        } else {
+            false
+        }
     }
 
     /// Список доступных действий для текущей локации + периода + флагов.
     pub fn available_actions(&self) -> Vec<Action> {
-        use Effect::*; use StatKind::*;
+        use Effect::*;
+        use StatKind::*;
         let mut a: Vec<Action> = Vec::new();
 
         match &self.location {
             Location::Dorm => {
                 // Первый разговор с Виктором
                 if !self.has("met_victor") {
-                    a.push(Action::scene_act("talk_victor", "💬", "Поговорить с Виктором", "intro_victor"));
+                    a.push(Action::scene_act(
+                        "talk_victor",
+                        "💬",
+                        "Поговорить с Виктором",
+                        "intro_victor",
+                    ));
                 } else {
-                    a.push(Action::go("go_hallway", "Выйти в коридор", Location::Hallway));
+                    a.push(Action::go(
+                        "go_hallway",
+                        "Выйти в коридор",
+                        Location::Hallway,
+                    ));
                 }
                 if matches!(self.period, Period::Evening | Period::Night) {
-                    a.push(Action::act("rest_early", "📖", "Почитать перед сном (+INT)", vec![Stat(Intelligence, 1)]));
+                    a.push(Action::act(
+                        "rest_early",
+                        "📖",
+                        "Почитать перед сном (+INT)",
+                        vec![Stat(Intelligence, 1)],
+                    ));
                     a.push(Action::end_day("sleep"));
                 }
                 if self.has("met_victor") {
-                    a.push(Action::go("go_hallway", "Выйти в коридор", Location::Hallway));
+                    a.push(Action::go(
+                        "go_hallway",
+                        "Выйти в коридор",
+                        Location::Hallway,
+                    ));
                 }
             }
             Location::Hallway => {
-                a.push(Action::go("go_class", "→ Учебный класс", Location::Classroom));
+                a.push(Action::go(
+                    "go_class",
+                    "→ Учебный класс",
+                    Location::Classroom,
+                ));
                 a.push(Action::go("go_lib", "→ Библиотека", Location::Library));
                 a.push(Action::go("go_gym", "→ Спортзал", Location::Gym));
                 a.push(Action::go("go_caf", "→ Столовая", Location::Cafeteria));
                 a.push(Action::go("go_park", "→ Парк (выход)", Location::Park));
-                a.push(Action::go("go_dorm", "← Вернуться в общежитие", Location::Dorm));
+                a.push(Action::go(
+                    "go_dorm",
+                    "← Вернуться в общежитие",
+                    Location::Dorm,
+                ));
                 // Кабинет Vale доступен если познакомились
                 if self.has("met_vale") {
-                    a.push(Action::go("go_office", "→ Кабинет Ms. Вейл", Location::Office));
+                    a.push(Action::go(
+                        "go_office",
+                        "→ Кабинет Ms. Вейл",
+                        Location::Office,
+                    ));
                 }
             }
             Location::Classroom => {
-                a.push(Action::act("study", "📚", "Учиться (+2 INT)", vec![Stat(Intelligence, 2)]));
+                a.push(Action::act(
+                    "study",
+                    "📚",
+                    "Учиться (+2 INT)",
+                    vec![Stat(Intelligence, 2)],
+                ));
                 if !self.has("met_vale") {
-                    a.push(Action::scene_act("meet_vale", "✨", "Подойти к Ms. Вейл", "meet_vale"));
+                    a.push(Action::scene_act(
+                        "meet_vale",
+                        "✨",
+                        "Подойти к Ms. Вейл",
+                        "meet_vale",
+                    ));
                 } else if self.rel("vale") >= 15 && !self.has("vale_chat_1_done") {
-                    a.push(Action::scene_time("chat_vale_class", "💬", "Поговорить с Ms. Вейл после урока", "vale_class_chat", vec![Rel("vale".into(), 5)]));
+                    a.push(Action::scene_time(
+                        "chat_vale_class",
+                        "💬",
+                        "Поговорить с Ms. Вейл после урока",
+                        "vale_class_chat",
+                        vec![Rel("vale".into(), 5)],
+                    ));
                 }
                 if !self.has("met_elena") && self.period == Period::Afternoon {
-                    a.push(Action::scene_act("notice_elena", "👁", "Заметить ту девушку у окна", "first_elena"));
+                    a.push(Action::scene_act(
+                        "notice_elena",
+                        "👁",
+                        "Заметить ту девушку у окна",
+                        "first_elena",
+                    ));
                 }
                 a.push(Action::go("back_hall", "← Коридор", Location::Hallway));
             }
             Location::Library => {
-                a.push(Action::act("study_hard", "📖", "Усиленно учиться (+3 INT)", vec![Stat(Intelligence, 3)]));
+                a.push(Action::act(
+                    "study_hard",
+                    "📖",
+                    "Усиленно учиться (+3 INT)",
+                    vec![Stat(Intelligence, 3)],
+                ));
                 if self.has("met_elena") && !self.has("elena_lib_1") {
-                    a.push(Action::scene_time("elena_lib", "💬", "Подойти к Елене (она снова здесь)", "elena_library_1", vec![Rel("elena".into(), 8)]));
+                    a.push(Action::scene_time(
+                        "elena_lib",
+                        "💬",
+                        "Подойти к Елене (она снова здесь)",
+                        "elena_library_1",
+                        vec![Rel("elena".into(), 8)],
+                    ));
                 }
                 a.push(Action::go("back_hall", "← Коридор", Location::Hallway));
             }
             Location::Gym => {
-                a.push(Action::act("train", "💪", "Тренироваться (+2 FIT)", vec![Stat(Fitness, 2)]));
-                a.push(Action::act("train_hard", "🏋", "Серьёзная тренировка (+3 FIT, -1 WIL)", vec![Stat(Fitness, 3), Stat(Willpower, -1)]));
+                a.push(Action::act(
+                    "train",
+                    "💪",
+                    "Тренироваться (+2 FIT)",
+                    vec![Stat(Fitness, 2)],
+                ));
+                a.push(Action::act(
+                    "train_hard",
+                    "🏋",
+                    "Серьёзная тренировка (+3 FIT, -1 WIL)",
+                    vec![Stat(Fitness, 3), Stat(Willpower, -1)],
+                ));
                 a.push(Action::go("back_hall", "← Коридор", Location::Hallway));
             }
             Location::Cafeteria => {
-                a.push(Action::act("socialize", "🗣", "Общаться (+2 CHR, +1 REP)", vec![Stat(Charm, 2), Stat(Reputation, 1)]));
+                a.push(Action::act(
+                    "socialize",
+                    "🗣",
+                    "Общаться (+2 CHR, +1 REP)",
+                    vec![Stat(Charm, 2), Stat(Reputation, 1)],
+                ));
                 if !self.has("met_sofia") {
-                    a.push(Action::scene_act("meet_sofia", "👑", "Подойти к компании Sofii", "meet_sofia"));
+                    a.push(Action::scene_act(
+                        "meet_sofia",
+                        "👑",
+                        "Подойти к компании Sofii",
+                        "meet_sofia",
+                    ));
                 } else if self.rel("sofia") >= 10 {
-                    a.push(Action::scene_time("chat_sofia", "💬", "Поговорить с Sofiej", "sofia_chat", vec![Rel("sofia".into(), 5), Stat(Reputation, 1)]));
+                    a.push(Action::scene_time(
+                        "chat_sofia",
+                        "💬",
+                        "Поговорить с Sofiej",
+                        "sofia_chat",
+                        vec![Rel("sofia".into(), 5), Stat(Reputation, 1)],
+                    ));
                 }
                 a.push(Action::go("back_hall", "← Коридор", Location::Hallway));
             }
             Location::Park => {
-                a.push(Action::act("walk", "🌿", "Прогуляться (+1 WIL, +1 REP)", vec![Stat(Willpower, 1), Stat(Reputation, 1)]));
-                a.push(Action::act("reflect", "🌙", "Поразмышлять (+1 INT, +1 WIL)", vec![Stat(Intelligence, 1), Stat(Willpower, 1)]));
+                a.push(Action::act(
+                    "walk",
+                    "🌿",
+                    "Прогуляться (+1 WIL, +1 REP)",
+                    vec![Stat(Willpower, 1), Stat(Reputation, 1)],
+                ));
+                a.push(Action::act(
+                    "reflect",
+                    "🌙",
+                    "Поразмышлять (+1 INT, +1 WIL)",
+                    vec![Stat(Intelligence, 1), Stat(Willpower, 1)],
+                ));
                 a.push(Action::go("back_hall", "← К школе", Location::Hallway));
             }
             Location::Office => {
                 let _session_key = format!("vale_session_{}", self.rel("vale") / 15);
-                let scene_id = if self.rel("vale") < 25 { "vale_office_1" }
-                    else if self.rel("vale") < 45 { "vale_office_2" }
-                    else { "vale_office_deep" };
-                a.push(Action::scene_time("session_vale", "🛋", "Консультация у Ms. Вейл", scene_id, vec![Rel("vale".into(), 8)]));
+                let scene_id = if self.rel("vale") < 25 {
+                    "vale_office_1"
+                } else if self.rel("vale") < 45 {
+                    "vale_office_2"
+                } else {
+                    "vale_office_deep"
+                };
+                a.push(Action::scene_time(
+                    "session_vale",
+                    "🛋",
+                    "Консультация у Ms. Вейл",
+                    scene_id,
+                    vec![Rel("vale".into(), 8)],
+                ));
                 a.push(Action::go("back_hall", "← Коридор", Location::Hallway));
             }
         }
@@ -319,5 +564,24 @@ impl GameState {
             65..=84 => "Близкий друг",
             _ => "Особый",
         }
+    }
+}
+
+#[cfg(test)]
+mod localization_tests {
+    use super::*;
+
+    #[test]
+    fn dialogue_effect_messages_follow_selected_language() {
+        let mut state = GameState::new("Tester");
+        let effects = [Effect::Rel("vale".into(), 5), Effect::QuestDone("q".into())];
+        let english = state.apply(&effects, "en").join(" ");
+        let russian = state.apply(&effects, "ru").join(" ");
+
+        assert!(english.contains("relationship"));
+        assert!(english.contains("Quest completed"));
+        assert!(!english.contains("отнош"));
+        assert!(russian.contains("отношениям"));
+        assert!(russian.contains("Квест выполнен"));
     }
 }

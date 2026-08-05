@@ -1,6 +1,7 @@
 [
   {
     "id": "glass_cannon",
+    "name_en": "Glass Cannon", "desc_en": "+15% damage, but -30 HP.",
     "needs": [
       "sharpshooter:2",
       "fleet_footed:2"
@@ -20,6 +21,7 @@
   },
   {
     "id": "lifedrinker",
+    "name_en": "Life Drinker", "desc_en": "+10% lifesteal.",
     "needs": [
       "vampirism:2",
       "rapid_fire:1"
@@ -35,6 +37,7 @@
   },
   {
     "id": "fortress",
+    "name_en": "Fortress", "desc_en": "+50 maximum HP.",
     "needs": [
       "thick_skin:3",
       "juggernaut:2"
@@ -50,6 +53,7 @@
   },
   {
     "id": "warlord",
+    "name_en": "Warlord", "desc_en": "+10% damage.",
     "needs": [
       "executioner:1",
       "juggernaut:1"
@@ -65,6 +69,7 @@
   },
   {
     "id": "ammo_lord",
+    "name_en": "Ammo Lord", "desc_en": "+30% ammunition capacity.",
     "needs": [
       "scavenger:3",
       "deep_pockets:1"
@@ -80,6 +85,7 @@
   },
   {
     "id": "blood_engine",
+    "name_en": "Blood Engine", "desc_en": "+8% lifesteal.",
     "needs": [
       "leech_rounds:1",
       "vampirism:1"
@@ -95,6 +101,7 @@
   },
   {
     "id": "storm_of_steel",
+    "name_en": "Storm of Steel", "desc_en": "Reduces weapon cooldown by 10%.",
     "needs": [
       "heavy_rounds:1",
       "rapid_fire:3"
@@ -110,6 +117,7 @@
   },
   {
     "id": "marathon",
+    "name_en": "Marathon Runner", "desc_en": "+12% movement speed.",
     "needs": [
       "second_wind:1",
       "fleet_footed:3"

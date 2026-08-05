@@ -1,0 +1,9 @@
+schema_version = 2
+id = "core"
+name_ru = "Неоновое Сердце"
+desc_ru = "Основная сюжетная кампания: шесть районов, открытый хаб и процедурные катакомбы."
+author = "OpenHeart"
+version = 2
+enabled = true
+entry_map = "hub"
+tags = ["campaign", "story", "open-world", "dungeons"]

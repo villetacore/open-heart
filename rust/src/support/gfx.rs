@@ -1,12 +1,14 @@
 //! Графические утилиты: боксы, спрайты-биллборды, свет, кэш текстур.
 
-use godot::prelude::*;
-use godot::classes::{
-    BoxShape3D, CollisionShape3D, Image, ImageTexture, MeshInstance3D, BoxMesh,
-    OmniLight3D, Sprite3D, StandardMaterial3D, StaticBody3D, Texture2D,
+use godot::classes::base_material_3d::{
+    BillboardMode, Feature, Flags, TextureFilter, TextureParam,
 };
-use godot::classes::base_material_3d::{BillboardMode, TextureParam, TextureFilter, Feature, Flags};
 use godot::classes::sprite_base_3d::AlphaCutMode;
+use godot::classes::{
+    BoxMesh, BoxShape3D, CollisionShape3D, MeshInstance3D, OmniLight3D, ResourceLoader, Sprite3D,
+    StandardMaterial3D, StaticBody3D, Texture2D,
+};
+use godot::prelude::*;
 use std::collections::HashMap;
 
 /// Кэш текстур на время построения мира.
@@ -16,20 +18,19 @@ pub struct TexCache {
 }
 
 impl TexCache {
-    pub fn new() -> Self { Self { map: HashMap::new() } }
+    pub fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+        }
+    }
 
     pub fn get(&mut self, path: &str) -> Option<Gd<Texture2D>> {
         if let Some(t) = self.map.get(path) {
             return t.clone();
         }
-        // Генерируем мип-мапы: убирает мерцание/алиасинг вдали и на мелких
-        // спрайтах, и оживляет фильтры с мип-мапами у окружения.
-        let tex = Image::load_from_file(path)
-            .and_then(|mut img| {
-                img.generate_mipmaps();
-                ImageTexture::create_from_image(&img)
-            })
-            .map(|t| t.upcast::<Texture2D>());
+        let tex = ResourceLoader::singleton()
+            .load(path)
+            .and_then(|resource| resource.try_cast::<Texture2D>().ok());
         self.map.insert(path.to_string(), tex.clone());
         tex
     }
@@ -45,8 +46,11 @@ pub const TEXEL_M: f32 = 3.0;
 /// Текстуры кладутся мировым triplanar-маппингом: одинаковый квадратный тексель
 /// на полу/стене/потолке независимо от пропорций бокса, и бесшовно между боксами.
 pub fn make_box(
-    pos: Vector3, size: Vector3, color: Color,
-    tex: Option<&Gd<Texture2D>>, _uv: f32,
+    pos: Vector3,
+    size: Vector3,
+    color: Color,
+    tex: Option<&Gd<Texture2D>>,
+    _uv: f32,
 ) -> Gd<StaticBody3D> {
     let mut body = StaticBody3D::new_alloc();
     body.set_position(pos);
@@ -81,8 +85,12 @@ pub fn make_box(
 
 /// Бокс с поворотом вокруг Y.
 pub fn make_box_rot(
-    pos: Vector3, size: Vector3, rot_y: f32, color: Color,
-    tex: Option<&Gd<Texture2D>>, uv: f32,
+    pos: Vector3,
+    size: Vector3,
+    rot_y: f32,
+    color: Color,
+    tex: Option<&Gd<Texture2D>>,
+    uv: f32,
 ) -> Gd<StaticBody3D> {
     let mut b = make_box(pos, size, color, tex, uv);
     b.set_rotation(Vector3::new(0.0, rot_y, 0.0));
@@ -93,8 +101,12 @@ pub fn make_box_rot(
 /// `low`/`high` — мировые точки поверхности пола на нижнем и верхнем концах,
 /// `width` — ширина пандуса, `thick` — толщина плиты.
 pub fn make_ramp(
-    low: Vector3, high: Vector3, width: f32, thick: f32,
-    color: Color, tex: Option<&Gd<Texture2D>>,
+    low: Vector3,
+    high: Vector3,
+    width: f32,
+    thick: f32,
+    color: Color,
+    tex: Option<&Gd<Texture2D>>,
 ) -> Gd<StaticBody3D> {
     let dir = high - low;
     let len = dir.length().max(0.01);
@@ -104,7 +116,13 @@ pub fn make_ramp(
     let up = dirn.cross(right).normalized();
     let uv = (len / 3.0).max(1.0);
     // размеры запекаем в меш/шейп; basis — чистое вращение (ортонормированный)
-    let mut body = make_box(Vector3::ZERO, Vector3::new(width, thick, len), color, tex, uv);
+    let mut body = make_box(
+        Vector3::ZERO,
+        Vector3::new(width, thick, len),
+        color,
+        tex,
+        uv,
+    );
     let basis = Basis::from_cols(right, up, dirn);
     body.set_transform(Transform3D {
         basis,
@@ -115,7 +133,11 @@ pub fn make_ramp(
 
 /// Светящийся декоративный бокс (без коллизии), например лужа лавы.
 pub fn make_glow_slab(
-    pos: Vector3, size: Vector3, tex: Option<&Gd<Texture2D>>, emission: Color, uv: f32,
+    pos: Vector3,
+    size: Vector3,
+    tex: Option<&Gd<Texture2D>>,
+    emission: Color,
+    uv: f32,
 ) -> Gd<MeshInstance3D> {
     let mut mi = MeshInstance3D::new_alloc();
     let mut mesh = BoxMesh::new_gd();
@@ -138,7 +160,10 @@ pub fn make_glow_slab(
 
 /// Спрайт-биллборд (всегда лицом к камере) из файла.
 pub fn make_billboard(
-    cache: &mut TexCache, path: &str, pos: Vector3, pixel_size: f32,
+    cache: &mut TexCache,
+    path: &str,
+    pos: Vector3,
+    pixel_size: f32,
 ) -> Option<Gd<Sprite3D>> {
     let tex = cache.get(path)?;
     let mut sp = Sprite3D::new_alloc();
@@ -153,7 +178,11 @@ pub fn make_billboard(
 
 /// Плоский спрайт на стене (без биллборда), повёрнут на rot_y.
 pub fn make_flat_sprite(
-    cache: &mut TexCache, path: &str, pos: Vector3, rot_y: f32, pixel_size: f32,
+    cache: &mut TexCache,
+    path: &str,
+    pos: Vector3,
+    rot_y: f32,
+    pixel_size: f32,
 ) -> Option<Gd<Sprite3D>> {
     let tex = cache.get(path)?;
     let mut sp = Sprite3D::new_alloc();
@@ -182,7 +211,9 @@ pub fn make_light(pos: Vector3, color: Color, energy: f32, range: f32) -> Gd<Omn
 pub struct Rng(pub u64);
 
 impl Rng {
-    pub fn new(seed: u64) -> Self { Self(seed.max(1)) }
+    pub fn new(seed: u64) -> Self {
+        Self(seed.max(1))
+    }
 
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> u64 {
@@ -196,13 +227,17 @@ impl Rng {
 
     /// [0, n)
     pub fn below(&mut self, n: u32) -> u32 {
-        if n == 0 { return 0; }
+        if n == 0 {
+            return 0;
+        }
         (self.next() >> 33) as u32 % n
     }
 
     /// [lo, hi] включительно
     pub fn range(&mut self, lo: i32, hi: i32) -> i32 {
-        if hi <= lo { return lo; }
+        if hi <= lo {
+            return lo;
+        }
         lo + self.below((hi - lo + 1) as u32) as i32
     }
 

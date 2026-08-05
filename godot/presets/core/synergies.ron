@@ -1,0 +1,142 @@
+[
+    /*[0]*/ {
+        "desc_en": "+15% damage, but -30 HP.",
+        "desc_ru": "+15% урона, но −30 HP.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.15,
+                "stat": "dmg",
+            },
+            /*[1]*/ {
+                "add": -30.0,
+                "stat": "max_hp",
+            },
+        ],
+        "id": "glass_cannon",
+        "name_en": "Glass Cannon",
+        "name_ru": "Стеклянная пушка",
+        "needs": [
+            /*[0]*/ "sharpshooter:2",
+            /*[1]*/ "fleet_footed:2",
+        ],
+    },
+    /*[1]*/ {
+        "desc_en": "+10% lifesteal.",
+        "desc_ru": "+10% вампиризма.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.1,
+                "stat": "lifesteal",
+            },
+        ],
+        "id": "lifedrinker",
+        "name_en": "Life Drinker",
+        "name_ru": "Кровопийца",
+        "needs": [
+            /*[0]*/ "vampirism:2",
+            /*[1]*/ "rapid_fire:1",
+        ],
+    },
+    /*[2]*/ {
+        "desc_en": "+50 maximum HP.",
+        "desc_ru": "+50 к максимуму HP.",
+        "effects": [
+            /*[0]*/ {
+                "add": 50.0,
+                "stat": "max_hp",
+            },
+        ],
+        "id": "fortress",
+        "name_en": "Fortress",
+        "name_ru": "Крепость",
+        "needs": [
+            /*[0]*/ "thick_skin:3",
+            /*[1]*/ "juggernaut:2",
+        ],
+    },
+    /*[3]*/ {
+        "desc_en": "+10% damage.",
+        "desc_ru": "+10% урона.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.1,
+                "stat": "dmg",
+            },
+        ],
+        "id": "warlord",
+        "name_en": "Warlord",
+        "name_ru": "Полководец",
+        "needs": [
+            /*[0]*/ "executioner:1",
+            /*[1]*/ "juggernaut:1",
+        ],
+    },
+    /*[4]*/ {
+        "desc_en": "+30% ammunition capacity.",
+        "desc_ru": "+30% к лимиту боезапаса.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.3,
+                "stat": "ammo",
+            },
+        ],
+        "id": "ammo_lord",
+        "name_en": "Ammo Lord",
+        "name_ru": "Повелитель боезапаса",
+        "needs": [
+            /*[0]*/ "scavenger:3",
+            /*[1]*/ "deep_pockets:1",
+        ],
+    },
+    /*[5]*/ {
+        "desc_en": "+8% lifesteal.",
+        "desc_ru": "+8% вампиризма.",
+        "effects": [
+            /*[0]*/ {
+                "add": 0.08,
+                "stat": "lifesteal",
+            },
+        ],
+        "id": "blood_engine",
+        "name_en": "Blood Engine",
+        "name_ru": "Кровавый мотор",
+        "needs": [
+            /*[0]*/ "leech_rounds:1",
+            /*[1]*/ "vampirism:1",
+        ],
+    },
+    /*[6]*/ {
+        "desc_en": "Reduces weapon cooldown by 10%.",
+        "desc_ru": "−10% кулдаун оружия.",
+        "effects": [
+            /*[0]*/ {
+                "mult": 0.9,
+                "stat": "cd",
+            },
+        ],
+        "id": "storm_of_steel",
+        "name_en": "Storm of Steel",
+        "name_ru": "Стальной шторм",
+        "needs": [
+            /*[0]*/ "heavy_rounds:1",
+            /*[1]*/ "rapid_fire:3",
+        ],
+    },
+    /*[7]*/ {
+        "desc_en": "+12% movement speed.",
+        "desc_ru": "+12% скорость бега.",
+        "effects": [
+            /*[0]*/ {
+                "mult": 1.12,
+                "stat": "speed",
+            },
+        ],
+        "id": "marathon",
+        "name_en": "Marathon Runner",
+        "name_ru": "Марафонец",
+        "needs": [
+            /*[0]*/ "second_wind:1",
+            /*[1]*/ "fleet_footed:3",
+        ],
+    },
+]

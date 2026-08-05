@@ -1,6 +1,6 @@
 //! NPC: точка в мире с именем, цветом и «ролью». Логику диалога/квестов держит Game.
 
-use godot::classes::{Label, Node2D, INode2D};
+use godot::classes::{INode2D, Label, Node2D};
 use godot::prelude::*;
 
 #[derive(GodotClass)]

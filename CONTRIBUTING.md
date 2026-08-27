@@ -7,13 +7,13 @@
 
 1. **Логика — в Rust, контент — в JSON.** Новый враг/оружие/квест/карта не должны требовать
    правок Rust. Если требуют — это повод расширить схему данных, а не хардкодить.
-2. **Пресеты самодостаточны.** Всё, что нужно «игре», лежит в `godot/presets/<id>/`.
+2. **Пресеты самодостаточны.** Всё, что нужно «игре», лежит в `game/presets/<id>/`.
    Не создавай зависимостей контента от конкретного пресета в коде.
 3. **Не ломай ядро ради контента.** Фундамент (`main.tscn`, `main_menu.tscn`,
-   `project.godot`, `OpenHeart.gdextension`, `rust/`) меняется только осознанными PR;
+   `project.godot`, `OpenHeart.gdextension`, `core/` и `client/`) меняется только осознанными PR;
    контент-мейкерам достаточно вкладки OpenHeart в редакторе.
 4. **Каждый JSON-загрузчик должен переживать битый файл** — паттерн «предупреждение в лог +
-   встроенный фолбэк» (`include_str!`), см. `rust/src/weapon.rs`.
+   встроенный фолбэк» (`include_str!`), см. `client/src/weapon.rs`.
 
 ## С чего начать
 
@@ -26,13 +26,13 @@
 ## Сборка и проверка
 
 ```bash
-cd rust && cargo build              # должен собираться без ошибок
+cargo build -p openheart   # клиентская DLL; cargo test --workspace — тесты
 ```
 
 Быстрая проверка без окна (инициализация, парс конфигов):
 
 ```bash
-godot --headless --path godot res://main.tscn --quit   # exit code 0, без ERROR в логе
+godot --headless --path game res://main.tscn --quit   # exit code 0, без ERROR в логе
 ```
 
 ### Смоук-чеклист перед PR (2 минуты руками)
@@ -48,19 +48,19 @@ godot --headless --path godot res://main.tscn --quit   # exit code 0, без ERR
 
 | Хочу внести | Куда | Проверка |
 |---|---|---|
-| Контент (враг/предмет/перк/квест/NPC/карта) | `godot/presets/<id>/*.json` или вкладка OpenHeart | смоук + отсутствие `using embedded` |
+| Контент (враг/предмет/перк/квест/NPC/карта) | `game/presets/<id>/*.json` или вкладка OpenHeart | смоук + отсутствие `using embedded` |
 | Баланс | те же JSON | опиши в PR, что и почему |
-| Механика боя/движения | `rust/src/game.rs`, `player.rs`, `enemy.rs` | смоук-чеклист целиком |
-| Генерация данжей | `rust/src/dungeon.rs` | зайди в данж 3+ раз (разные сиды) |
-| Формат карт | `rust/src/map.rs` + [docs/DATA_FORMATS.md](docs/DATA_FORMATS.md) | обнови документацию форматов! |
-| Редактор игры | `godot/addons/oh_editor/*.gd` | открой вкладку, прогони CRUD+сохранение |
+| Механика боя/движения | `client/src/game.rs`, `player.rs`, `enemy.rs` | смоук-чеклист целиком |
+| Генерация данжей | `client/src/dungeon.rs` | зайди в данж 3+ раз (разные сиды) |
+| Формат карт | `client/src/map.rs` + [docs/DATA_FORMATS.md](docs/DATA_FORMATS.md) | обнови документацию форматов! |
+| Редактор игры | `game/addons/oh_editor/*.gd` | открой вкладку, прогони CRUD+сохранение |
 | Нарезка ассетов | `tools/slice_*.py` | приложи контактный лист из `tools/preview/` |
 
 ## Стиль
 
 - **Rust**: как в соседнем коде — русские doc-комментарии `//!`/`///`, выравнивание полей
   структур, без `unwrap()` в путях, до которых дотягивается пользовательский ввод/файлы.
-  `cargo build` без новых warnings.
+  `cargo build --workspace` без новых warnings.
 - **JSON-данные**: 2 пробела, ключи в порядке схемы из [docs/DATA_FORMATS.md](docs/DATA_FORMATS.md),
   строки для игрока — на русском (`*_ru`).
 - **GDScript** (только editor-плагин): табы, статическая типизация где возможно, `@tool`.

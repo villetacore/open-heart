@@ -1,0 +1,24 @@
+[package]
+name = "openheart-core"
+version = "0.1.0"
+edition = "2021"
+description = "OpenHeart core — симуляция и данные без зависимости от движка (клиент + сервер)"
+
+# rlib — для gdext-клиента, cdylib — для сборки core.wasm под oh-server.
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+serde      = { version = "1", features = ["derive"] }
+# raw_value: конверт протокола разбирается лениво — тело трогаем, только зная тег.
+serde_json = { version = "1", features = ["raw_value"] }
+# Пресеты бывают в трёх форматах; разбор общий для клиента и сервера.
+# sha2: отпечаток пресета считают обе стороны, алгоритм обязан совпасть с Go.
+sha2       = "0.10"
+ron        = "0.8"
+toml       = "0.8"
+
+[features]
+# ABI для wasm-хоста (wazero в oh-server). Клиенту не нужен.
+default = []
+abi = []

@@ -1,0 +1,80 @@
+{
+  "recipes": [
+    {
+      "id": "field_medkit",
+      "name_ru": "Полевая аптечка",
+      "name_en": "Field medkit",
+      "inputs": [
+        { "item": "bread", "qty": 2 },
+        { "item": "neon_shard", "qty": 1 }
+      ],
+      "output": "medkit",
+      "output_qty": 1,
+      "time": 1.5
+    },
+    {
+      "id": "concentrate_potion",
+      "name_ru": "Сгущённое зелье",
+      "name_en": "Concentrated potion",
+      "inputs": [
+        { "item": "small_potion", "qty": 3 }
+      ],
+      "output": "potion",
+      "output_qty": 1,
+      "time": 1.0
+    },
+    {
+      "id": "big_potion_brew",
+      "name_ru": "Большое зелье",
+      "name_en": "Large potion",
+      "inputs": [
+        { "item": "potion", "qty": 2 },
+        { "item": "neon_shard", "qty": 1 }
+      ],
+      "output": "big_potion",
+      "output_qty": 1,
+      "station": "bench",
+      "time": 2.5
+    },
+    {
+      "id": "stimpack_mix",
+      "name_ru": "Стимпак",
+      "name_en": "Stimpack",
+      "inputs": [
+        { "item": "energy_drink", "qty": 1 },
+        { "item": "potion", "qty": 1 }
+      ],
+      "output": "stimpack",
+      "output_qty": 1,
+      "station": "bench",
+      "time": 2.0
+    },
+    {
+      "id": "armor_shard_forge",
+      "name_ru": "Осколок брони",
+      "name_en": "Armor shard",
+      "inputs": [
+        { "item": "silver_bar", "qty": 1 },
+        { "item": "neon_shard", "qty": 2 }
+      ],
+      "output": "armor_shard",
+      "output_qty": 1,
+      "station": "bench",
+      "time": 3.0
+    },
+    {
+      "id": "combat_injector_build",
+      "name_ru": "Боевой инъектор",
+      "name_en": "Combat injector",
+      "inputs": [
+        { "item": "stimpack", "qty": 1 },
+        { "item": "drone_core", "qty": 1 }
+      ],
+      "output": "combat_injector",
+      "output_qty": 1,
+      "station": "bench",
+      "requires_flag": "blueprint_injector",
+      "time": 4.0
+    }
+  ]
+}

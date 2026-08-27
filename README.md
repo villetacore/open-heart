@@ -24,7 +24,7 @@
 - Движок — **Godot 4.7** (совместим с Redot), рендерер Forward Mobile (Vulkan).
 - **Вся игровая логика — на Rust** через [gdext / godot-rust](https://github.com/godot-rust/gdext)
   (GDExtension). GDScript используется только в editor-плагине.
-- **Весь контент — в JSON** (`godot/presets/<пресет>/`): оружие, классы, перки, враги,
+- **Весь контент — в JSON** (`game/presets/<пресет>/`): оружие, классы, перки, враги,
   предметы, NPC, квесты, карты. Добавление контента не требует ни строчки Rust.
 - **Пресеты = разные игры**: папка пресета — самодостаточный набор данных. В главном меню
   выбирается активный; в комплекте кампания «Неоновое Сердце» и режим «Кровавая арена».
@@ -57,15 +57,18 @@
 
 ```powershell
 git clone <repo> open-heart && cd open-heart
-./run.ps1          # соберёт Rust-DLL и откроет редактор → жми F5
+./scripts/run.ps1          # соберёт Rust-DLL и откроет редактор → жми F5
 ```
+
+Играть с сервером: в главном меню — **«Подключиться»**, адрес вида
+`ws://127.0.0.1:7777/ws` (как поднять сервер — [server/README.md](server/README.md)).
 
 Вручную:
 
 ```bash
-cd rust && cargo build      # → rust/target/debug/openheart.dll
-cp target/debug/openheart.dll ../godot/bin/   # движок ищет DLL внутри проекта
-godot -e --path ../godot    # редактор (F5 — играть) | без -e — сразу игра
+cargo build -p openheart    # → target/debug/openheart.dll
+cp target/debug/openheart.dll ../game/bin/   # движок ищет DLL внутри проекта
+godot -e --path ../game    # редактор (F5 — играть) | без -e — сразу игра
 ```
 
 Подробный гайд с траблшутингом: **[docs/BUILDING.md](docs/BUILDING.md)**.
@@ -115,7 +118,7 @@ godot -e --path ../godot    # редактор (F5 — играть) | без -e
 Либо правь JSON руками — форматы в [docs/DATA_FORMATS.md](docs/DATA_FORMATS.md):
 
 ```jsonc
-// godot/presets/core/enemies.json — новый враг за 30 секунд
+// game/presets/core/enemies.json — новый враг за 30 секунд
 { "id": "neon_wraith", "name": "Неоновый призрак", "sprite": "cultist",
   "hp": 90, "speed": 3.4, "attack_damage": 18, "scale": 1.1,
   "resist": { "energy": 0.5, "physical": -0.2 }, "xp": 40, ... }
@@ -143,7 +146,7 @@ synergies, damage types, enemy resistances & data-driven weak points, persistent
 minimap, JSON-defined multi-tier maps (boxes/ramps/stairs/cylinders/neon), data-driven
 NPCs & quests, an in-Godot **game content editor** plugin, and a **preset system** where
 each preset folder is effectively a separate game selectable from the main menu.
-Build: `cd rust && cargo build`, then open `godot/` in Godot 4.7+ and press F5.
+Build: `cargo build -p openheart`, then open `game/` in Godot 4.7+ and press F5.
 Docs live in [`docs/`](docs/README.md); start with [`docs/INDEX.md`](docs/INDEX.md).
 
 </details>

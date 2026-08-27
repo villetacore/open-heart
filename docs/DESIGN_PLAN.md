@@ -29,14 +29,15 @@
 `game.rs` — god-object на ~2300 строк: мир, боёвка, HUD, диалоги, порталы, сейвы в одном файле.
 Оружие/классы/диалоги захардкожены в Rust (`weapon.rs`, `classes.rs`, `story.rs`).
 
-### 1.2 Workspace из двух крейтов
+### 1.2 Workspace из двух крейтов — **сделано** (см. [MULTIPLAYER.md §4](MULTIPLAYER.md))
 ```
-rust/
-├─ oh_core/     # чистая логика, БЕЗ Godot: конфиги+валидация, статы и формулы,
-│               # генератор данжей, квест-машина, диалог-машина, лут-роллы.
-│               # Здесь живут юнит-тесты (cargo test без движка).
-└─ oh_game/     # gdext-слой: ноды, рендер, ввод, звук, UI. Тонкая обёртка над core.
+Cargo.toml     # [workspace]: members = core, client
+core/          # openheart-core: чистая логика, БЕЗ движка — формулы, генерация,
+│              # rng, модели контента. Юнит-тесты идут без Godot.
+│              # Он же собирается в core.wasm и крутит симуляцию на сервере.
+client/        # openheart: gdext-слой — ноды, рендер, ввод, звук, UI.
 ```
+Перенос модулей (`combat/`, `data/`, `worldgen/`, `state/`) в `core/` идёт поэтапно.
 
 ### 1.3 Разбиение oh_game на системы
 ```
@@ -74,7 +75,7 @@ Debug-консоль (~): `give <item>`, `spawn <enemy>`, `tp <x> <z>`, `god`, `
 
 ---
 
-## 2. Схема данных `godot/data/` (M0–M1)
+## 2. Схема данных `game/data/` (M0–M1)
 
 ```
 data/
@@ -462,7 +463,7 @@ glow (неон засветится по emission-маскам из M1!), volume
   `tools/aigen.json`, шаблоны промптов `aigen_templates.json`) + окно «🎨 ИИ-текстуры»
   в oh_editor с фоновой генерацией и превью; постобработка и раскладка — существующим
   `process_sprites.py`. См. docs/EDITOR.md.
-- ✅ **Фундамент-фиксы**: DLL внутри проекта (`godot/bin/`, экспорт снова возможен);
+- ✅ **Фундамент-фиксы**: DLL внутри проекта (`game/bin/`, экспорт снова возможен);
   битые конфиги пресета → предупреждение + встроенная копия core (не пустой мир);
   битый сейв → откладывается в `save.corrupt.json` (не перезаписывается молча);
   **пауза на Esc** и полная остановка боя в любых меню (враги заморожены);
@@ -509,16 +510,16 @@ glow (неон засветится по emission-маскам из M1!), volume
 
 **Движок установлен**: Godot 4.7 (winget), путь:
 `%LOCALAPPDATA%\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7-stable_win64.exe`
-(в новых терминалах доступен алиас `godot`; `run.ps1` знает этот путь).
+(в новых терминалах доступен алиас `godot`; `scripts/run.ps1` знает этот путь).
 
 ```powershell
 # 1. Собрать Rust и запустить одной командой (из корня проекта):
-./run.ps1            # соберёт DLL и откроет редактор — жми F5
+./scripts/run.ps1            # соберёт DLL и откроет редактор — жми F5
 
 # ...или вручную:
-cd rust; cargo build
-godot --path ../godot          # сразу игра
-godot -e --path ../godot       # редактор
+cargo build
+godot --path ../game          # сразу игра
+godot -e --path ../game       # редактор
 ```
 
 **Смоук-чеклист** (после любых изменений):

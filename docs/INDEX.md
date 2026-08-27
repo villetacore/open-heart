@@ -4,6 +4,11 @@
 API, каждый файл данных, ассеты и инструменты. Числа актуальны на v0.4.0 (2026-07-04);
 при больших изменениях обновляй вместе с кодом.
 
+> ⚠️ Раздел про Rust отстал от кода: модули давно разложены по подкаталогам
+> (`nodes/`, `data/`, `combat/`, `worldgen/`, `state/`, `support/`), а клиент переехал
+> в `client/`. Актуальная карта репозитория — в
+> [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md); этот файл ждёт своей ревизии.
+
 **Сводка:** ~8 100 строк Rust в 24 модулях · 2 GDScript-файла редактора (~660 строк) ·
 2 пресета × 10 JSON-файлов данных · 197 PNG-ассетов · 14 Python-скриптов пайплайна.
 
@@ -18,12 +23,27 @@ API, каждый файл данных, ассеты и инструменты.
 | `CHANGELOG.md` | История версий (Keep a Changelog) |
 | `CODE_OF_CONDUCT.md` | Кодекс поведения |
 | `LICENSE` | MIT |
-| `run.ps1` | Сборка Rust + запуск редактора одной командой (знает winget-путь Godot) |
-| `watch.ps1` | Автопересборка DLL при сохранении `.rs` (cargo-watch) |
-| `build.bat` | Просто `cargo build` |
-| `.gitignore` | rust/target, .godot, *.import, tools/preview, __pycache__ |
+| `scripts/run.ps1` | Сборка Rust + запуск редактора одной командой (знает winget-путь Godot) |
+| `scripts/watch.ps1` | Автопересборка DLL при сохранении `.rs` (cargo-watch) |
+| `scripts/build.bat` | Просто `cargo build -p openheart` |
+| `scripts/build.ps1`, `scripts/build.sh` | Сборка под все платформы + экспорт |
+| `scripts/core-wasm.ps1`, `scripts/core-wasm.sh` | Сборка ядра в `core.wasm` для сервера |
+| `.gitignore` | target, .godot, *.import, tools/preview, __pycache__, базы и бинарники go/ |
 
-## 2. `rust/` — игровая логика (все 24 модуля)
+## 1.1 Каталоги верхнего уровня
+
+| Каталог | Что внутри |
+|---|---|
+| `core/` | `openheart-core` — симуляция и данные без движка; собирается и в `core.wasm` |
+| `client/` | `openheart` — GDExtension: узлы, рендер, ввод, HUD |
+| `server/` | Бэкенд: `oh-server`, `oh-master`, `oh-probe` ([server/README.md](../server/README.md)) |
+| `protocol/` | Схема сетевого протокола — источник правды для Rust и Go |
+| `game/` | Проект движка: сцены, ассеты, пресеты контента |
+| `scripts/` | Сборка и запуск |
+| `tools/` | Python-пайплайн нарезки ассетов |
+| `docs/` | Документация |
+
+## 2. `core/` и `client/` — игровая логика (все 24 модуля)
 
 Компилируется в `openheart.dll` (GDExtension). Зависимости: `godot 0.5.4 (api-4-3)`,
 `serde`, `serde_json`. Точка входа — `lib.rs` (регистрация классов `Game3D`, `Player`,
@@ -79,23 +99,23 @@ API, каждый файл данных, ассеты и инструменты.
 | `character.rs` | 53 | `StatKind` (INT/CHR/FIT/REP/WIL), `Stats` | VN-статы для гейтинга реплик («нужен ИНТ 7») |
 | `locale.rs` | 84 | `t(key, lang)` | Строки HUD/меню ru/en |
 
-## 3. `godot/` — проект движка
+## 3. `game/` — проект движка
 
 | Путь | Назначение |
 |---|---|
 | `project.godot` | Godot 4.7, рендерер **mobile** (Forward Mobile/Vulkan), стретч canvas_items 1920×1080, все input-actions, включённый плагин oh_editor |
-| `OpenHeart.gdextension` | Маппинг платформа → `res://bin/openheart.{dll,so,dylib}` — DLL живёт внутри проекта (копируют build.bat/run.ps1/watch.ps1), иначе экспорт не соберётся; `reloadable=true` |
+| `OpenHeart.gdextension` | Маппинг платформа → `res://bin/openheart.{dll,so,dylib}` — DLL живёт внутри проекта (копируют scripts/{build.bat,run.ps1,watch.ps1}), иначе экспорт не соберётся; `reloadable=true` |
 | `main_menu.tscn` | Стартовая сцена (нода `MainMenu`) |
 | `main.tscn` | Игровая сцена: `Game3D` + `Player`(+Camera3D, капсула) |
 
-### 3.1 `godot/addons/oh_editor/` — редактор игры (GDScript, только в редакторе)
+### 3.1 `game/addons/oh_editor/` — редактор игры (GDScript, только в редакторе)
 
 | Файл | Назначение |
 |---|---|
 | `plugin.cfg`, `plugin.gd` | Регистрация main-screen вкладки «OpenHeart» |
 | `editor_main.gd` (~600 строк) | Вся панель: `SCHEMAS` (декларативные схемы 14 категорий), список записей, генератор форм (str/text/float/int/bool/enum/json), CRUD, сохранение пресета, «Создать копию» пресета, «Замок ядра» (attrib ±R на фундаментальные файлы) |
 
-### 3.2 `godot/presets/` — контент (данные = игры)
+### 3.2 `game/presets/` — контент (данные = игры)
 
 Каждый пресет содержит одинаковый набор файлов (форматы: [DATA_FORMATS.md](DATA_FORMATS.md)):
 
@@ -118,7 +138,7 @@ API, каждый файл данных, ассеты и инструменты.
 | `level.json` | legacy-спавны (фолбэк) | пусто |
 | `maps/hub.json` | многоярусный квартал | компактный колизей |
 
-### 3.3 `godot/assets/` — 197 PNG
+### 3.3 `game/assets/` — 197 PNG
 
 | Папка | Файлов | Что |
 |---|---|---|
@@ -136,7 +156,7 @@ API, каждый файл данных, ассеты и инструменты.
 | `textures/sky/` | 4 | панорамы неба |
 | `sprites_raw/`, `textures_raw/` | 6 | исходники до нарезки (рантаймом world.rs использует `world_complete.png`) |
 
-### 3.4 `godot/data/`
+### 3.4 `game/data/`
 
 | Файл | Назначение |
 |---|---|
@@ -152,7 +172,7 @@ API, каждый файл данных, ассеты и инструменты.
 | `slice_props.py` | Пропсы по вручную измеренным боксам (финальная версия) |
 | `analyze_weapons.py`, `analyze_regions.py` | Поиск координат секций атласа по плотности пикселей |
 | `ASSET_GUIDE.md` | Промпты генерации новых атласов + спецификации форматов |
-| `process_sprites.py` | Постобработка одиночных изображений: фон→альфа, ресайз, сборка листов кадров, раскладка по `godot/assets/` (использует aigen.py) |
+| `process_sprites.py` | Постобработка одиночных изображений: фон→альфа, ресайз, сборка листов кадров, раскладка по `game/assets/` (использует aigen.py) |
 | остальные (`extract_atlas.py`, `debug_cells.py`, …) | Ранние/одноразовые инструменты, оставлены для справки |
 | `ChatGPT Image 30 июн….png` | Исходный мастер-атлас (эффекты/UI/небо/жидкости) |
 
@@ -164,7 +184,7 @@ API, каждый файл данных, ассеты и инструменты.
 
 | Вопрос | Ответ |
 |---|---|
-| Где точка входа логики? | `rust/src/lib.rs` → нода `Game3D` в `main.tscn` → `game.rs::ready()` |
+| Где точка входа логики? | `client/src/lib.rs` → нода `Game3D` в `main.tscn` → `game.rs::ready()` |
 | Где загружаются данные? | `game.rs::ready()` → `content::load_preset()` + `GameConfig::load_from()` |
 | Как игра выбирает карту? | `map::load_map(preset, "hub")`; нет файла → `world::build_world()` (legacy) |
 | Где урон считается? | `game.rs::try_fire/fire_ray/fire_melee/explode` → `Enemy::take_damage(amount, DmgType)` с резистами |

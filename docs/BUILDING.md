@@ -5,12 +5,12 @@
 
 Игра состоит из двух частей, которые надо понимать по-отдельности:
 
-1. **Rust** (`rust/`) — вся логика игры, компилируется в `openheart.dll`.
-2. **Godot/Redot** (`godot/`) — движок и ассеты; сам по себе не содержит логики,
+1. **Rust** (`core/` и `client/`) — вся логика игры, компилируется в `openheart.dll`.
+2. **Godot/Redot** (`game/`) — движок и ассеты; сам по себе не содержит логики,
    он просто загружает `openheart.dll` через GDExtension и вызывает код оттуда.
 
 Поэтому цикл разработки всегда такой: **поменял `.rs` → пересобрал DLL → перезапустил
-сцену в движке**. Правки JSON в `godot/data/*.json` подхватываются без пересборки DLL —
+сцену в движке**. Правки JSON в `game/data/*.json` подхватываются без пересборки DLL —
 достаточно перезапустить сцену (F5 в редакторе или заново открыть игру).
 
 ---
@@ -23,7 +23,7 @@
   %LOCALAPPDATA%\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7-stable_win64.exe
   ```
   Открой `where godot` в НОВОМ окне терминала — если winget успел дописать alias в PATH,
-  команда `godot` заработает напрямую. Если нет — используй полный путь выше или `run.ps1`
+  команда `godot` заработает напрямую. Если нет — используй полный путь выше или `scripts/run.ps1`
   (он этот путь уже знает).
 
 Если ты на другой машине без Godot — поставь через `winget install GodotEngine.GodotEngine`
@@ -36,13 +36,13 @@
 Из корня проекта:
 
 ```powershell
-.\run.ps1
+.\scripts\run.ps1
 ```
 
 Это делает всё сразу:
-1. `cd rust; cargo build` — собирает `openheart.dll` (debug-профиль).
+1. `cargo build -p openheart` — собирает `openheart.dll` (debug-профиль).
 2. Ищет установленный Godot/Redot (в т.ч. по пути winget из раздела 0).
-3. Открывает редактор с проектом `godot/`.
+3. Открывает редактор с проектом `game/`.
 
 Дальше в открывшемся редакторе жми **F5** (или кнопку ▶ в правом верхнем углу) — запустится игра.
 
@@ -54,18 +54,18 @@
 
 ```powershell
 cd rust
-cargo build
+cargo build -p openheart
 ```
 
-Что произойдёт: `cargo` скомпилирует весь код из `rust/src/*.rs` и всё, что подключено через
-`use crate::...`, в файл `rust/target/debug/openheart.dll`. Это обычная динамическая библиотека
+Что произойдёт: `cargo` скомпилирует весь код из `client/src/*.rs` и всё, что подключено через
+`use crate::...`, в файл `target/debug/openheart.dll`. Это обычная динамическая библиотека
 Windows — движок будет вызывать её функции напрямую.
 
-**Важно:** движок ищет DLL внутри проекта — `godot/bin/openheart.dll` (так её видит и экспорт
-игры). Скрипты `run.ps1`/`build.bat`/`watch.ps1` копируют её туда сами; при ручной сборке скопируй:
+**Важно:** движок ищет DLL внутри проекта — `game/bin/openheart.dll` (так её видит и экспорт
+игры). Скрипты `scripts/run.ps1`/`scripts/build.bat`/`scripts/watch.ps1` копируют её туда сами; при ручной сборке скопируй:
 
 ```powershell
-Copy-Item rust\target\debug\openheart.dll godot\bin\openheart.dll -Force
+Copy-Item target\debug\openheart.dll godot\bin\openheart.dll -Force
 ```
 
 Долго собирается **только первый раз** (компилируются все зависимости, включая сам `gdext`).
@@ -82,10 +82,10 @@ Finished `dev` profile [unoptimized + debuginfo] target(s) in N.NNs
 Вариант А — через терминал (быстрее, без диалогов):
 ```powershell
 $godot = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7-stable_win64.exe"
-& $godot -e --path godot
+& $godot -e --path game
 ```
 Флаг `-e` (`--editor`) — открыть именно **редактор**, а не сразу запустить игру.
-`--path godot` — указать, где лежит `project.godot` (у нас в подпапке `godot/`, не в корне репо).
+`--path game` — указать, где лежит `project.godot` (у нас в подпапке `game/`, не в корне репо).
 
 Вариант Б — через GUI: запусти Godot без параметров → в диспетчере проектов нажми
 **Import** → укажи `C:\projects\open-heart\godot\project.godot`.
@@ -99,14 +99,14 @@ $godot = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Mi
 - **Esc** во время игры отпускает захваченную мышь (курсор захватывается для обзора от первого
   лица — это нормально, не баг).
 
-Движок сам находит и грузит `openheart.dll` — это прописано в `godot/OpenHeart.gdextension`,
+Движок сам находит и грузит `openheart.dll` — это прописано в `game/OpenHeart.gdextension`,
 руками ничего указывать не нужно.
 
 ### Шаг 4 — запустить игру совсем без редактора (как релизная сборка)
 
 ```powershell
 $godot = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7-stable_win64.exe"
-& $godot --path godot
+& $godot --path game
 ```
 Без `-e` — движок сразу выполняет главную сцену, редактор не открывается. Так удобно быстро
 проверить билд, не отвлекаясь на интерфейс редактора.
@@ -119,7 +119,7 @@ $godot = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Mi
 
 ```powershell
 cd rust
-cargo build
+cargo build -p openheart
 ```
 
 Затем **вернись в окно Godot-редактора** (если оно уже открыто) — он сам подхватит новую
@@ -129,7 +129,7 @@ cargo build
 
 Если хочешь, чтобы DLL пересобиралась сама при каждом сохранении `.rs`-файла:
 ```powershell
-.\watch.ps1
+.\scripts\watch.ps1
 ```
 Требует `cargo-watch` (скрипт сам предложит установить, если его нет: `cargo install cargo-watch`).
 Оставь этот терминал открытым фоном, редактируй код, переключайся в Godot и жми F5 — DLL уже
@@ -144,7 +144,7 @@ cargo build
 - «🔒 Защитить ядро» ставит read-only на фундаментальные файлы (сцены, project.godot,
   .gdextension) — контент-мейкер не сломает движок случайно.
 
-### Правишь только JSON в `godot/presets/<пресет>/*.json`?
+### Правишь только JSON в `game/presets/<пресет>/*.json`?
 
 Пересборка Rust НЕ нужна — эти файлы читаются в рантайме при старте сцены (`content.rs::load_all()`).
 Просто перезапусти игру (F5 заново, или Esc → в меню → «Новая игра»/«Продолжить»).
@@ -160,25 +160,25 @@ cargo build
 
 | Хочу... | Команда |
 |---|---|
-| Собрать релизную (оптимизированную) DLL | `cd rust; cargo build --release` |
-| Проверить, что код компилируется, без сборки бинарника | `cd rust; cargo check` |
-| Быстро прогнать игру и сразу закрыть (для проверки, что ничего не упало) | `& $godot --headless --path godot --quit` |
-| Посмотреть, какие ассеты/сцены есть в проекте | открой `godot/` в редакторе, вкладка FileSystem слева |
+| Собрать релизную (оптимизированную) DLL | `cargo build -p openheart --release` |
+| Проверить, что код компилируется, без сборки бинарника | `cargo check` |
+| Быстро прогнать игру и сразу закрыть (для проверки, что ничего не упало) | `& $godot --headless --path game --quit` |
+| Посмотреть, какие ассеты/сцены есть в проекте | открой `game/` в редакторе, вкладка FileSystem слева |
 | Пересобрать/поправить нарезанные спрайты из атласов | `python tools/slice_atlases.py` → `slice_fix.py` → `slice_props.py` (см. `tools/ASSET_GUIDE.md`) |
 
 ---
 
 ## 5. Частые проблемы
 
-**«Не нахожу Godot» при запуске `run.ps1`.**
-Передай путь явно: `.\run.ps1 -Engine "C:\путь\к\Godot.exe"`.
+**«Не нахожу Godot» при запуске `scripts/run.ps1`.**
+Передай путь явно: `.\scripts\run.ps1 -Engine "C:\путь\к\Godot.exe"`.
 
 **Игра открывается, но экран чёрный / пустой.**
 Подожди секунду-две — первая загрузка текстур занимает время. Если не проходит — открой
 вкладку «Вывод» внизу редактора Godot и посмотри на красные строки ошибок.
 
 **Изменил Rust-код, но в игре ничего не изменилось.**
-Ты забыл `cargo build` перед перезапуском сцены — самая частая причина. DLL сама себя не
+Ты забыл `cargo build -p openheart` перед перезапуском сцены — самая частая причина. DLL сама себя не
 пересобирает.
 
 **`cargo build` ругается на скачивание пакетов.**

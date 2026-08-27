@@ -47,7 +47,7 @@ Convert an existing preset:
 
 ```powershell
 cd rust
-cargo run --bin preset_migrate -- ../godot/presets/core
+cargo run --bin preset_migrate -- ../game/presets/core
 ```
 
 The converter writes sibling `.ron` files and keeps the JSON sources intact for rollback.

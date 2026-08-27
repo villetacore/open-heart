@@ -1,0 +1,32 @@
+# Конфиг игрового сервера OpenHeart (oh-server).
+# Скопируй в server.toml рядом с бинарником и правь. Любой ключ переопределяется
+# флагом (-listen, -preset…) и переменной окружения (OH_LISTEN, OH_PRESET…).
+
+name        = "Неоновый квартал #1"
+motd        = "PvE кооп, 4 слота"
+region      = "eu"
+
+preset      = "core"                  # папка в presets/
+presets     = "../game/presets"      # где искать пресеты (для content_hash)
+core        = ""                      # путь к core.wasm; пусто = заглушка без врагов
+
+world       = "hub"                   # hub | delve (delve — комната-данж с врагами)
+depth       = 1                       # глубина делва
+
+listen      = "127.0.0.1:7777"
+max_players = 16
+party_size  = 4
+
+auth        = "open"                  # open | local | master
+password     = ""                     # пароль на вход, пусто = свободный вход
+
+# ── публикация в списке серверов (нужен запущенный oh-master) ────────────────
+master      = ""                      # "https://master.example.com"
+public      = false                   # объявляться в списке
+relay       = false                   # true, если нет белого IP: держим туннель к мастеру
+public_url  = ""                      # "wss://my.host:7777/ws" — как к нам подключаться;
+                                      # при relay = true не нужен, адрес выдаёт мастер
+server_id   = ""                      # выдаёт oh-master server-add
+secret      = ""                      # выдаёт oh-master server-add, показывается один раз
+
+db          = "server.db"

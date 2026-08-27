@@ -1,11 +1,11 @@
 # Rust
-/rust/target/
+/target/
 **/*.rs.bk
 
 # Скопированная в проект DLL (создаётся build.bat / run.ps1 / watch.ps1);
 # .gitkeep оставляет папку в свежем клоне
-/godot/bin/*
-!/godot/bin/.gitkeep
+/game/bin/*
+!/game/bin/.gitkeep
 
 # Результаты ИИ-генерации текстур (сырые, до постобработки)
 /tools/generated/
@@ -18,3 +18,16 @@ __pycache__/
 
 # QA-артефакты нарезки (регенерируются tools/slice_*.py)
 tools/preview/
+
+# Go-бэкенд: бинарники, локальные конфиги, базы и ключи
+/server/oh-server
+/server/oh-master
+/server/oh-probe
+/server/*.exe
+/server/server.toml
+/server/master.toml
+/server/master.key
+/server/core.wasm
+*.db
+*.db-wal
+*.db-shm

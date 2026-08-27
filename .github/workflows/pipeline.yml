@@ -55,24 +55,57 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: rust -> rust/target
+          workspaces: . -> target
 
       - name: cargo check
-        run: cargo check
-        working-directory: rust
+        run: cargo check --workspace
 
       - name: cargo clippy
-        run: cargo clippy -- -D warnings
-        working-directory: rust
+        run: cargo clippy --workspace -- -D warnings
 
       - name: cargo test
-        run: cargo test
-        working-directory: rust
+        run: cargo test --workspace
+
+# ── 1б. Бэкенд: ядро в wasm + сервера на Go ────────────────────────────────────
+  backend:
+    name: "Go: build + vet + test, core.wasm"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache-dependency-path: server/go.sum
+
+      # Ядро игры, которое oh-server крутит через wazero (docs/MULTIPLAYER.md §4).
+      - name: build core.wasm
+        run: cargo build -p openheart-core --target wasm32-unknown-unknown --features abi --release
+
+      - name: go build
+        run: go build ./...
+        working-directory: server
+
+      - name: go vet
+        run: go vet ./...
+        working-directory: server
+
+      - name: go test
+        run: go test ./...
+        working-directory: server
 
 # ── 2. Авто-тег (только push→main или ручной запуск) ───────────────────────────
   tag:
     name: "Bump & Tag"
-    needs: test
+    needs: [test, backend]
     runs-on: ubuntu-24.04
     if: >
       github.event_name != 'pull_request' &&
@@ -153,14 +186,13 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: rust -> rust/target
+          workspaces: . -> target
 
       - name: Build Rust DLL
-        run: cargo build --release
-        working-directory: rust
+        run: cargo build -p openheart --release
 
-      - name: Copy DLL → godot/bin/
-        run: Copy-Item rust\target\release\openheart.dll godot\bin\openheart.dll -Force
+      - name: Copy DLL → game/bin/
+        run: Copy-Item target\release\openheart.dll game\bin\openheart.dll -Force
 
       - name: Install Godot ${{ env.GODOT_VER }}
         shell: pwsh
@@ -186,7 +218,7 @@ jobs:
 
       - name: Import assets
         shell: pwsh
-        working-directory: godot
+        working-directory: game
         run: |
           $process = Start-Process C:\Godot\godot.exe `
             -ArgumentList '--headless --import' `
@@ -195,7 +227,7 @@ jobs:
 
       - name: Godot export (Windows)
         shell: pwsh
-        working-directory: godot
+        working-directory: game
         run: |
           New-Item -ItemType Directory -Force dist\windows | Out-Null
           $process = Start-Process C:\Godot\godot.exe `
@@ -207,7 +239,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: build-windows
-          path: godot/dist/windows/
+          path: game/dist/windows/
           if-no-files-found: warn
           retention-days: 1
 
@@ -224,14 +256,13 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: rust -> rust/target
+          workspaces: . -> target
 
       - name: Build Rust .so
-        run: cargo build --release
-        working-directory: rust
+        run: cargo build -p openheart --release
 
-      - name: Copy .so → godot/bin/
-        run: cp rust/target/release/libopenheart.so godot/bin/libopenheart.so
+      - name: Copy .so → game/bin/
+        run: cp target/release/libopenheart.so game/bin/libopenheart.so
 
       - name: Install Godot ${{ env.GODOT_VER }}
         run: |
@@ -248,11 +279,11 @@ jobs:
           echo "Templates: $(ls "$TPL" | wc -l) files"
 
       - name: Import assets
-        working-directory: godot
+        working-directory: game
         run: godot --headless --import 2>&1 || true
 
       - name: Godot export (Linux)
-        working-directory: godot
+        working-directory: game
         run: |
           mkdir -p dist/linux
           godot --headless --export-release "Linux/X11" dist/linux/OpenHeart.x86_64
@@ -261,7 +292,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: build-linux
-          path: godot/dist/linux/
+          path: game/dist/linux/
           if-no-files-found: warn
           retention-days: 1
 
@@ -280,17 +311,16 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: rust -> rust/target
+          workspaces: . -> target
 
       - name: Build Rust fat dylib
-        working-directory: rust
         run: |
-          cargo build --release --target x86_64-apple-darwin
-          cargo build --release --target aarch64-apple-darwin
+          cargo build -p openheart --release --target x86_64-apple-darwin
+          cargo build -p openheart --release --target aarch64-apple-darwin
           lipo -create \
             target/x86_64-apple-darwin/release/libopenheart.dylib \
             target/aarch64-apple-darwin/release/libopenheart.dylib \
-            -output ../godot/bin/libopenheart.dylib
+            -output game/bin/libopenheart.dylib
 
       - name: Install Godot ${{ env.GODOT_VER }}
         run: |
@@ -310,11 +340,11 @@ jobs:
           echo "Templates: $(ls "$TPL" | wc -l) files"
 
       - name: Import assets
-        working-directory: godot
+        working-directory: game
         run: /Applications/Godot.app/Contents/MacOS/Godot --headless --import 2>&1 || true
 
       - name: Godot export (macOS)
-        working-directory: godot
+        working-directory: game
         run: |
           mkdir -p dist/macos
           /Applications/Godot.app/Contents/MacOS/Godot --headless \
@@ -324,7 +354,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: build-macos
-          path: godot/dist/macos/
+          path: game/dist/macos/
           if-no-files-found: warn
           retention-days: 1
 
@@ -343,7 +373,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: rust -> rust/target
+          workspaces: . -> target
 
       - uses: actions/setup-java@v4
         with:
@@ -359,11 +389,10 @@ jobs:
         run: cargo install cargo-ndk --locked
 
       - name: Build Rust (arm64 + armeabi-v7a)
-        working-directory: rust
         run: |
-          mkdir -p ../godot/bin/android
+          mkdir -p game/bin/android
           export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/23.2.8568313"
-          cargo ndk -t arm64-v8a -t armeabi-v7a -o ../godot/bin/android build --release
+          cargo ndk -t arm64-v8a -t armeabi-v7a -o game/bin/android build -p openheart --release
 
       - name: Generate debug keystore
         run: |
@@ -388,11 +417,11 @@ jobs:
           echo "Templates: $(ls "$TPL" | wc -l) files"
 
       - name: Import assets
-        working-directory: godot
+        working-directory: game
         run: godot --headless --import 2>&1 || true
 
       - name: Godot export (Android APK)
-        working-directory: godot
+        working-directory: game
         # Godot 4.x reads the debug keystore from these env vars — надёжнее editor_settings.
         # use_gradle_build=false в export_presets.cfg → Android SDK/Gradle не нужны,
         # экспорт лишь переупаковывает готовый APK-шаблон и подписывает debug-ключом.
@@ -408,7 +437,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: build-android
-          path: godot/dist/android/
+          path: game/dist/android/
           if-no-files-found: warn
           retention-days: 1
 
@@ -438,18 +467,17 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: rust -> rust/target
+          workspaces: . -> target
 
       - name: Build Rust WASM
-        working-directory: rust
         run: |
           emcc --version
-          mkdir -p ../godot/bin/web
-          cargo +nightly build -Z build-std=std,panic_abort \
+          mkdir -p game/bin/web
+          cargo +nightly build -p openheart -Z build-std=std,panic_abort \
             --release --target wasm32-unknown-emscripten
           test -f target/wasm32-unknown-emscripten/release/openheart.wasm
           cp target/wasm32-unknown-emscripten/release/openheart.wasm \
-             ../godot/bin/web/libopenheart.wasm
+             game/bin/web/libopenheart.wasm
 
       - name: Install Godot ${{ env.GODOT_VER }}
         run: |
@@ -466,11 +494,11 @@ jobs:
           echo "Templates: $(ls "$TPL" | wc -l) files"
 
       - name: Import assets
-        working-directory: godot
+        working-directory: game
         run: godot --headless --import 2>&1 || true
 
       - name: Godot export (Web)
-        working-directory: godot
+        working-directory: game
         run: |
           mkdir -p dist/web
           godot --headless --export-release "Web" dist/web/index.html
@@ -479,7 +507,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: build-web
-          path: godot/dist/web/
+          path: game/dist/web/
           if-no-files-found: warn
           retention-days: 1
 

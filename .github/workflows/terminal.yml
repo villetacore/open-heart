@@ -1,0 +1,41 @@
+name: Terminal client
+
+on:
+  push:
+    paths: ['terminal/**', 'core/**', 'server/**', 'protocol/**', 'game/presets/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/terminal.yml']
+  pull_request:
+    paths: ['terminal/**', 'core/**', 'server/**', 'protocol/**', 'game/presets/**', 'Cargo.toml', 'Cargo.lock', '.github/workflows/terminal.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terminal:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache-dependency-path: server/go.sum
+      - run: cargo clippy -p openheart-terminal --all-targets --locked -- -D warnings
+      - run: cargo build -p openheart-core --target wasm32-unknown-unknown --features abi --release --locked
+      - name: Build Go and run real network tests
+        run: |
+          go -C server build -o oh-server.exe ./cmd/oh-server
+          export OH_TEST_SERVER="$PWD/server/oh-server.exe"
+          export OH_TEST_CORE="$PWD/target/wasm32-unknown-unknown/release/openheart_core.wasm"
+          cargo test -p openheart-terminal --locked -- --include-ignored
+      - run: cargo run -p openheart-terminal --locked -- --offline --headless --world delve --seconds 2

@@ -46,6 +46,7 @@
 | `cmd` | `kind:str, args:{...}` |
 | `chat` | `text:str` (≤ 256 символов) |
 | `ping` | `t:i64` (мс клиента) |
+| `save` | `ver:int, data:str` — состояние персонажа целиком, ≤ 64 КиБ. Сервер его не разбирает: хранит и отдаёт обратно при следующем входе |
 
 `buttons` — битовая маска:
 
@@ -70,7 +71,7 @@
 
 | `t` | Тело |
 |---|---|
-| `welcome` | `peer:u16, tick:u32, preset_id:str, content_hash:str, world:{kind, seed:u64, depth:int}, players:[{peer, nickname, class, level}]` |
+| `welcome` | `peer:u16, tick:u32, preset_id:str, content_hash:str, world:{kind, seed:u64, depth:int}, players:[{peer, nickname, class, level}], character?:{ver:int, data:str}` |
 | `snap` | `tick:u32, ack:u32, players:[ent], enemies:[ent], projectiles:[ent], items:[ent]` |
 | `event` | `kind:str, actor?:u16, target?:u16, amount?:f32, text?:str, pos?:[f32;3], extra?:{...}` |
 | `reject` | `reason:str, detail?:str` |

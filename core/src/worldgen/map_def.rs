@@ -237,8 +237,25 @@ pub struct MapDef {
     pub route_layers: Vec<RouteLayerDef>,
     #[serde(default)]
     pub skyline_beacons: Vec<SkylineBeaconDef>,
+    /// Интерактивные станции (верстак крафта и т.п.): зоны, где доступны
+    /// станочные рецепты. Геометрию станции рисуют blocks/props карты.
+    #[serde(default)]
+    pub stations: Vec<StationDef>,
     #[serde(default)]
     pub spawns: LevelCfg,
+}
+
+fn d_station_radius() -> f32 {
+    4.0
+}
+
+/// Станция крафта на карте: тип (`kind`, напр. "bench") и зона взаимодействия.
+#[derive(Deserialize, Clone)]
+pub struct StationDef {
+    pub kind: String,
+    pub pos: [f32; 2],
+    #[serde(default = "d_station_radius")]
+    pub radius: f32,
 }
 
 // ── Утилиты текстур ───────────────────────────────────────────────────────────

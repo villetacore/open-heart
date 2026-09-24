@@ -471,7 +471,7 @@ pub fn plan(depth: u32, seed: u64, cfg: &GameConfig) -> DungeonLayout {
     // 1. Комнаты (высоту назначим позже — по дереву связей)
     let mut rooms: Vec<Room> = Vec::new();
     let target = 8 + depth.min(3) as i32 + rng.range(0, 2);
-    for _ in 0..120 {
+    for _ in 0..480 {
         if rooms.len() as i32 >= target {
             break;
         }
@@ -546,6 +546,22 @@ pub fn plan(depth: u32, seed: u64, cfg: &GameConfig) -> DungeonLayout {
         };
         if !rooms.iter().any(|o| r.overlaps(o, 2)) {
             rooms.push(r);
+        }
+    }
+    // Every mandatory beat needs a distinct room. Crowded random packing used
+    // to silently omit story/puzzle rooms, making their quests impossible.
+    if rooms.len() < 8 {
+        let template = rooms[0];
+        rooms.clear();
+        for index in 0..9 {
+            let mut room = template;
+            room.x = 3 + (index % 3) * 13;
+            room.z = 3 + (index / 3) * 13;
+            room.w = 8;
+            room.h = 8;
+            room.shape = Shape::Rect;
+            room.role = RoomRole::Arena;
+            rooms.push(room);
         }
     }
     let n = rooms.len();

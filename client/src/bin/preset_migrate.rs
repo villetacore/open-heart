@@ -18,6 +18,7 @@ const CONTENT_FILES: &[&str] = &[
     "synergies",
     "weapons",
     "weapon_mods",
+    "player_abilities",
 ];
 
 fn migrate_file(preset: &Path, stem: &str) -> Result<bool, String> {
@@ -45,7 +46,9 @@ fn main() -> Result<(), String> {
         .map(PathBuf::from)
         .ok_or("usage: cargo run --bin preset_migrate -- <preset-directory>")?;
     let mut migrated = 0;
+    let selected: Vec<String> = std::env::args().skip(2).collect();
     for stem in CONTENT_FILES {
+        if !selected.is_empty() && !selected.iter().any(|s| s == stem) { continue; }
         if migrate_file(&preset, stem)? {
             migrated += 1;
             println!("migrated {stem}.json -> {stem}.ron");

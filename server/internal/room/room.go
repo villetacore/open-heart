@@ -49,6 +49,10 @@ type Player struct {
 	UserID     int64
 	AccountRef string
 	Conn       wire.Conn
+	// CharacterID — строка в characters, 0 — персонажа ещё нет.
+	CharacterID int64
+	// Character — то, что сервер помнит за игроком; уходит в welcome.
+	Character *proto.Save
 
 	budget  int // оставшийся лимит сообщений в текущую секунду
 	dropped int
@@ -228,6 +232,7 @@ func (r *Room) doJoin(p *Player) error {
 		ContentHash: r.cfg.ContentHash,
 		World:       proto.World{Kind: r.cfg.Kind, Seed: r.cfg.Seed, Depth: r.cfg.Depth},
 		Players:     r.roster(),
+		Character:   p.Character,
 	}
 	if err := p.Conn.Send(proto.TWelcome, welcome); err != nil {
 		r.log.Warn("не отправить welcome", "peer", p.Peer, "err", err)

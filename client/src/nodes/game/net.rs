@@ -19,6 +19,10 @@ use crate::player::Player;
 
 use super::{Game3D, Loc, PeerId};
 
+/// Как часто персонаж уезжает на сервер. Чаще незачем: блоб небольшой, но и
+/// терять больше полуминуты игры не хочется.
+const NET_SAVE_PERIOD: f32 = 30.0;
+
 /// Насколько быстро сетевые сущности подтягиваются к позиции из снапшота.
 /// Снапшоты приходят 20 раз в секунду, между ними положение интерполируется.
 const INTERP_SPEED: f32 = 12.0;
@@ -89,8 +93,16 @@ impl Game3D {
 
         for event in net.poll(dt) {
             match event {
-                NetEvent::Welcome { peer, world, players } => {
+                NetEvent::Welcome {
+                    peer,
+                    world,
+                    players,
+                    character,
+                } => {
                     self.on_welcome(peer, &world, players.len());
+                    if let Some(save) = character {
+                        self.apply_server_character(&save.data);
+                    }
                 }
                 NetEvent::Snapshot(snapshot) => {
                     self.apply_snapshot(&snapshot.players, &snapshot.enemies);
@@ -101,6 +113,16 @@ impl Game3D {
                     godot_warn!("[net] сервер отказал: {} ({})", reject.reason, reject.detail);
                 }
                 NetEvent::Pong(_) => {}
+            }
+        }
+
+        // Персонажа держит сервер: отправляем его регулярно, иначе прогресс
+        // теряется на любом обрыве.
+        self.net_save_timer += dt;
+        if net.is_ready() && self.net_save_timer >= NET_SAVE_PERIOD {
+            self.net_save_timer = 0.0;
+            if let Some(save) = self.character_blob() {
+                net.send_save(save);
             }
         }
 
@@ -116,6 +138,56 @@ impl Game3D {
         self.interpolate_net_entities(dt);
         self.apply_correction(dt);
         self.net = Some(net);
+    }
+
+    /// Собрать состояние персонажа для отправки на сервер.
+    fn character_blob(&self) -> Option<openheart_core::protocol::Save> {
+        let state = self.state.as_ref()?;
+        let hp = self
+            .player()
+            .and_then(|node| node.try_cast::<Player>().ok())
+            .map(|player| player.bind().hp)
+            .unwrap_or(100.0);
+        let data = crate::save::SaveData::from_game(state, hp, &self.arsenal)
+            .to_json()
+            .ok()?;
+        Some(openheart_core::protocol::Save {
+            ver: crate::save::SAVE_VERSION as i32,
+            data,
+        })
+    }
+
+    /// Принять персонажа, которого помнит сервер.
+    ///
+    /// Локальный сейв при этом не трогаем: одиночная игра и игра на сервере —
+    /// два разных персонажа, и путать их нельзя.
+    fn apply_server_character(&mut self, data: &str) {
+        let save = match crate::save::SaveData::from_json(data) {
+            Ok(save) => save,
+            Err(error) => {
+                godot_warn!("[net] персонаж с сервера не читается: {error}");
+                return;
+            }
+        };
+        let (state, hp, arsenal) = save.into_game();
+        let class = state.class_idx;
+        let spec = state.spec_idx;
+        self.state = Some(state);
+        self.arsenal = arsenal;
+
+        if let Some(class_idx) = class {
+            // Тот же путь, что и при загрузке сейва: снаряжение, здоровье, режим.
+            self.apply_loadout(class_idx, spec, false);
+            if let Some(node) = self.player() {
+                if let Ok(mut player) = node.try_cast::<Player>() {
+                    let max = player.bind().max_hp;
+                    player.bind_mut().hp = hp.min(max).max(1.0);
+                }
+            }
+            self.set_mode_explore();
+            self.refresh_weapon_sheet();
+        }
+        godot_print!("[net] персонаж загружен с сервера");
     }
 
     fn on_welcome(&mut self, peer: PeerId, world: &World, players: usize) {
@@ -158,6 +230,7 @@ impl Game3D {
     fn on_net_event(&mut self, event: &SimEvent) {
         use openheart_core::sim::event;
         match event.kind.as_str() {
+            "ability_cast" => self.on_ability_cast(event),
             event::DAMAGE if event.target == self.local_peer => {
                 self.damage_player(event.amount);
             }

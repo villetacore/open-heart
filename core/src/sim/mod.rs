@@ -7,6 +7,7 @@
 //! Формат структур обязан совпадать с protocol/schema.md и Go-пакетом `internal/proto`.
 
 pub mod damage;
+mod abilities;
 pub mod enemy;
 pub mod loot;
 pub mod rescue;
@@ -271,6 +272,10 @@ pub struct TickResult {
 /// Игрок глазами сервера.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Player {
+    #[serde(default)]
+    pub class: Option<usize>,
+    #[serde(default)]
+    pub abilities: crate::combat::ability::AbilityState,
     pub peer: u16,
     pub nickname: String,
     pub pos: Vec3,
@@ -303,6 +308,8 @@ impl Player {
         Self {
             peer,
             nickname,
+            class: None,
+            abilities: Default::default(),
             pos: Vec3::ZERO,
             yaw: 0.0,
             hp: 100.0,
@@ -482,7 +489,7 @@ impl State {
             return;
         }
 
-        let limit = MAX_SPEED * SPEED_TOLERANCE * dt.max(0.001);
+        let limit = MAX_SPEED * player.abilities.speed_scale() * SPEED_TOLERANCE * dt.max(0.001);
         if player.pos != Vec3::ZERO && player.pos.distance(input.pos) > limit {
             player.violations += 1;
             return; // позицию не принимаем, клиент откатится по снапшоту
@@ -547,6 +554,7 @@ impl State {
         }
         self.tick = self.tick.wrapping_add(1);
         self.time += dt;
+        for player in self.players.values_mut() { player.abilities.tick(dt); }
 
         let mut events = self.tick_enemies(dt);
         let hits = self.apply_enemy_damage(&events);
@@ -742,7 +750,7 @@ impl State {
             if player.downed() {
                 continue;
             }
-            player.hp = (player.hp - amount).max(0.0);
+            player.hp = (player.hp - amount * player.abilities.damage_scale()).max(0.0);
             if player.downed() {
                 rescue::knock_down(player);
                 let mut event = Event::new(event::DOWNED);
@@ -758,8 +766,17 @@ impl State {
     ///
     /// Пока их немного: состав пати сообщает сама комната, остальное
     /// (крафт, постройки) появится вместе с инвентарём на сервере.
-    fn game_command(&mut self, _peer: u16, kind: &str, args: Option<&Value>) -> Vec<Event> {
+    fn game_command(&mut self, peer: u16, kind: &str, args: Option<&Value>) -> Vec<Event> {
         match kind {
+            "choose_class" => {
+                if let Some(class) = args.and_then(|v| v.get("class")).and_then(Value::as_u64).filter(|c| *c < 3) {
+                    if let Some(player) = self.players.get_mut(&peer) {
+                        if player.class.is_none() { player.class = Some(class as usize); }
+                    }
+                }
+                Vec::new()
+            }
+            "ability" => self.cast_ability(peer, args),
             "party" => {
                 let size = args
                     .and_then(|value| value.get("size"))

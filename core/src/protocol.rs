@@ -25,6 +25,7 @@ pub mod tag {
     pub const CMD: &str = "cmd";
     pub const CHAT: &str = "chat";
     pub const PING: &str = "ping";
+    pub const SAVE: &str = "save";
 
     // сервер → клиент
     pub const WELCOME: &str = "welcome";
@@ -117,6 +118,22 @@ pub struct Ping {
     pub t: i64,
 }
 
+/// Состояние персонажа целиком.
+///
+/// Сервер его не разбирает: прогресс пока считает клиент, а сервер хранит блоб
+/// и отдаёт при следующем входе. Так персонаж переживает и рестарт сервера, и
+/// переустановку игры — но локальный сейв одиночной игры он не трогает.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Save {
+    #[serde(default)]
+    pub ver: i32,
+    #[serde(default)]
+    pub data: String,
+}
+
+/// Предел на состояние персонажа — столько же, сколько у сервера.
+pub const MAX_SAVE_BYTES: usize = 64 * 1024;
+
 // ── сервер → клиент ──────────────────────────────────────────────────────────
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -153,6 +170,9 @@ pub struct Welcome {
     pub world: World,
     #[serde(default)]
     pub players: Vec<PlayerInfo>,
+    /// Персонаж, которого сервер помнит за этим игроком.
+    #[serde(default)]
+    pub character: Option<Save>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -190,23 +210,27 @@ pub fn parse_server(raw: &str) -> Result<ServerMessage, serde_json::Error> {
 /// Сообщение клиента.
 #[derive(Clone, Debug)]
 pub enum ClientMessage {
+    Command(serde_json::Value),
     Hello(Hello),
     Input(Input),
     Fire(Fire),
     Hit(HitClaim),
     Chat(Chat),
     Ping(i64),
+    Save(Save),
 }
 
 impl ClientMessage {
     pub fn encode(&self) -> Result<String, serde_json::Error> {
         match self {
+            Self::Command(msg) => encode(tag::CMD, msg),
             Self::Hello(msg) => encode(tag::HELLO, msg),
             Self::Input(msg) => encode(tag::INPUT, msg),
             Self::Fire(msg) => encode(tag::FIRE, msg),
             Self::Hit(msg) => encode(tag::HIT, msg),
             Self::Chat(msg) => encode(tag::CHAT, msg),
             Self::Ping(t) => encode(tag::PING, &Ping { t: *t }),
+            Self::Save(msg) => encode(tag::SAVE, msg),
         }
     }
 }

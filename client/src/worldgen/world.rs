@@ -25,7 +25,7 @@ pub fn build_world(cache: &mut TexCache) -> WorldPlan {
     let mut root = Node3D::new_alloc();
     let mut rng = Rng::new(0xC0FFEE);
 
-    let t_ground = cache.get("res://assets/textures/floor_main.png");
+    let t_ground = cache.get("res://assets/textures/floor_city_stone.png");
     let t_market = cache.get("res://assets/textures/wall_market.png");
     let t_main = cache.get("res://assets/textures/wall_main.png");
     let t_lab = cache.get("res://assets/textures/wall_lab.png");

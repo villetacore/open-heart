@@ -133,6 +133,10 @@ impl NetClient {
         self.session.send_input(input);
     }
 
+    pub fn send_save(&mut self, save: openheart_core::protocol::Save) {
+        self.session.send_save(save);
+    }
+
     /// Держать соединение живым, когда отправлять нечего.
     ///
     /// Пока игрок выбирает класс или читает диалог, узла игрока ещё нет и ввод
@@ -150,6 +154,10 @@ impl NetClient {
 
     pub fn send_fire(&mut self, fire: Fire) {
         self.session.send_fire(fire);
+    }
+
+    pub fn send_command(&mut self, kind: &str, args: serde_json::Value) {
+        self.session.send_command(kind, args);
     }
 
     pub fn send_hit(&mut self, hit: HitClaim) {

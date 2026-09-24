@@ -82,3 +82,27 @@ fn server_messages_parse() {
         other => panic!("ожидался отказ: {other:?}"),
     }
 }
+
+/// Сейв персонажа: клиент его шлёт, сервер хранит не заглядывая внутрь.
+#[test]
+fn save_fixture_matches() {
+    let raw = fixture("save.json");
+    let envelope = Envelope::parse(raw.trim()).unwrap();
+    assert_eq!(envelope.t, crate::protocol::tag::SAVE);
+    let save: crate::protocol::Save = envelope.body().unwrap();
+    assert_eq!(save.ver, 4);
+    assert!(!save.data.is_empty() && save.data.len() <= crate::protocol::MAX_SAVE_BYTES);
+}
+
+/// Персонаж приезжает вместе с welcome — иначе клиент начнёт с нуля.
+#[test]
+fn welcome_carries_character() {
+    match parse_server(fixture("welcome.json").trim()).unwrap() {
+        ServerMessage::Welcome(welcome) => {
+            let character = welcome.character.expect("персонаж");
+            assert_eq!(character.ver, 4);
+            assert!(character.data.contains("core"));
+        }
+        other => panic!("ожидался welcome, пришло {other:?}"),
+    }
+}

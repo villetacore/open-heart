@@ -3,7 +3,7 @@
 //! Формат и разбор карты — в ядре (`openheart_core::worldgen::map_def`),
 //! он нужен и серверу; здесь только геометрия.
 
-use godot::classes::base_material_3d::{TextureFilter, TextureParam};
+use godot::classes::base_material_3d::{Flags, TextureFilter, TextureParam};
 use godot::classes::{
     file_access::ModeFlags, CollisionShape3D, CylinderMesh, CylinderShape3D, FileAccess,
     MeshInstance3D, Node3D, StandardMaterial3D, StaticBody3D,
@@ -26,6 +26,8 @@ pub struct BuiltMap {
     pub name_en: String,
     pub districts: Vec<MapDistrict>,
     pub ambient: Vec<MapAmbient>,
+    /// Зоны станций крафта: (kind, центр, радиус). Геометрию рисуют blocks/props.
+    pub stations: Vec<(String, Vector3, f32)>,
 }
 
 pub struct MapAmbient {
@@ -208,13 +210,12 @@ pub fn build_map(def: &MapDef, cache: &mut TexCache) -> BuiltMap {
                 if let Some(ref t) = tex {
                     mat.set_albedo(Color::WHITE);
                     mat.set_texture(TextureParam::ALBEDO, t);
-                    // Развёртка цилиндра — обхват на высоту, поэтому масштаб
-                    // считаем из размеров: с постоянным `uv` текстура на
-                    // фонарном столбе и на площадке растягивается по-разному.
-                    let around = (std::f32::consts::TAU * b.radius / crate::gfx::TEXEL_M).max(1.0);
-                    let along = (b.height / crate::gfx::TEXEL_M).max(1.0);
-                    mat.set_uv1_scale(Vector3::new(around, along, 1.0));
-                    mat.set_texture_filter(TextureFilter::NEAREST_WITH_MIPMAPS);
+                    // World projection also covers the top cap: scaling UVs by
+                    // circumference/height stretched the plaza into long stripes.
+                    mat.set_uv1_scale(Vector3::splat(1.0 / crate::gfx::TEXEL_M));
+                    mat.set_flag(Flags::UV1_USE_TRIPLANAR, true);
+                    mat.set_flag(Flags::UV1_USE_WORLD_TRIPLANAR, true);
+                    mat.set_texture_filter(TextureFilter::LINEAR_WITH_MIPMAPS_ANISOTROPIC);
                 } else {
                     mat.set_albedo(C_STONE);
                 }
@@ -667,5 +668,10 @@ pub fn build_map(def: &MapDef, cache: &mut TexCache) -> BuiltMap {
             })
             .collect(),
         ambient,
+        stations: def
+            .stations
+            .iter()
+            .map(|s| (s.kind.clone(), Vector3::new(s.pos[0], 0.0, s.pos[1]), s.radius))
+            .collect(),
     }
 }

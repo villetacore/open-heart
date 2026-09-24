@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "description": "Art resources only; not items added to inventory or save schema.",
+  "entries": [
+    {
+      "id": "heart_choker",
+      "name_ru": "Чокер «Сердце»",
+      "texture": "res://assets/icons/cosmetics/heart_choker.tres",
+      "region": [
+        0,
+        0,
+        384,
+        341
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "rose_stripe_stockings",
+      "name_ru": "Чулки с розовыми полосами",
+      "texture": "res://assets/icons/cosmetics/rose_stripe_stockings.tres",
+      "region": [
+        384,
+        0,
+        384,
+        341
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "pleated_battle_skirt",
+      "name_ru": "Плиссированная боевая юбка",
+      "texture": "res://assets/icons/cosmetics/pleated_battle_skirt.tres",
+      "region": [
+        768,
+        0,
+        384,
+        341
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "lace_combat_boots",
+      "name_ru": "Шнурованные боевые сапоги",
+      "texture": "res://assets/icons/cosmetics/lace_combat_boots.tres",
+      "region": [
+        1152,
+        0,
+        384,
+        341
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "rose_hair_bow",
+      "name_ru": "Шёлковый бант",
+      "texture": "res://assets/icons/cosmetics/rose_hair_bow.tres",
+      "region": [
+        0,
+        341,
+        384,
+        342
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "lace_gloves",
+      "name_ru": "Кружевные митенки",
+      "texture": "res://assets/icons/cosmetics/lace_gloves.tres",
+      "region": [
+        384,
+        341,
+        384,
+        342
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "brocade_waistcoat",
+      "name_ru": "Парчовый жилет",
+      "texture": "res://assets/icons/cosmetics/brocade_waistcoat.tres",
+      "region": [
+        768,
+        341,
+        384,
+        342
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "amethyst_ear_chain",
+      "name_ru": "Аметистовая серьга-цепочка",
+      "texture": "res://assets/icons/cosmetics/amethyst_ear_chain.tres",
+      "region": [
+        1152,
+        341,
+        384,
+        342
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "heart_satchel",
+      "name_ru": "Сумка-сердце",
+      "texture": "res://assets/icons/cosmetics/heart_satchel.tres",
+      "region": [
+        0,
+        683,
+        384,
+        341
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "rose_eyeliner",
+      "name_ru": "Карандаш для глаз",
+      "texture": "res://assets/icons/cosmetics/rose_eyeliner.tres",
+      "region": [
+        384,
+        683,
+        384,
+        341
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "violet_perfume",
+      "name_ru": "Флакон «Фиалка»",
+      "texture": "res://assets/icons/cosmetics/violet_perfume.tres",
+      "region": [
+        768,
+        683,
+        384,
+        341
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    },
+    {
+      "id": "silver_rose_brooch",
+      "name_ru": "Серебряная роза",
+      "texture": "res://assets/icons/cosmetics/silver_rose_brooch.tres",
+      "region": [
+        1152,
+        683,
+        384,
+        341
+      ],
+      "status": "art_only",
+      "gameplay_effect": null
+    }
+  ]
+}

@@ -113,59 +113,32 @@ impl Game3D {
     }
 
     pub(super) fn use_first_consumable(&mut self) {
-        let lang = self.settings.lang.clone();
-        let heal_data = self.state.as_ref().and_then(|s| {
-            s.inventory
-                .items
-                .iter()
-                .find(|i| {
-                    matches!(
-                        i.id.as_str(),
-                        "medkit" | "armor_shard" | "potion" | "bread" | "energy_drink"
-                    )
-                })
-                .map(|i| {
-                    let amt = match i.id.as_str() {
-                        "medkit" => 30.0,
-                        "armor_shard" => 20.0,
-                        "potion" => 50.0,
-                        "energy_drink" => 15.0,
-                        _ => 10.0,
-                    };
-                    (i.id.clone(), amt)
-                })
+        let id = self.state.as_ref().and_then(|state| {
+            state.inventory.items.iter().find(|item| {
+                self.cfg.as_ref().is_some_and(|cfg| cfg.items.iter().any(|def| def.id == item.id && def.heal.unwrap_or(0.0) > 0.0))
+            }).map(|item| item.id.clone())
         });
-        if let Some((id, amount)) = heal_data {
-            let full = self.player()
-                .and_then(|p| p.clone().try_cast::<Player>().ok())
-                .map(|pl| pl.bind().hp >= pl.bind().max_hp)
-                .unwrap_or(true);
-            if full {
-                self.show_flash(if lang == "en" {
-                    "Health is already full"
-                } else {
-                    "Здоровье уже полное"
-                });
-                return;
-            }
-            if let Some(ref mut state) = self.state {
-                state.inventory.remove_one(&id);
-            }
-            if let Some(p) = self.player() {
-                if let Ok(mut player) = p.clone().try_cast::<Player>() {
-                    player.bind_mut().heal(amount);
-                }
-            }
-            self.spawn_fx_on_player("res://assets/effects/effect_heal.png");
-            self.show_flash(t("msg_healed", &lang));
-        }
+        if let Some(id) = id { self.use_consumable_id(&id); }
     }
-
     pub(super) fn spawn_fx_on_player(&mut self, tex: &str) {
         if let Some(p) = self.player() {
             let pos = p.get_global_position() + Vector3::new(0.0, 1.2, 0.0);
             self.spawn_fx(tex, pos, 0.010, 0.5);
         }
+    }
+
+    pub(super) fn use_consumable_id(&mut self, id: &str) -> bool {
+        let amount = self.cfg.as_ref().and_then(|c| c.items.iter().find(|i| i.id==id)).and_then(|i| i.heal).unwrap_or(0.0);
+        if amount <= 0.0 || self.state.as_ref().is_none_or(|s| !s.inventory.has(id)) { return false; }
+        let Some(mut player) = self.player().and_then(|p| p.try_cast::<Player>().ok()) else { return false; };
+        if player.bind().hp >= player.bind().max_hp || player.bind().dead { return false; }
+        if self.state.as_mut().unwrap().inventory.remove_one(id) {
+            player.bind_mut().heal(amount);
+            self.spawn_fx_on_player("res://assets/effects/effect_heal.png");
+            self.auto_save();
+            return true;
+        }
+        false
     }
 
     // ── Инвентарь ────────────────────────────────────────────────────────────
@@ -379,6 +352,7 @@ impl Game3D {
         if let Some(label) = self.journal_list.as_mut() {
             label.set_text(&lines.join("\n"));
         }
+        self.refresh_journal_cards();
     }
 
     pub(super) fn refresh_inventory_ui(&mut self) {
@@ -517,6 +491,7 @@ impl Game3D {
         if let Some(ref mut lbl) = self.inv_list {
             lbl.set_text(&text);
         }
+        self.refresh_inventory_cards();
     }
 
     pub(super) fn select_weapon_mod(&mut self, branch: u8) {
@@ -775,5 +750,6 @@ impl Game3D {
         if let Some(ref mut lbl) = self.perk_list {
             lbl.set_text(&text);
         }
+        self.refresh_perk_cards();
     }
 }

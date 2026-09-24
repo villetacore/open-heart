@@ -157,6 +157,7 @@ impl Action {
 }
 
 pub struct GameState {
+    pub abilities: crate::combat::ability::AbilityState,
     pub day: u32,
     pub period: Period,
     pub location: Location,
@@ -183,7 +184,17 @@ pub struct GameState {
     pub preset: String,
     pub weapon_mods: [u8; 8],
     pub weapon_mod_cores: u32,
+    /// Был ли уже использован сброс перков: первый сброс бесплатный (план §5).
+    pub respec_used: bool,
 }
+
+/// Стоимость золота за повторный сброс перков (первый — бесплатный).
+pub const RESPEC_COST: i32 = 100;
+
+/// Крафт очка перка из материалов: расходуемый предмет, его количество и золото.
+pub const PERK_CRAFT_ITEM: &str = "neon_shard";
+pub const PERK_CRAFT_ITEM_QTY: u32 = 3;
+pub const PERK_CRAFT_GOLD: i32 = 150;
 
 impl GameState {
     pub fn new(name: &str) -> Self {
@@ -194,6 +205,7 @@ impl GameState {
         relations.insert("sofia".into(), 0);
 
         Self {
+            abilities: Default::default(),
             day: 1,
             period: Period::Morning,
             location: Location::Dorm,
@@ -223,7 +235,63 @@ impl GameState {
             preset: "core".into(),
             weapon_mods: [0; 8],
             weapon_mod_cores: 0,
+            respec_used: false,
         }
+    }
+
+    /// Списать золото, если хватает. Возвращает `true` при успешной покупке.
+    /// Единая проверка для магазина Торговца, сброса перков и модов оружия.
+    pub fn spend_gold(&mut self, cost: i32) -> bool {
+        if cost < 0 || self.gold < cost {
+            return false;
+        }
+        self.gold -= cost;
+        true
+    }
+
+    /// Хватает ли материалов и золота, чтобы скрафтить очко перка.
+    pub fn can_craft_perk_point(&self) -> bool {
+        self.gold >= PERK_CRAFT_GOLD
+            && self.inventory.count(PERK_CRAFT_ITEM) >= PERK_CRAFT_ITEM_QTY
+    }
+
+    /// Скрафтить очко перка: списать материалы и золото, добавить `perk_point`.
+    /// Возвращает `false`, если ресурсов не хватило. Альтернатива прокачке через
+    /// бой — превращает собранные осколки в развитие билда (план §5).
+    pub fn craft_perk_point(&mut self) -> bool {
+        if !self.can_craft_perk_point() {
+            return false;
+        }
+        self.inventory.remove(PERK_CRAFT_ITEM, PERK_CRAFT_ITEM_QTY);
+        self.gold -= PERK_CRAFT_GOLD;
+        self.perk_points += 1;
+        true
+    }
+
+    /// Стоимость следующего сброса перков: первый бесплатный, далее [`RESPEC_COST`].
+    pub fn respec_cost(&self) -> i32 {
+        if self.respec_used { RESPEC_COST } else { 0 }
+    }
+
+    /// Сбросить перки: снять золото по [`Self::respec_cost`], вернуть все вложенные
+    /// очки (ранг × стоимость перка) в `perk_points` и очистить набор перков.
+    /// Возвращает число возвращённых очков или `None`, если не хватает золота.
+    /// Вызывающая сторона обязана пересчитать лоадаут после сброса.
+    pub fn respec_perks(&mut self) -> Option<u32> {
+        let cost = self.respec_cost();
+        if self.gold < cost {
+            return None;
+        }
+        let refunded: u32 = self
+            .perks
+            .iter()
+            .map(|(id, rank)| crate::perk::perk_cost(id) * rank)
+            .sum();
+        self.gold -= cost;
+        self.perk_points += refunded;
+        self.perks.clear();
+        self.respec_used = true;
+        Some(refunded)
     }
 
     pub fn add_heart(&mut self) {
@@ -583,5 +651,77 @@ mod localization_tests {
         assert!(!english.contains("отнош"));
         assert!(russian.contains("отношениям"));
         assert!(russian.contains("Квест выполнен"));
+    }
+}
+
+#[cfg(test)]
+mod respec_tests {
+    use super::*;
+
+    #[test]
+    fn first_respec_is_free_then_costs_gold_and_refunds_points() {
+        let perk = &crate::perk::perks()[0];
+        let cost = perk.cost.max(1);
+
+        let mut state = GameState::new("Tester");
+        state.gold = 150;
+        // Куплен один перк на два ранга (вложено cost*2 очков).
+        state.perks.insert(perk.id.clone(), 2);
+
+        // Первый сброс — бесплатный, возвращает вложенные очки, чистит перки.
+        assert_eq!(state.respec_cost(), 0);
+        let refunded = state.respec_perks().expect("free respec must succeed");
+        assert_eq!(refunded, cost * 2, "должны вернуться все вложенные очки");
+        assert_eq!(state.perk_points, cost * 2);
+        assert!(state.perks.is_empty());
+        assert_eq!(state.gold, 150, "первый сброс не тратит золото");
+        assert!(state.respec_used);
+
+        // Второй сброс — платный.
+        assert_eq!(state.respec_cost(), RESPEC_COST);
+        state.perks.insert(perk.id.clone(), 1);
+        let before = state.perk_points;
+        let refunded2 = state.respec_perks().expect("paid respec with enough gold");
+        assert_eq!(refunded2, cost);
+        assert_eq!(state.perk_points, before + cost);
+        assert_eq!(state.gold, 150 - RESPEC_COST);
+    }
+
+    #[test]
+    fn craft_perk_point_consumes_materials_and_gold() {
+        use crate::item::Item;
+        let mut state = GameState::new("Tester");
+        state.gold = PERK_CRAFT_GOLD;
+        assert!(!state.can_craft_perk_point(), "без материалов крафт невозможен");
+        state.inventory.add(Item::new(PERK_CRAFT_ITEM, "Neon shard", "", PERK_CRAFT_ITEM_QTY));
+        assert!(state.can_craft_perk_point());
+        assert!(state.craft_perk_point());
+        assert_eq!(state.perk_points, 1);
+        assert_eq!(state.gold, 0);
+        assert_eq!(state.inventory.count(PERK_CRAFT_ITEM), 0);
+        assert!(!state.craft_perk_point(), "повторно без ресурсов — отказ");
+        assert_eq!(state.perk_points, 1);
+    }
+
+    #[test]
+    fn spend_gold_checks_balance_and_rejects_negative() {
+        let mut state = GameState::new("Tester");
+        state.gold = 50;
+        assert!(!state.spend_gold(60), "нельзя купить дороже баланса");
+        assert_eq!(state.gold, 50);
+        assert!(state.spend_gold(30));
+        assert_eq!(state.gold, 20);
+        assert!(!state.spend_gold(-5), "отрицательная цена недопустима");
+        assert_eq!(state.gold, 20);
+    }
+
+    #[test]
+    fn respec_refused_without_enough_gold() {
+        let mut state = GameState::new("Tester");
+        state.respec_used = true; // повторный сброс — платный
+        state.gold = RESPEC_COST - 1;
+        state.perk_points = 3;
+        assert!(state.respec_perks().is_none(), "нет золота — сброс не проходит");
+        assert_eq!(state.perk_points, 3, "очки не должны меняться при отказе");
     }
 }

@@ -139,4 +139,48 @@
             /*[1]*/ "fleet_footed:3",
         ],
     },
+    {
+        "desc_en": "Capstone synergy: +30 max HP and −5% cooldowns.",
+        "desc_ru": "Синергия капстоуна: +30 к максимуму HP и −5% кулдаунов.",
+        "effects": [
+            { "add": 30.0, "stat": "max_hp" },
+            { "mult": 0.95, "stat": "cd" },
+        ],
+        "id": "apex_bulwark",
+        "name_en": "Unbroken Line",
+        "name_ru": "Несокрушимый строй",
+        "needs": [
+            "bulwark:1",
+            "iron_will:1",
+        ],
+    },
+    {
+        "desc_en": "Capstone synergy: +15% damage.",
+        "desc_ru": "Синергия капстоуна: +15% урона.",
+        "effects": [
+            { "add": 0.15, "stat": "dmg" },
+        ],
+        "id": "apex_onslaught",
+        "name_en": "Total War",
+        "name_ru": "Тотальная война",
+        "needs": [
+            "onslaught:1",
+            "heavy_rounds:1",
+        ],
+    },
+    {
+        "desc_en": "Capstone synergy: +20% ammo and +5% lifesteal.",
+        "desc_ru": "Синергия капстоуна: +20% боезапаса и +5% вампиризма.",
+        "effects": [
+            { "add": 0.2, "stat": "ammo" },
+            { "add": 0.05, "stat": "lifesteal" },
+        ],
+        "id": "apex_overdrive",
+        "name_en": "Perpetual Engine",
+        "name_ru": "Вечный двигатель",
+        "needs": [
+            "overdrive:1",
+            "leech_rounds:1",
+        ],
+    },
 ]

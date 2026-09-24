@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/decor/femboy_quarter/tea_house_sign.tres" id="1"]
+
+[node name="tea_house_sign" type="Node3D"]
+
+[node name="Artwork" type="Sprite3D" parent="."]
+position = Vector3(0, 1.024, 0)
+pixel_size = 0.00409600
+texture_filter = 1
+texture = ExtResource("1")
+shaded = false
+double_sided = true

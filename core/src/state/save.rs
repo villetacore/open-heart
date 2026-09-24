@@ -23,6 +23,8 @@ fn default_seed() -> u64 {
 
 #[derive(Serialize, Deserialize)]
 pub struct SaveData {
+    #[serde(default)]
+    pub abilities: crate::combat::ability::AbilityState,
     pub version: u32,
     pub day: u32,
     pub gold: i32,
@@ -72,6 +74,8 @@ pub struct SaveData {
     pub weapon_mods: Vec<u8>,
     #[serde(default)]
     pub weapon_mod_cores: u32,
+    #[serde(default)]
+    pub respec_used: bool,
 }
 
 fn default_preset() -> String {
@@ -81,6 +85,7 @@ fn default_preset() -> String {
 impl SaveData {
     pub fn from_game(state: &GameState, player_hp: f32, ars: &Arsenal) -> Self {
         Self {
+            abilities: state.abilities.clone(),
             version: SAVE_VERSION,
             day: state.day,
             gold: state.gold,
@@ -131,11 +136,13 @@ impl SaveData {
                 .collect(),
             weapon_mods: state.weapon_mods.to_vec(),
             weapon_mod_cores: state.weapon_mod_cores,
+            respec_used: state.respec_used,
         }
     }
 
     pub fn into_game(self) -> (GameState, f32, Arsenal) {
         let mut s = GameState::new("Игрок");
+        s.abilities = self.abilities;
         s.day = self.day;
         s.gold = self.gold;
         s.stats.intelligence = self.int_;
@@ -173,6 +180,7 @@ impl SaveData {
             s.weapon_mods[slot] = (*branch).min(2);
         }
         s.weapon_mod_cores = self.weapon_mod_cores;
+        s.respec_used = self.respec_used;
 
         let mut ars = Arsenal::new();
         for (i, v) in self.ammo.iter().take(4).enumerate() {
@@ -239,6 +247,19 @@ mod tests {
             .items
             .iter()
             .any(|item| item.id == "trophy_tyrant_heart" && item.qty == 1));
+    }
+
+    #[test]
+    fn respec_flag_survives_save_round_trip() {
+        let mut state = GameState::new("Tester");
+        assert!(!state.respec_used);
+        state.respec_used = true;
+        let data = SaveData::from_game(&state, 100.0, &Arsenal::new());
+        let (restored, _, _) = data.into_game();
+        assert!(
+            restored.respec_used,
+            "первый бесплатный сброс не должен восстанавливаться перезагрузкой"
+        );
     }
 
     #[test]

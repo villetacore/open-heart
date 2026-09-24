@@ -1,0 +1,596 @@
+[
+  {
+    "id": "ivo",
+    "path": "game/assets/portraits/neighbors/ivo.tres",
+    "atlas": "game/assets/portraits/neighbors/modern_atlas.png",
+    "region": [
+      5,
+      5,
+      502,
+      502
+    ]
+  },
+  {
+    "id": "noel",
+    "path": "game/assets/portraits/neighbors/noel.tres",
+    "atlas": "game/assets/portraits/neighbors/modern_atlas.png",
+    "region": [
+      517,
+      5,
+      502,
+      502
+    ]
+  },
+  {
+    "id": "lucien",
+    "path": "game/assets/portraits/neighbors/lucien.tres",
+    "atlas": "game/assets/portraits/neighbors/modern_atlas.png",
+    "region": [
+      1029,
+      5,
+      502,
+      502
+    ]
+  },
+  {
+    "id": "ash",
+    "path": "game/assets/portraits/neighbors/ash.tres",
+    "atlas": "game/assets/portraits/neighbors/modern_atlas.png",
+    "region": [
+      5,
+      517,
+      502,
+      502
+    ]
+  },
+  {
+    "id": "emil",
+    "path": "game/assets/portraits/neighbors/emil.tres",
+    "atlas": "game/assets/portraits/neighbors/modern_atlas.png",
+    "region": [
+      517,
+      517,
+      502,
+      502
+    ]
+  },
+  {
+    "id": "yves",
+    "path": "game/assets/portraits/neighbors/yves.tres",
+    "atlas": "game/assets/portraits/neighbors/modern_atlas.png",
+    "region": [
+      1029,
+      517,
+      502,
+      502
+    ]
+  },
+  {
+    "id": "ivo",
+    "path": "game/assets/icons/neighbors/ivo.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      5,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "noel",
+    "path": "game/assets/icons/neighbors/noel.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      389,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "lucien",
+    "path": "game/assets/icons/neighbors/lucien.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      773,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "ash",
+    "path": "game/assets/icons/neighbors/ash.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      1157,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "emil",
+    "path": "game/assets/icons/neighbors/emil.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      5,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "yves",
+    "path": "game/assets/icons/neighbors/yves.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      389,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "ivo_2",
+    "path": "game/assets/icons/neighbors/ivo_2.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      773,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "noel_2",
+    "path": "game/assets/icons/neighbors/noel_2.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      1157,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "lucien_2",
+    "path": "game/assets/icons/neighbors/lucien_2.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      5,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "ash_2",
+    "path": "game/assets/icons/neighbors/ash_2.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      389,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "emil_2",
+    "path": "game/assets/icons/neighbors/emil_2.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      773,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "yves_2",
+    "path": "game/assets/icons/neighbors/yves_2.tres",
+    "atlas": "game/assets/icons/neighbors/atlas.png",
+    "region": [
+      1157,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "rose",
+    "path": "game/assets/decor/neighbors/rose.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      5,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "archive",
+    "path": "game/assets/decor/neighbors/archive.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      389,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "music",
+    "path": "game/assets/decor/neighbors/music.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      773,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "repair",
+    "path": "game/assets/decor/neighbors/repair.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      1157,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "bread",
+    "path": "game/assets/decor/neighbors/bread.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      5,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "garden",
+    "path": "game/assets/decor/neighbors/garden.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      389,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "dance",
+    "path": "game/assets/decor/neighbors/dance.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      773,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "letter",
+    "path": "game/assets/decor/neighbors/letter.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      1157,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "mask",
+    "path": "game/assets/decor/neighbors/mask.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      5,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "heart",
+    "path": "game/assets/decor/neighbors/heart.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      389,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "moth",
+    "path": "game/assets/decor/neighbors/moth.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      773,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "compass",
+    "path": "game/assets/decor/neighbors/compass.tres",
+    "atlas": "game/assets/decor/neighbors/panels.png",
+    "region": [
+      1157,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "moon_brooch",
+    "path": "game/assets/icons/cosmetics/moon_brooch.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      5,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "jasmine_pin",
+    "path": "game/assets/icons/cosmetics/jasmine_pin.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      389,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "silk_cravat",
+    "path": "game/assets/icons/cosmetics/silk_cravat.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      773,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "lace_fan",
+    "path": "game/assets/icons/cosmetics/lace_fan.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      1157,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "heart_ring",
+    "path": "game/assets/icons/cosmetics/heart_ring.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      5,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "voltage_bow",
+    "path": "game/assets/icons/cosmetics/voltage_bow.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      389,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "opera_mask",
+    "path": "game/assets/icons/cosmetics/opera_mask.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      773,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "rose_beret",
+    "path": "game/assets/icons/cosmetics/rose_beret.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      1157,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "heart_watch",
+    "path": "game/assets/icons/cosmetics/heart_watch.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      5,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "moon_collar",
+    "path": "game/assets/icons/cosmetics/moon_collar.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      389,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "pearl_cuff",
+    "path": "game/assets/icons/cosmetics/pearl_cuff.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      773,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "rose_glove",
+    "path": "game/assets/icons/cosmetics/rose_glove.tres",
+    "atlas": "game/assets/icons/cosmetics_neighborhood_atlas.png",
+    "region": [
+      1157,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "led_choker",
+    "path": "game/assets/icons/cosmetics/led_choker.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      5,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "platform_boots",
+    "path": "game/assets/icons/cosmetics/platform_boots.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      389,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "cyber_bow",
+    "path": "game/assets/icons/cosmetics/cyber_bow.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      773,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "trans_pin",
+    "path": "game/assets/icons/cosmetics/trans_pin.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      1157,
+      5,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "punk_cuff",
+    "path": "game/assets/icons/cosmetics/punk_cuff.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      5,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "ar_visor",
+    "path": "game/assets/icons/cosmetics/ar_visor.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      389,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "mesh_sleeves",
+    "path": "game/assets/icons/cosmetics/mesh_sleeves.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      773,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "tech_skirt",
+    "path": "game/assets/icons/cosmetics/tech_skirt.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      1157,
+      346,
+      374,
+      332
+    ]
+  },
+  {
+    "id": "heart_headphones",
+    "path": "game/assets/icons/cosmetics/heart_headphones.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      5,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "neon_liner",
+    "path": "game/assets/icons/cosmetics/neon_liner.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      389,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "cyber_nails",
+    "path": "game/assets/icons/cosmetics/cyber_nails.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      773,
+      688,
+      374,
+      331
+    ]
+  },
+  {
+    "id": "punk_bag",
+    "path": "game/assets/icons/cosmetics/punk_bag.tres",
+    "atlas": "game/assets/icons/cosmetics_tech_atlas.png",
+    "region": [
+      1157,
+      688,
+      374,
+      331
+    ]
+  }
+]

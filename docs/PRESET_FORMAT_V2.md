@@ -46,8 +46,8 @@ recommended map format because maps are generated and edited by tools.
 Convert an existing preset:
 
 ```powershell
-cd rust
-cargo run --bin preset_migrate -- ../game/presets/core
+# from the repository root
+cargo run -p openheart --bin preset_migrate -- game/presets/core
 ```
 
 The converter writes sibling `.ron` files and keeps the JSON sources intact for rollback.

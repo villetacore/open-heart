@@ -190,5 +190,170 @@
       0.7
     ],
     "quest": "medkit_run"
+  },
+  {
+    "id": "stylist",
+    "name_ru": "Сайлас · мастер ателье",
+    "name_en": "Silas · atelier",
+    "sprite": "citizens_atlas",
+    "pos": [
+      -5.0,
+      -2.0
+    ],
+    "color": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "scene": "atelier_intro",
+    "sprite_region": [
+      0,
+      0,
+      512,
+      1000
+    ],
+    "sprite_height": 2.15
+  },
+  {
+    "id": "ren",
+    "name_ru": "Рен · хозяин чайной",
+    "name_en": "Ren · tea keeper",
+    "sprite": "citizens_atlas",
+    "sprite_region": [
+      512,
+      0,
+      512,
+      1000
+    ],
+    "sprite_height": 2.15,
+    "pos": [
+      9.0,
+      -2.0
+    ],
+    "color": [
+      1,
+      1,
+      1
+    ],
+    "scene": "tea_intro"
+  },
+  {
+    "id": "mika",
+    "name_ru": "Мика · курьер",
+    "name_en": "Mika · courier",
+    "sprite": "citizens_atlas",
+    "sprite_region": [
+      1024,
+      0,
+      512,
+      1000
+    ],
+    "sprite_height": 2.15,
+    "pos": [
+      2.0,
+      16.0
+    ],
+    "color": [
+      1,
+      1,
+      1
+    ],
+    "scene": "courier_intro"
+  },
+  {
+    "id": "ivo",
+    "name_ru": "Иво",
+    "name_en": "Ivo",
+    "sprite": "npc_victor",
+    "pos": [
+      -8,
+      22
+    ],
+    "color": [
+      1,
+      1,
+      1
+    ],
+    "scene": "neighbors_ivo"
+  },
+  {
+    "id": "noel",
+    "name_ru": "Ноэль",
+    "name_en": "Noel",
+    "sprite": "npc_victor",
+    "pos": [
+      8,
+      24
+    ],
+    "color": [
+      1,
+      1,
+      1
+    ],
+    "scene": "neighbors_noel"
+  },
+  {
+    "id": "lucien",
+    "name_ru": "Люсьен",
+    "name_en": "Lucien",
+    "sprite": "npc_victor",
+    "pos": [
+      -7,
+      32
+    ],
+    "color": [
+      1,
+      1,
+      1
+    ],
+    "scene": "neighbors_lucien"
+  },
+  {
+    "id": "ash",
+    "name_ru": "Эш",
+    "name_en": "Ash",
+    "sprite": "npc_victor",
+    "pos": [
+      7,
+      34
+    ],
+    "color": [
+      1,
+      1,
+      1
+    ],
+    "scene": "neighbors_ash"
+  },
+  {
+    "id": "emil",
+    "name_ru": "Эмиль",
+    "name_en": "Emil",
+    "sprite": "npc_victor",
+    "pos": [
+      -7,
+      43
+    ],
+    "color": [
+      1,
+      1,
+      1
+    ],
+    "scene": "neighbors_emil"
+  },
+  {
+    "id": "yves",
+    "name_ru": "Ив",
+    "name_en": "Yves",
+    "sprite": "npc_victor",
+    "pos": [
+      7,
+      45
+    ],
+    "color": [
+      1,
+      1,
+      1
+    ],
+    "scene": "neighbors_yves"
   }
 ]

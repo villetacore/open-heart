@@ -40,6 +40,10 @@ pub struct Threat {
 /// Враг глазами сервера.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Enemy {
+    #[serde(default)]
+    pub slow_time: f32,
+    #[serde(default)]
+    pub slow_amount: f32,
     pub id: u16,
     /// id из enemies.json.
     pub kind: String,
@@ -84,6 +88,8 @@ impl Enemy {
                     is_boss: bool, affixes: Vec<String>) -> Self {
         let hp = cfg.hp * mult.max(0.1) * hp_mult.max(0.1);
         Self {
+            slow_time: 0.0,
+            slow_amount: 0.0,
             id,
             kind: cfg.id.clone(),
             type_id,
@@ -146,6 +152,7 @@ impl Enemy {
             return;
         }
         self.attack_timer = (self.attack_timer - dt).max(0.0);
+        self.slow_time = (self.slow_time - dt).max(0.0);
         self.path_timer = (self.path_timer - dt).max(0.0);
         self.decay_threat(dt);
 
@@ -305,7 +312,8 @@ impl Enemy {
         let Some(direction) = direction else {
             return;
         };
-        let step = direction * (self.speed * dt);
+        let slow = if self.slow_time > 0.0 { 1.0 - self.slow_amount } else { 1.0 };
+        let step = direction * (self.speed * slow * dt);
         let next = self.pos + step;
         if world.walkable_at(next) {
             self.pos = Vec3::new(next.x, world.floor_at(next), next.z);

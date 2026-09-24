@@ -1,358 +1,1071 @@
 [
   {
-	"id": "district_patrol",
-	"title_ru": "Ночная смена",
-	"title_en": "Night Shift",
-	"giver": "hunter",
-	"chain_ru": "Охота квартала", "chain_en": "Quarter Hunt", "stage": 4,
-	"reward_items": [{"id":"armor_shard","qty":2}],
-	"desc_ru": "Проведи ночную зачистку квартала. Уничтожь двенадцать любых противников.",
-	"desc_en": "Run a night patrol through the quarter and eliminate any twelve hostiles.",
-	"kind": "kill_any",
-	"target": "*",
-	"count": 12,
-	"reward_xp": 360,
-	"reward_gold": 150,
-	"requires": ["hound_pack"],
-	"offer_scene": "hunter_patrol_offer",
-	"progress_scene": "hunter_patrol_progress",
-	"complete_scene": "hunter_patrol_complete",
-	"world_change": {"id":"hunter_beacon","pattern":"beacon","pos":[-34.0,0.0,14.0],"color":[1.0,0.24,0.18],"scale":1.15,"sprite":"res://assets/sprites/characters/enemy_blood_hound.png","activity":"patrol","activity_count":4,"activity_radius":3.2,"activity_speed":1.15}
+    "id": "district_patrol",
+    "title_ru": "Ночная смена",
+    "title_en": "Night Shift",
+    "giver": "hunter",
+    "chain_ru": "Охота квартала",
+    "chain_en": "Quarter Hunt",
+    "stage": 4,
+    "reward_items": [
+      {
+        "id": "armor_shard",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Проведи ночную зачистку квартала. Уничтожь двенадцать любых противников.",
+    "desc_en": "Run a night patrol through the quarter and eliminate any twelve hostiles.",
+    "kind": "kill_any",
+    "target": "*",
+    "count": 12,
+    "reward_xp": 360,
+    "reward_gold": 150,
+    "requires": [
+      "hound_pack"
+    ],
+    "offer_scene": "hunter_patrol_offer",
+    "progress_scene": "hunter_patrol_progress",
+    "complete_scene": "hunter_patrol_complete",
+    "world_change": {
+      "id": "hunter_beacon",
+      "pattern": "beacon",
+      "pos": [
+        -34.0,
+        0.0,
+        14.0
+      ],
+      "color": [
+        1.0,
+        0.24,
+        0.18
+      ],
+      "scale": 1.15,
+      "sprite": "res://assets/sprites/characters/enemy_blood_hound.png",
+      "activity": "patrol",
+      "activity_count": 4,
+      "activity_radius": 3.2,
+      "activity_speed": 1.15
+    }
   },
   {
-	"id": "relief_supplies",
-	"title_ru": "Запасы для убежища",
-	"title_en": "Shelter Supplies",
-	"giver": "medic",
-	"chain_ru": "Линия снабжения", "chain_en": "Relief Line", "stage": 3,
-	"reward_items": [{"id":"big_potion","qty":2}],
-	"desc_ru": "Собери пять любых расходников для жителей убежища.",
-	"desc_en": "Collect any five consumable supplies for the shelter residents.",
-	"kind": "collect_category",
-	"target": "consumable",
-	"count": 5,
-	"reward_xp": 260,
-	"reward_gold": 110,
-	"requires": ["vermin_sweep"],
-	"offer_scene": "medic_relief_offer",
-	"progress_scene": "medic_relief_progress",
-	"complete_scene": "medic_relief_complete",
-	"world_change": {"id":"mercy_garden","pattern":"garden","pos":[36.0,0.0,14.0],"color":[0.22,1.0,0.58],"scale":1.1,"sprite":"res://assets/sprites/characters/npc_elena.png","activity":"support","activity_count":3,"activity_radius":2.8,"activity_speed":0.85}
+    "id": "relief_supplies",
+    "title_ru": "Запасы для убежища",
+    "title_en": "Shelter Supplies",
+    "giver": "medic",
+    "chain_ru": "Линия снабжения",
+    "chain_en": "Relief Line",
+    "stage": 3,
+    "reward_items": [
+      {
+        "id": "big_potion",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Собери пять любых расходников для жителей убежища.",
+    "desc_en": "Collect any five consumable supplies for the shelter residents.",
+    "kind": "collect_category",
+    "target": "consumable",
+    "count": 5,
+    "reward_xp": 260,
+    "reward_gold": 110,
+    "requires": [
+      "vermin_sweep"
+    ],
+    "offer_scene": "medic_relief_offer",
+    "progress_scene": "medic_relief_progress",
+    "complete_scene": "medic_relief_complete",
+    "world_change": {
+      "id": "mercy_garden",
+      "pattern": "garden",
+      "pos": [
+        36.0,
+        0.0,
+        14.0
+      ],
+      "color": [
+        0.22,
+        1.0,
+        0.58
+      ],
+      "scale": 1.1,
+      "sprite": "res://assets/sprites/characters/npc_elena.png",
+      "activity": "support",
+      "activity_count": 3,
+      "activity_radius": 2.8,
+      "activity_speed": 0.85
+    }
   },
   {
-	"id": "first_descent",
-	"title_ru": "Первый спуск",
-	"title_en": "First Descent",
-	"giver": "warden",
-	"chain_ru": "Глубинный дозор", "chain_en": "Depthwatch", "stage": 1,
-	"reward_items": [{"id":"small_potion","qty":2}],
-	"desc_ru": "Войди в катакомбы через северные врата и вернись с картой первого яруса.",
-	"desc_en": "Enter the catacombs through the northern gate and map the first depth.",
-	"kind": "enter_dungeon",
-	"target": "1",
-	"count": 1,
-	"reward_xp": 140,
-	"reward_gold": 65,
-	"offer_scene": "warden_descent_offer",
-	"progress_scene": "warden_descent_progress",
-	"complete_scene": "warden_descent_complete"
+    "id": "first_descent",
+    "title_ru": "Первый спуск",
+    "title_en": "First Descent",
+    "giver": "warden",
+    "chain_ru": "Глубинный дозор",
+    "chain_en": "Depthwatch",
+    "stage": 1,
+    "reward_items": [
+      {
+        "id": "small_potion",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Войди в катакомбы через северные врата и вернись с картой первого яруса.",
+    "desc_en": "Enter the catacombs through the northern gate and map the first depth.",
+    "kind": "enter_dungeon",
+    "target": "1",
+    "count": 1,
+    "reward_xp": 140,
+    "reward_gold": 65,
+    "offer_scene": "warden_descent_offer",
+    "progress_scene": "warden_descent_progress",
+    "complete_scene": "warden_descent_complete"
   },
   {
-	"id": "cull_grunts",
-	"title_ru": "Прореживание",
-	"title_en": "Thinning the Ranks",
-	"desc_en": "Raiders control the eastern wastes. Eliminate eight grunts and break their hold.",
-	"giver": "hunter",
-	"chain_ru": "Охота квартала", "chain_en": "Quarter Hunt", "stage": 1,
-	"reward_items": [{"id":"ration","qty":2}],
-	"desc_ru": "Боевики распоясались на восточных пустошах. Сократи поголовье: восемь боевиков.",
-	"kind": "kill",
-	"target": "grunt",
-	"count": 8.0,
-	"reward_xp": 260.0,
-	"reward_gold": 90.0
+    "id": "cull_grunts",
+    "title_ru": "Прореживание",
+    "title_en": "Thinning the Ranks",
+    "desc_en": "Raiders control the eastern wastes. Eliminate eight grunts and break their hold.",
+    "giver": "hunter",
+    "chain_ru": "Охота квартала",
+    "chain_en": "Quarter Hunt",
+    "stage": 1,
+    "reward_items": [
+      {
+        "id": "ration",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Боевики распоясались на восточных пустошах. Сократи поголовье: восемь боевиков.",
+    "kind": "kill",
+    "target": "grunt",
+    "count": 8.0,
+    "reward_xp": 260.0,
+    "reward_gold": 90.0
   },
   {
-	"id": "neon_shards",
-	"title_ru": "Светящаяся коллекция",
-	"title_en": "A Glowing Collection",
-	"desc_en": "Bring the Collector three neon shards that still carry the district's light.",
-	"giver": "collector",
-	"chain_ru": "Реликвии квартала", "chain_en": "Quarter Relics", "stage": 1,
-	"reward_items": [{"id":"energy_drink","qty":2}],
-	"desc_ru": "Собери для меня три неоновых осколка. Плачу щедро — они мерцают как сердце города.",
-	"kind": "collect",
-	"target": "neon_shard",
-	"count": 3.0,
-	"reward_xp": 200.0,
-	"reward_gold": 140.0
+    "id": "neon_shards",
+    "title_ru": "Светящаяся коллекция",
+    "title_en": "A Glowing Collection",
+    "desc_en": "Bring the Collector three neon shards that still carry the district's light.",
+    "giver": "collector",
+    "chain_ru": "Реликвии квартала",
+    "chain_en": "Quarter Relics",
+    "stage": 1,
+    "reward_items": [
+      {
+        "id": "energy_drink",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Собери для меня три неоновых осколка. Плачу щедро — они мерцают как сердце города.",
+    "kind": "collect",
+    "target": "neon_shard",
+    "count": 3.0,
+    "reward_xp": 200.0,
+    "reward_gold": 140.0
   },
   {
-	"id": "depth_two",
-	"title_ru": "Глубже во тьму",
-	"title_en": "Deeper into Darkness",
-	"desc_en": "Clear the dungeon through depth two and survive its guardians.",
-	"giver": "warden",
-	"chain_ru": "Глубинный дозор", "chain_en": "Depthwatch", "stage": 2,
-	"reward_items": [{"id":"armor_shard","qty":2}],
-	"desc_ru": "Врата шепчут о втором ярусе. Зачисти данж до глубины 2 — убей двух стражей.",
-	"kind": "clear_dungeon",
-	"target": "",
-	"count": 2.0,
-	"reward_xp": 420.0,
-	"reward_gold": 150.0,
-	"requires": ["first_descent"],
-	"offer_scene": "warden_depth_two_offer",
-	"progress_scene": "warden_depth_two_progress",
-	"complete_scene": "warden_depth_two_complete"
+    "id": "depth_two",
+    "title_ru": "Глубже во тьму",
+    "title_en": "Deeper into Darkness",
+    "desc_en": "Clear the dungeon through depth two and survive its guardians.",
+    "giver": "warden",
+    "chain_ru": "Глубинный дозор",
+    "chain_en": "Depthwatch",
+    "stage": 2,
+    "reward_items": [
+      {
+        "id": "armor_shard",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Врата шепчут о втором ярусе. Зачисти данж до глубины 2 — убей двух стражей.",
+    "kind": "clear_dungeon",
+    "target": "",
+    "count": 2.0,
+    "reward_xp": 420.0,
+    "reward_gold": 150.0,
+    "requires": [
+      "first_descent"
+    ],
+    "offer_scene": "warden_depth_two_offer",
+    "progress_scene": "warden_depth_two_progress",
+    "complete_scene": "warden_depth_two_complete"
   },
   {
-	"id": "medkit_run",
-	"title_ru": "Полевые запасы",
-	"title_en": "Field Supplies",
-	"desc_en": "The wounded need medicine. Recover four medkits scattered across the wastes.",
-	"giver": "medic",
-	"chain_ru": "Линия снабжения", "chain_en": "Relief Line", "stage": 1,
-	"reward_items": [{"id":"potion","qty":2}],
-	"desc_ru": "Раненым нужны аптечки. Принеси четыре штуки — в пустошах их разбросало взрывом.",
-	"kind": "collect",
-	"target": "medkit",
-	"count": 4.0,
-	"reward_xp": 180.0,
-	"reward_gold": 70.0
+    "id": "medkit_run",
+    "title_ru": "Полевые запасы",
+    "title_en": "Field Supplies",
+    "desc_en": "The wounded need medicine. Recover four medkits scattered across the wastes.",
+    "giver": "medic",
+    "chain_ru": "Линия снабжения",
+    "chain_en": "Relief Line",
+    "stage": 1,
+    "reward_items": [
+      {
+        "id": "potion",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Раненым нужны аптечки. Принеси четыре штуки — в пустошах их разбросало взрывом.",
+    "kind": "collect",
+    "target": "medkit",
+    "count": 4.0,
+    "reward_xp": 180.0,
+    "reward_gold": 70.0
   },
   {
-	"id": "shade_hunt",
-	"title_ru": "Охота на тень",
-	"title_en": "Hunting the Shade",
-	"desc_en": "Track down and destroy the Shade haunting the south-eastern district.",
-	"giver": "hunter",
-	"chain_ru": "Охота квартала", "chain_en": "Quarter Hunt", "stage": 2,
-	"reward_items": [{"id":"stimpack","qty":1}],
-	"desc_ru": "На юго-востоке видели Тень — тварь из пустоты. Убей её, пока она не убила кого-то из наших.",
-	"kind": "kill",
-	"target": "shade",
-	"count": 1.0,
-	"reward_xp": 300.0,
-	"reward_gold": 120.0,
-	"requires": ["cull_grunts"],
-	"progress_scene": "hunter_shade_progress"
+    "id": "shade_hunt",
+    "title_ru": "Охота на тень",
+    "title_en": "Hunting the Shade",
+    "desc_en": "Track down and destroy the Shade haunting the south-eastern district.",
+    "giver": "hunter",
+    "chain_ru": "Охота квартала",
+    "chain_en": "Quarter Hunt",
+    "stage": 2,
+    "reward_items": [
+      {
+        "id": "stimpack",
+        "qty": 1
+      }
+    ],
+    "desc_ru": "На юго-востоке видели Тень — тварь из пустоты. Убей её, пока она не убила кого-то из наших.",
+    "kind": "kill",
+    "target": "shade",
+    "count": 1.0,
+    "reward_xp": 300.0,
+    "reward_gold": 120.0,
+    "requires": [
+      "cull_grunts"
+    ],
+    "progress_scene": "hunter_shade_progress"
   },
   {
-	"id": "vermin_sweep",
-	"title_ru": "Дезинсекция",
-	"title_en": "Pest Control",
-	"desc_en": "Kill five vermin before they spread the infection through the quarter.",
-	"giver": "medic",
-	"chain_ru": "Линия снабжения", "chain_en": "Relief Line", "stage": 2,
-	"reward_items": [{"id":"ration","qty":2}],
-	"desc_ru": "Падальщики разносят заразу. Пять голов — и квартал вздохнёт спокойнее.",
-	"kind": "kill",
-	"target": "vermin",
-	"count": 5.0,
-	"reward_xp": 150.0,
-	"reward_gold": 60.0,
-	"requires": ["medkit_run"]
+    "id": "vermin_sweep",
+    "title_ru": "Дезинсекция",
+    "title_en": "Pest Control",
+    "desc_en": "Kill five vermin before they spread the infection through the quarter.",
+    "giver": "medic",
+    "chain_ru": "Линия снабжения",
+    "chain_en": "Relief Line",
+    "stage": 2,
+    "reward_items": [
+      {
+        "id": "ration",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Падальщики разносят заразу. Пять голов — и квартал вздохнёт спокойнее.",
+    "kind": "kill",
+    "target": "vermin",
+    "count": 5.0,
+    "reward_xp": 150.0,
+    "reward_gold": 60.0,
+    "requires": [
+      "medkit_run"
+    ]
   },
   {
-	"id": "royal_trophy",
-	"title_ru": "Королевский трофей",
-	"title_en": "Royal Trophy",
-	"desc_en": "Defeat a Royal Guard and claim proof of the victory for the Collector.",
-	"giver": "collector",
-	"chain_ru": "Реликвии квартала", "chain_en": "Quarter Relics", "stage": 2,
-	"reward_items": [{"id":"silver_bar","qty":1}],
-	"desc_ru": "Королевские стражи носят золочёные печати. Добудь одну — убей стража.",
-	"kind": "kill",
-	"target": "royal_guard",
-	"count": 1.0,
-	"reward_xp": 350.0,
-	"reward_gold": 200.0,
-	"requires": ["neon_shards"]
+    "id": "royal_trophy",
+    "title_ru": "Королевский трофей",
+    "title_en": "Royal Trophy",
+    "desc_en": "Defeat a Royal Guard and claim proof of the victory for the Collector.",
+    "giver": "collector",
+    "chain_ru": "Реликвии квартала",
+    "chain_en": "Quarter Relics",
+    "stage": 2,
+    "reward_items": [
+      {
+        "id": "silver_bar",
+        "qty": 1
+      }
+    ],
+    "desc_ru": "Королевские стражи носят золочёные печати. Добудь одну — убей стража.",
+    "kind": "kill",
+    "target": "royal_guard",
+    "count": 1.0,
+    "reward_xp": 350.0,
+    "reward_gold": 200.0,
+    "requires": [
+      "neon_shards"
+    ]
   },
   {
-	"id": "drone_blackout",
-	"title_ru": "Гасим небо",
-	"title_en": "Black Out the Sky",
-	"desc_en": "Destroy six spark drones and open a blind spot in their surveillance network.",
-	"giver": "scientist",
-	"chain_ru": "Архивный сигнал", "chain_en": "Archive Signal", "stage": 1,
-	"reward_items": [{"id":"stimpack","qty":1}],
-	"desc_ru": "Искровые дроны держат квартал под наблюдением. Сбей шесть машин и принеси тишину.",
-	"kind": "kill",
-	"target": "spark_drone",
-	"count": 6,
-	"reward_xp": 380,
-	"reward_gold": 145,
-	"requires": ["stolen_cores"],
-	"progress_scene": "scientist_drone_progress"
+    "id": "drone_blackout",
+    "title_ru": "Гасим небо",
+    "title_en": "Black Out the Sky",
+    "desc_en": "Destroy six spark drones and open a blind spot in their surveillance network.",
+    "giver": "scientist",
+    "chain_ru": "Архивный сигнал",
+    "chain_en": "Archive Signal",
+    "stage": 1,
+    "reward_items": [
+      {
+        "id": "stimpack",
+        "qty": 1
+      }
+    ],
+    "desc_ru": "Искровые дроны держат квартал под наблюдением. Сбей шесть машин и принеси тишину.",
+    "kind": "kill",
+    "target": "spark_drone",
+    "count": 6,
+    "reward_xp": 380,
+    "reward_gold": 145,
+    "requires": [
+      "stolen_cores"
+    ],
+    "progress_scene": "scientist_drone_progress"
   },
   {
-	"id": "hound_pack",
-	"title_ru": "По кровавому следу",
-	"title_en": "The Blood Trail",
-	"desc_en": "Hunt four blood hounds that emerged from the red tunnels.",
-	"giver": "hunter",
-	"chain_ru": "Охота квартала", "chain_en": "Quarter Hunt", "stage": 3,
-	"reward_items": [{"id":"combat_injector","qty":1}],
-	"desc_ru": "Стая гончих вышла из красных тоннелей. Уничтожь четыре твари до следующей охоты.",
-	"kind": "kill",
-	"target": "blood_hound",
-	"count": 4,
-	"reward_xp": 340,
-	"reward_gold": 130,
-	"requires": ["shade_hunt"]
+    "id": "hound_pack",
+    "title_ru": "По кровавому следу",
+    "title_en": "The Blood Trail",
+    "desc_en": "Hunt four blood hounds that emerged from the red tunnels.",
+    "giver": "hunter",
+    "chain_ru": "Охота квартала",
+    "chain_en": "Quarter Hunt",
+    "stage": 3,
+    "reward_items": [
+      {
+        "id": "combat_injector",
+        "qty": 1
+      }
+    ],
+    "desc_ru": "Стая гончих вышла из красных тоннелей. Уничтожь четыре твари до следующей охоты.",
+    "kind": "kill",
+    "target": "blood_hound",
+    "count": 4,
+    "reward_xp": 340,
+    "reward_gold": 130,
+    "requires": [
+      "shade_hunt"
+    ]
   },
   {
-	"id": "stolen_cores",
-	"title_ru": "Энергия квартала",
-	"title_en": "Power for the Quarter",
-	"desc_en": "Recover three drone cores to restore power to the neon bridges.",
-	"giver": "collector",
-	"chain_ru": "Реликвии квартала", "chain_en": "Quarter Relics", "stage": 2,
-	"reward_items": [{"id":"energy_drink","qty":2}],
-	"desc_ru": "Добудь три ядра дронов. Они нужны, чтобы вернуть питание неоновым мостам.",
-	"kind": "collect",
-	"target": "drone_core",
-	"count": 3,
-	"reward_xp": 300,
-	"reward_gold": 220,
-	"requires": ["neon_shards", "royal_trophy"],
-	"world_change": {"id":"relic_gallery","pattern":"gallery","pos":[22.0,0.0,34.0],"color":[1.0,0.72,0.18],"scale":1.05,"sprite":"res://assets/sprites/characters/npc_merchant.png","activity":"crowd","activity_count":5,"activity_radius":3.4,"activity_speed":0.65}
+    "id": "stolen_cores",
+    "title_ru": "Энергия квартала",
+    "title_en": "Power for the Quarter",
+    "desc_en": "Recover three drone cores to restore power to the neon bridges.",
+    "giver": "collector",
+    "chain_ru": "Реликвии квартала",
+    "chain_en": "Quarter Relics",
+    "stage": 2,
+    "reward_items": [
+      {
+        "id": "energy_drink",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Добудь три ядра дронов. Они нужны, чтобы вернуть питание неоновым мостам.",
+    "kind": "collect",
+    "target": "drone_core",
+    "count": 3,
+    "reward_xp": 300,
+    "reward_gold": 220,
+    "requires": [
+      "neon_shards",
+      "royal_trophy"
+    ],
+    "world_change": {
+      "id": "relic_gallery",
+      "pattern": "gallery",
+      "pos": [
+        22.0,
+        0.0,
+        34.0
+      ],
+      "color": [
+        1.0,
+        0.72,
+        0.18
+      ],
+      "scale": 1.05,
+      "sprite": "res://assets/sprites/characters/npc_merchant.png",
+      "activity": "crowd",
+      "activity_count": 5,
+      "activity_radius": 3.4,
+      "activity_speed": 0.65
+    }
   },
   {
-	"id": "void_liturgy",
-	"title_ru": "Прерванная литургия",
-	"title_en": "Interrupted Liturgy",
-	"desc_en": "Destroy two Void Priests and stop their ritual beneath the city.",
-	"giver": "warden",
-	"chain_ru": "Глубинный дозор", "chain_en": "Depthwatch", "stage": 3,
-	"reward_items": [{"id":"void_relic","qty":1}],
-	"desc_ru": "Жрецы пустоты готовят ритуал под городом. Уничтожь двух и сорви призыв.",
-	"kind": "kill",
-	"target": "void_priest",
-	"count": 2,
-	"reward_xp": 520,
-	"reward_gold": 260,
-	"requires": ["depth_two"],
-	"offer_scene": "warden_liturgy_offer",
-	"progress_scene": "warden_liturgy_progress",
-	"complete_scene": "warden_liturgy_complete"
+    "id": "void_liturgy",
+    "title_ru": "Прерванная литургия",
+    "title_en": "Interrupted Liturgy",
+    "desc_en": "Destroy two Void Priests and stop their ritual beneath the city.",
+    "giver": "warden",
+    "chain_ru": "Глубинный дозор",
+    "chain_en": "Depthwatch",
+    "stage": 3,
+    "reward_items": [
+      {
+        "id": "void_relic",
+        "qty": 1
+      }
+    ],
+    "desc_ru": "Жрецы пустоты готовят ритуал под городом. Уничтожь двух и сорви призыв.",
+    "kind": "kill",
+    "target": "void_priest",
+    "count": 2,
+    "reward_xp": 520,
+    "reward_gold": 260,
+    "requires": [
+      "depth_two"
+    ],
+    "offer_scene": "warden_liturgy_offer",
+    "progress_scene": "warden_liturgy_progress",
+    "complete_scene": "warden_liturgy_complete"
   },
   {
-	"id": "heart_descent",
-	"title_ru": "До самого Сердца",
-	"title_en": "Into the Heart",
-	"desc_en": "Reach depth four and survive the presence controlling the catacombs.",
-	"giver": "warden",
-	"chain_ru": "Глубинный дозор", "chain_en": "Depthwatch", "stage": 4,
-	"reward_items": [{"id":"big_potion","qty":2}],
-	"desc_ru": "Спустись на четвёртую глубину и переживи встречу с тем, что управляет катакомбами.",
-	"kind": "clear_dungeon",
-	"target": "",
-	"count": 4,
-	"reward_xp": 900,
-	"reward_gold": 500,
-	"requires": ["void_liturgy"],
-	"offer_scene": "warden_heart_offer",
-	"progress_scene": "warden_heart_progress",
-	"complete_scene": "warden_heart_complete"
+    "id": "heart_descent",
+    "title_ru": "До самого Сердца",
+    "title_en": "Into the Heart",
+    "desc_en": "Reach depth four and survive the presence controlling the catacombs.",
+    "giver": "warden",
+    "chain_ru": "Глубинный дозор",
+    "chain_en": "Depthwatch",
+    "stage": 4,
+    "reward_items": [
+      {
+        "id": "big_potion",
+        "qty": 2
+      }
+    ],
+    "desc_ru": "Спустись на четвёртую глубину и переживи встречу с тем, что управляет катакомбами.",
+    "kind": "clear_dungeon",
+    "target": "",
+    "count": 4,
+    "reward_xp": 900,
+    "reward_gold": 500,
+    "requires": [
+      "void_liturgy"
+    ],
+    "offer_scene": "warden_heart_offer",
+    "progress_scene": "warden_heart_progress",
+    "complete_scene": "warden_heart_complete"
   },
   {
-	"id": "echo_contact",
-	"title_ru": "Свидетель потерянного яруса",
-	"title_en": "Witness of the Lost Depth",
-	"desc_ru": "Найди Эхо в квартале и расспроси о ярусе, которого больше нет на картах.",
-	"desc_en": "Find Echo in the quarter and ask about the depth erased from every map.",
-	"giver": "warden",
-	"chain_ru": "Глубинный дозор", "chain_en": "Depthwatch", "stage": 5,
-	"reward_items": [{"id":"old_photo","qty":1}],
-	"kind": "interact",
-	"target": "stranger",
-	"count": 1,
-	"reward_xp": 420,
-	"reward_gold": 180,
-	"requires": ["heart_descent"],
-	"offer_scene": "warden_echo_offer",
-	"progress_scene": "warden_echo_progress",
-	"complete_scene": "warden_echo_complete"
+    "id": "echo_contact",
+    "title_ru": "Свидетель потерянного яруса",
+    "title_en": "Witness of the Lost Depth",
+    "desc_ru": "Найди Эхо в квартале и расспроси о ярусе, которого больше нет на картах.",
+    "desc_en": "Find Echo in the quarter and ask about the depth erased from every map.",
+    "giver": "warden",
+    "chain_ru": "Глубинный дозор",
+    "chain_en": "Depthwatch",
+    "stage": 5,
+    "reward_items": [
+      {
+        "id": "old_photo",
+        "qty": 1
+      }
+    ],
+    "kind": "interact",
+    "target": "stranger",
+    "count": 1,
+    "reward_xp": 420,
+    "reward_gold": 180,
+    "requires": [
+      "heart_descent"
+    ],
+    "offer_scene": "warden_echo_offer",
+    "progress_scene": "warden_echo_progress",
+    "complete_scene": "warden_echo_complete"
   },
   {
-	"id": "forgotten_cache",
-	"title_ru": "Оружие забытого яруса",
-	"title_en": "Arsenal of the Forgotten Depth",
-	"desc_ru": "Отыщи любой оружейный тайник в катакомбах и верни оружие в рабочее состояние.",
-	"desc_en": "Locate any weapon cache in the catacombs and recover its weapon in working order.",
-	"giver": "warden",
-	"chain_ru": "Глубинный дозор", "chain_en": "Depthwatch", "stage": 6,
-	"reward_items": [{"id":"combat_injector","qty":2}],
-	"kind": "discover_weapon",
-	"target": "*",
-	"count": 1,
-	"reward_xp": 560,
-	"reward_gold": 260,
-	"requires": ["echo_contact"],
-	"offer_scene": "warden_cache_offer",
-	"progress_scene": "warden_cache_progress",
-	"complete_scene": "warden_cache_complete"
+    "id": "forgotten_cache",
+    "title_ru": "Оружие забытого яруса",
+    "title_en": "Arsenal of the Forgotten Depth",
+    "desc_ru": "Отыщи любой оружейный тайник в катакомбах и верни оружие в рабочее состояние.",
+    "desc_en": "Locate any weapon cache in the catacombs and recover its weapon in working order.",
+    "giver": "warden",
+    "chain_ru": "Глубинный дозор",
+    "chain_en": "Depthwatch",
+    "stage": 6,
+    "reward_items": [
+      {
+        "id": "combat_injector",
+        "qty": 2
+      }
+    ],
+    "kind": "discover_weapon",
+    "target": "*",
+    "count": 1,
+    "reward_xp": 560,
+    "reward_gold": 260,
+    "requires": [
+      "echo_contact"
+    ],
+    "offer_scene": "warden_cache_offer",
+    "progress_scene": "warden_cache_progress",
+    "complete_scene": "warden_cache_complete"
   },
   {
-	"id": "heart_execution",
-	"title_ru": "Приговор Сердцу",
-	"title_en": "Sentence of the Heart",
-	"desc_ru": "Вернись в катакомбы и уничтожь Тирана Сердца оружием из забытого тайника.",
-	"desc_en": "Return to the catacombs and destroy the Heart Tyrant with the recovered arsenal.",
-	"giver": "warden",
-	"chain_ru": "Глубинный дозор", "chain_en": "Depthwatch", "stage": 7,
-	"reward_items": [{"id":"royal_seal","qty":1}],
-	"kind": "boss",
-	"target": "heart_tyrant",
-	"count": 1,
-	"reward_xp": 1250,
-	"reward_gold": 700,
-	"requires": ["forgotten_cache"],
-	"offer_scene": "warden_execution_offer",
-	"progress_scene": "warden_execution_progress",
-	"complete_scene": "warden_execution_complete",
-	"world_change": {"id":"heart_shrine","pattern":"shrine","pos":[0.0,0.0,-56.0],"color":[1.0,0.12,0.52],"scale":1.25,"sprite":"res://assets/sprites/characters/npc_guard.png","activity":"guardian","activity_count":4,"activity_radius":3.8,"activity_speed":0.55}
+    "id": "heart_execution",
+    "title_ru": "Приговор Сердцу",
+    "title_en": "Sentence of the Heart",
+    "desc_ru": "Вернись в катакомбы и уничтожь Тирана Сердца оружием из забытого тайника.",
+    "desc_en": "Return to the catacombs and destroy the Heart Tyrant with the recovered arsenal.",
+    "giver": "warden",
+    "chain_ru": "Глубинный дозор",
+    "chain_en": "Depthwatch",
+    "stage": 7,
+    "reward_items": [
+      {
+        "id": "royal_seal",
+        "qty": 1
+      }
+    ],
+    "kind": "boss",
+    "target": "heart_tyrant",
+    "count": 1,
+    "reward_xp": 1250,
+    "reward_gold": 700,
+    "requires": [
+      "forgotten_cache"
+    ],
+    "offer_scene": "warden_execution_offer",
+    "progress_scene": "warden_execution_progress",
+    "complete_scene": "warden_execution_complete",
+    "world_change": {
+      "id": "heart_shrine",
+      "pattern": "shrine",
+      "pos": [
+        0.0,
+        0.0,
+        -56.0
+      ],
+      "color": [
+        1.0,
+        0.12,
+        0.52
+      ],
+      "scale": 1.25,
+      "sprite": "res://assets/sprites/characters/npc_guard.png",
+      "activity": "guardian",
+      "activity_count": 4,
+      "activity_radius": 3.8,
+      "activity_speed": 0.55
+    }
   },
   {
-	"id": "relay_resonance",
-	"title_ru": "Резонанс реле",
-	"title_en": "Relay Resonance",
-	"desc_ru": "Синхронизируй две группы древних реле в головоломках катакомб.",
-	"desc_en": "Synchronize two ancient relay groups inside the catacomb puzzle chambers.",
-	"giver": "scientist",
-	"chain_ru": "Архивный сигнал", "chain_en": "Archive Signal", "stage": 2,
-	"reward_items": [{"id":"potion","qty":2}],
-	"kind": "solve_puzzle",
-	"target": "*",
-	"count": 2,
-	"reward_xp": 480,
-	"reward_gold": 210,
-	"requires": ["drone_blackout"],
-	"offer_scene": "scientist_relay_offer",
-	"progress_scene": "scientist_relay_progress",
-	"complete_scene": "scientist_relay_complete"
+    "id": "relay_resonance",
+    "title_ru": "Резонанс реле",
+    "title_en": "Relay Resonance",
+    "desc_ru": "Синхронизируй две группы древних реле в головоломках катакомб.",
+    "desc_en": "Synchronize two ancient relay groups inside the catacomb puzzle chambers.",
+    "giver": "scientist",
+    "chain_ru": "Архивный сигнал",
+    "chain_en": "Archive Signal",
+    "stage": 2,
+    "reward_items": [
+      {
+        "id": "potion",
+        "qty": 2
+      }
+    ],
+    "kind": "solve_puzzle",
+    "target": "*",
+    "count": 2,
+    "reward_xp": 480,
+    "reward_gold": 210,
+    "requires": [
+      "drone_blackout"
+    ],
+    "offer_scene": "scientist_relay_offer",
+    "progress_scene": "scientist_relay_progress",
+    "complete_scene": "scientist_relay_complete"
   },
   {
-	"id": "archive_whispers",
-	"title_ru": "Шёпот архива",
-	"title_en": "Whispers of the Archive",
-	"desc_ru": "Найди и прослушай два эха памяти в сюжетных комнатах катакомб.",
-	"desc_en": "Find and listen to two memory echoes in the catacombs' story chambers.",
-	"giver": "scientist",
-	"chain_ru": "Архивный сигнал", "chain_en": "Archive Signal", "stage": 3,
-	"reward_items": [{"id":"ancient_ruby","qty":1}],
-	"kind": "discover_lore",
-	"target": "*",
-	"count": 2,
-	"reward_xp": 620,
-	"reward_gold": 280,
-	"requires": ["relay_resonance"],
-	"offer_scene": "scientist_archive_offer",
-	"progress_scene": "scientist_archive_progress",
-	"complete_scene": "scientist_archive_complete",
-	"world_change": {"id":"archive_signal","pattern":"archive","pos":[-40.0,0.0,-38.0],"color":[0.22,0.68,1.0],"scale":1.15,"sprite":"res://assets/sprites/characters/npc_scientist.png","activity":"echo","activity_count":5,"activity_radius":3.6,"activity_speed":1.35}
+    "id": "archive_whispers",
+    "title_ru": "Шёпот архива",
+    "title_en": "Whispers of the Archive",
+    "desc_ru": "Найди и прослушай два эха памяти в сюжетных комнатах катакомб.",
+    "desc_en": "Find and listen to two memory echoes in the catacombs' story chambers.",
+    "giver": "scientist",
+    "chain_ru": "Архивный сигнал",
+    "chain_en": "Archive Signal",
+    "stage": 3,
+    "reward_items": [
+      {
+        "id": "ancient_ruby",
+        "qty": 1
+      }
+    ],
+    "kind": "discover_lore",
+    "target": "*",
+    "count": 2,
+    "reward_xp": 620,
+    "reward_gold": 280,
+    "requires": [
+      "relay_resonance"
+    ],
+    "offer_scene": "scientist_archive_offer",
+    "progress_scene": "scientist_archive_progress",
+    "complete_scene": "scientist_archive_complete",
+    "world_change": {
+      "id": "archive_signal",
+      "pattern": "archive",
+      "pos": [
+        -40.0,
+        0.0,
+        -38.0
+      ],
+      "color": [
+        0.22,
+        0.68,
+        1.0
+      ],
+      "scale": 1.15,
+      "sprite": "res://assets/sprites/characters/npc_scientist.png",
+      "activity": "echo",
+      "activity_count": 5,
+      "activity_radius": 3.6,
+      "activity_speed": 1.35
+    }
+  },
+  {
+    "id": "atelier_neighbors",
+    "title_ru": "Место для своих",
+    "title_en": "A Place to Belong",
+    "giver": "stylist",
+    "chain_ru": "Нити квартала",
+    "chain_en": "Threads of the Quarter",
+    "stage": 1,
+    "desc_ru": "Сайлас открывает ателье для жителей квартала. Познакомься с полевым медиком и узнай, кому нужна помощь. Вернись к Сайласу на Площадь Сердца, рядом с зеркалом и вывеской ножниц.",
+    "desc_en": "Silas is opening an atelier for the quarter. Meet the field medic, then return to Silas beside the mirror and scissors sign in Heart Square.",
+    "kind": "interact",
+    "target": "medic",
+    "count": 1,
+    "reward_xp": 60,
+    "reward_gold": 40,
+    "requires": [],
+    "reward_items": [
+      {
+        "id": "bread",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "atelier_supplies",
+    "title_ru": "Материал для мечты",
+    "title_en": "Material for a Dream",
+    "giver": "stylist",
+    "chain_ru": "Нити квартала",
+    "chain_en": "Threads of the Quarter",
+    "stage": 2,
+    "desc_ru": "Найди три неоновых осколка после принятия задания. Сайлас использует их как образец свечения для новой коллекции. Осколки останутся у тебя. Награда: вся коллекция личных знаков в ателье.",
+    "desc_en": "Find three neon shards after accepting this quest. Silas needs to study their glow for his collection; you keep the shards. Unlocks the entire personal emblem collection.",
+    "kind": "collect",
+    "target": "neon_shard",
+    "count": 3,
+    "reward_xp": 180,
+    "reward_gold": 80,
+    "requires": [
+      "atelier_neighbors"
+    ],
+    "complete_scene": "atelier_supplies_complete",
+    "reward_items": [
+      {
+        "id": "energy_drink",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "atelier_courage",
+    "title_ru": "Нежность — не слабость",
+    "title_en": "Gentleness Is Not Weakness",
+    "giver": "stylist",
+    "chain_ru": "Нити квартала",
+    "chain_en": "Threads of the Quarter",
+    "stage": 3,
+    "desc_ru": "Победи стража первого яруса катакомб. Если ярус уже пройден, просто расскажи Сайласу о победе. Квартал должен стать местом, где каждый может быть собой.",
+    "desc_en": "Defeat the first catacomb guardian, or tell Silas about your earlier victory. Help the quarter become a place where everyone can be themselves.",
+    "kind": "clear_dungeon",
+    "target": "",
+    "count": 1,
+    "reward_xp": 260,
+    "reward_gold": 120,
+    "requires": [
+      "atelier_supplies"
+    ],
+    "complete_scene": "atelier_courage_complete",
+    "reward_items": [
+      {
+        "id": "combat_injector",
+        "qty": 1
+      }
+    ]
+  },
+  {
+    "id": "tea_neighbors",
+    "title_ru": "Чай для соседа",
+    "title_en": "Tea for a Neighbor",
+    "giver": "ren",
+    "chain_ru": "Огни площади",
+    "chain_en": "Square Lights",
+    "stage": 1,
+    "desc_ru": "Рен приготовил чай для Сайласа. Поговори с мастером ателье у зеркала на западной стороне площади, затем вернись в чайную. Рен хочет познакомиться с соседями, а не просто торговать с ними.",
+    "desc_en": "Ren prepared tea for Silas. Speak to the tailor by the mirror on the west side of the square, then return to Ren.",
+    "kind": "interact",
+    "target": "stylist",
+    "count": 1,
+    "reward_xp": 70,
+    "reward_gold": 35,
+    "reward_items": [
+      {
+        "id": "bread",
+        "qty": 2
+      }
+    ],
+    "requires": []
+  },
+  {
+    "id": "courier_route",
+    "title_ru": "Дорога домой",
+    "title_en": "The Road Home",
+    "giver": "mika",
+    "chain_ru": "Почта квартала",
+    "chain_en": "Quarter Post",
+    "stage": 1,
+    "desc_ru": "Кровавые гончие перекрыли западную окраину. После принятия задания победи трёх гончих и вернись к Мике у южного входа на Площадь Сердца. Медик и чайная ждут посылки.",
+    "desc_en": "Blood hounds are blocking the western outskirts. Defeat three after accepting this quest, then return to Mika at the southern entrance of Heart Square.",
+    "kind": "kill",
+    "target": "blood_hound",
+    "count": 3,
+    "reward_xp": 200,
+    "reward_gold": 90,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 2
+      }
+    ],
+    "requires": []
+  },
+  {
+    "id": "neighbors_ivo_1",
+    "title_ru": "Цветы к чаю",
+    "title_en": "Flowers for Tea",
+    "desc_ru": "Узнай у Рена, нужны ли цветы для чайной. Он стоит на восточной стороне площади. Вернись к Иво.",
+    "desc_en": "Ask Ren on the east side of the square whether he wants flowers, then return to Ivo.",
+    "giver": "ivo",
+    "chain_ru": "Соседи: Иво",
+    "chain_en": "Neighbors: Ivo",
+    "stage": 1,
+    "kind": "interact",
+    "target": "ren",
+    "count": 1,
+    "reward_xp": 90,
+    "reward_gold": 45,
+    "reward_items": [
+      {
+        "id": "bread",
+        "qty": 1
+      }
+    ],
+    "requires": [],
+    "offer_scene": "neighbors_ivo_1_offer",
+    "progress_scene": "neighbors_ivo_1_progress",
+    "complete_scene": "neighbors_ivo_1_complete"
+  },
+  {
+    "id": "neighbors_ivo_2",
+    "title_ru": "Свет для лепестков",
+    "title_en": "Light for Petals",
+    "desc_ru": "Собери три неоновых осколка после принятия задания. Иво изучит цвет свечения; предметы останутся у тебя.",
+    "desc_en": "Collect three neon shards after accepting. Ivo will study their glow; you keep them.",
+    "giver": "ivo",
+    "chain_ru": "Соседи: Иво",
+    "chain_en": "Neighbors: Ivo",
+    "stage": 2,
+    "kind": "collect",
+    "target": "neon_shard",
+    "count": 3,
+    "reward_xp": 240,
+    "reward_gold": 110,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 1
+      }
+    ],
+    "requires": [
+      "neighbors_ivo_1"
+    ],
+    "offer_scene": "neighbors_ivo_2_offer",
+    "progress_scene": "neighbors_ivo_2_progress",
+    "complete_scene": "neighbors_ivo_2_complete"
+  },
+  {
+    "id": "neighbors_noel_1",
+    "title_ru": "Свидетель вместо слуха",
+    "title_en": "Witness over Rumor",
+    "desc_ru": "Поговори с учёным о голосах катакомб, затем вернись к Ноэлю на южной дороге.",
+    "desc_en": "Speak with the scientist about catacomb voices, then return to Noel on the southern road.",
+    "giver": "noel",
+    "chain_ru": "Соседи: Ноэль",
+    "chain_en": "Neighbors: Noel",
+    "stage": 1,
+    "kind": "interact",
+    "target": "scientist",
+    "count": 1,
+    "reward_xp": 90,
+    "reward_gold": 45,
+    "reward_items": [
+      {
+        "id": "bread",
+        "qty": 1
+      }
+    ],
+    "requires": [],
+    "offer_scene": "neighbors_noel_1_offer",
+    "progress_scene": "neighbors_noel_1_progress",
+    "complete_scene": "neighbors_noel_1_complete"
+  },
+  {
+    "id": "neighbors_noel_2",
+    "title_ru": "Достоверная глубина",
+    "title_en": "A Verified Depth",
+    "desc_ru": "Пройди второй ярус катакомб и вернись к Ноэлю. Ранее пройденный ярус засчитывается.",
+    "desc_en": "Clear catacomb depth two and return to Noel. Earlier completion counts.",
+    "giver": "noel",
+    "chain_ru": "Соседи: Ноэль",
+    "chain_en": "Neighbors: Noel",
+    "stage": 2,
+    "kind": "clear_dungeon",
+    "target": "",
+    "count": 2,
+    "reward_xp": 240,
+    "reward_gold": 110,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 1
+      }
+    ],
+    "requires": [
+      "neighbors_noel_1"
+    ],
+    "offer_scene": "neighbors_noel_2_offer",
+    "progress_scene": "neighbors_noel_2_progress",
+    "complete_scene": "neighbors_noel_2_complete"
+  },
+  {
+    "id": "neighbors_lucien_1",
+    "title_ru": "Слушатель у края",
+    "title_en": "A Listener at the Edge",
+    "desc_ru": "Познакомься с Ноэлем у южной дороги и вернись к Люсьену. Не нужно читать чужие письма.",
+    "desc_en": "Meet Noel by the southern road, then return to Lucien. No private letters need reading.",
+    "giver": "lucien",
+    "chain_ru": "Соседи: Люсьен",
+    "chain_en": "Neighbors: Lucien",
+    "stage": 1,
+    "kind": "interact",
+    "target": "noel",
+    "count": 1,
+    "reward_xp": 90,
+    "reward_gold": 45,
+    "reward_items": [
+      {
+        "id": "bread",
+        "qty": 1
+      }
+    ],
+    "requires": [],
+    "offer_scene": "neighbors_lucien_1_offer",
+    "progress_scene": "neighbors_lucien_1_progress",
+    "complete_scene": "neighbors_lucien_1_complete"
+  },
+  {
+    "id": "neighbors_lucien_2",
+    "title_ru": "Пауза перед концертом",
+    "title_en": "A Pause before the Concert",
+    "desc_ru": "Пройди первый ярус катакомб и сообщи Люсьену. Предыдущая победа тоже подходит.",
+    "desc_en": "Clear the first catacomb depth and tell Lucien. A previous victory counts.",
+    "giver": "lucien",
+    "chain_ru": "Соседи: Люсьен",
+    "chain_en": "Neighbors: Lucien",
+    "stage": 2,
+    "kind": "clear_dungeon",
+    "target": "",
+    "count": 1,
+    "reward_xp": 240,
+    "reward_gold": 110,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 1
+      }
+    ],
+    "requires": [
+      "neighbors_lucien_1"
+    ],
+    "offer_scene": "neighbors_lucien_2_offer",
+    "progress_scene": "neighbors_lucien_2_progress",
+    "complete_scene": "neighbors_lucien_2_complete"
+  },
+  {
+    "id": "neighbors_ash_1",
+    "title_ru": "Маршрут сухих ног",
+    "title_en": "A Dry Route",
+    "desc_ru": "Поговори с Микой у южного входа на площадь о его маршруте, затем вернись к Эшу.",
+    "desc_en": "Ask Mika at the southern entrance about his route, then return to Ash.",
+    "giver": "ash",
+    "chain_ru": "Соседи: Эш",
+    "chain_en": "Neighbors: Ash",
+    "stage": 1,
+    "kind": "interact",
+    "target": "mika",
+    "count": 1,
+    "reward_xp": 90,
+    "reward_gold": 45,
+    "reward_items": [
+      {
+        "id": "bread",
+        "qty": 1
+      }
+    ],
+    "requires": [],
+    "offer_scene": "neighbors_ash_1_offer",
+    "progress_scene": "neighbors_ash_1_progress",
+    "complete_scene": "neighbors_ash_1_complete"
+  },
+  {
+    "id": "neighbors_ash_2",
+    "title_ru": "Образцы для фонарей",
+    "title_en": "Lamp Samples",
+    "desc_ru": "Найди три новых неоновых осколка после принятия. После осмотра Эшем они останутся в инвентаре.",
+    "desc_en": "Find three new neon shards after accepting. Ash examines them; they remain in your inventory.",
+    "giver": "ash",
+    "chain_ru": "Соседи: Эш",
+    "chain_en": "Neighbors: Ash",
+    "stage": 2,
+    "kind": "collect",
+    "target": "neon_shard",
+    "count": 3,
+    "reward_xp": 240,
+    "reward_gold": 110,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 1
+      }
+    ],
+    "requires": [
+      "neighbors_ash_1"
+    ],
+    "offer_scene": "neighbors_ash_2_offer",
+    "progress_scene": "neighbors_ash_2_progress",
+    "complete_scene": "neighbors_ash_2_complete"
+  },
+  {
+    "id": "neighbors_emil_1",
+    "title_ru": "Заказ без глазури",
+    "title_en": "An Order without Icing",
+    "desc_ru": "Уточни заказ в чайной Рена на площади и вернись к Эмилю.",
+    "desc_en": "Confirm Ren's order at the tea house and return to Emil.",
+    "giver": "emil",
+    "chain_ru": "Соседи: Эмиль",
+    "chain_en": "Neighbors: Emil",
+    "stage": 1,
+    "kind": "interact",
+    "target": "ren",
+    "count": 1,
+    "reward_xp": 90,
+    "reward_gold": 45,
+    "reward_items": [
+      {
+        "id": "bread",
+        "qty": 1
+      }
+    ],
+    "requires": [],
+    "offer_scene": "neighbors_emil_1_offer",
+    "progress_scene": "neighbors_emil_1_progress",
+    "complete_scene": "neighbors_emil_1_complete"
+  },
+  {
+    "id": "neighbors_emil_2",
+    "title_ru": "Безопасный общий стол",
+    "title_en": "A Safer Shared Table",
+    "desc_ru": "После принятия победи трёх кровавых гончих на западной окраине или в катакомбах. Вернись к Эмилю.",
+    "desc_en": "After accepting, defeat three blood hounds on the western outskirts or in the catacombs. Return to Emil.",
+    "giver": "emil",
+    "chain_ru": "Соседи: Эмиль",
+    "chain_en": "Neighbors: Emil",
+    "stage": 2,
+    "kind": "kill",
+    "target": "blood_hound",
+    "count": 3,
+    "reward_xp": 240,
+    "reward_gold": 110,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 1
+      }
+    ],
+    "requires": [
+      "neighbors_emil_1"
+    ],
+    "offer_scene": "neighbors_emil_2_offer",
+    "progress_scene": "neighbors_emil_2_progress",
+    "complete_scene": "neighbors_emil_2_complete"
+  },
+  {
+    "id": "neighbors_yves_1",
+    "title_ru": "Сосед по клумбе",
+    "title_en": "A Neighbor in Bloom",
+    "desc_ru": "Обсуди с Иво цветы для общего двора и вернись к Иву у южной дороги.",
+    "desc_en": "Talk to Ivo about flowers for the shared courtyard and return to Yves by the southern road.",
+    "giver": "yves",
+    "chain_ru": "Соседи: Ив",
+    "chain_en": "Neighbors: Yves",
+    "stage": 1,
+    "kind": "interact",
+    "target": "ivo",
+    "count": 1,
+    "reward_xp": 90,
+    "reward_gold": 45,
+    "reward_items": [
+      {
+        "id": "bread",
+        "qty": 1
+      }
+    ],
+    "requires": [],
+    "offer_scene": "neighbors_yves_1_offer",
+    "progress_scene": "neighbors_yves_1_progress",
+    "complete_scene": "neighbors_yves_1_complete"
+  },
+  {
+    "id": "neighbors_yves_2",
+    "title_ru": "Земля под ногами",
+    "title_en": "Ground beneath Our Feet",
+    "desc_ru": "Пройди третий ярус катакомб и вернись к Иву. Уже пройденная глубина учитывается.",
+    "desc_en": "Clear catacomb depth three and return to Yves. Earlier completion counts.",
+    "giver": "yves",
+    "chain_ru": "Соседи: Ив",
+    "chain_en": "Neighbors: Yves",
+    "stage": 2,
+    "kind": "clear_dungeon",
+    "target": "",
+    "count": 3,
+    "reward_xp": 240,
+    "reward_gold": 110,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 1
+      }
+    ],
+    "requires": [
+      "neighbors_yves_1"
+    ],
+    "offer_scene": "neighbors_yves_2_offer",
+    "progress_scene": "neighbors_yves_2_progress",
+    "complete_scene": "neighbors_yves_2_complete"
   }
 ]

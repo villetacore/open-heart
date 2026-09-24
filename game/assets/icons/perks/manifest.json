@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "background": "PNG alpha preserved; transparent background and soft edges verified",
+  "filter": "linear",
+  "entries": [
+    {
+      "id": "thick_skin",
+      "texture": "res://assets/icons/perks/thick_skin.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        0,
+        30,
+        256,
+        300
+      ]
+    },
+    {
+      "id": "adrenaline",
+      "texture": "res://assets/icons/perks/adrenaline.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        263,
+        40,
+        252,
+        290
+      ]
+    },
+    {
+      "id": "vampirism",
+      "texture": "res://assets/icons/perks/vampirism.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        521,
+        90,
+        251,
+        240
+      ]
+    },
+    {
+      "id": "juggernaut",
+      "texture": "res://assets/icons/perks/juggernaut.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        777,
+        35,
+        248,
+        295
+      ]
+    },
+    {
+      "id": "sharpshooter",
+      "texture": "res://assets/icons/perks/sharpshooter.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        1030,
+        65,
+        230,
+        265
+      ]
+    },
+    {
+      "id": "overkill",
+      "texture": "res://assets/icons/perks/overkill.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        1285,
+        30,
+        251,
+        300
+      ]
+    },
+    {
+      "id": "rapid_fire",
+      "texture": "res://assets/icons/perks/rapid_fire.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        0,
+        340,
+        255,
+        298
+      ]
+    },
+    {
+      "id": "executioner",
+      "texture": "res://assets/icons/perks/executioner.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        260,
+        340,
+        267,
+        300
+      ]
+    },
+    {
+      "id": "fleet_footed",
+      "texture": "res://assets/icons/perks/fleet_footed.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        530,
+        340,
+        238,
+        300
+      ]
+    },
+    {
+      "id": "scavenger",
+      "texture": "res://assets/icons/perks/scavenger.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        776,
+        350,
+        249,
+        290
+      ]
+    },
+    {
+      "id": "quick_hands",
+      "texture": "res://assets/icons/perks/quick_hands.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        1030,
+        340,
+        245,
+        302
+      ]
+    },
+    {
+      "id": "deep_pockets",
+      "texture": "res://assets/icons/perks/deep_pockets.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        1280,
+        380,
+        256,
+        245
+      ]
+    },
+    {
+      "id": "second_wind",
+      "texture": "res://assets/icons/perks/second_wind.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        0,
+        635,
+        255,
+        310
+      ]
+    },
+    {
+      "id": "iron_will",
+      "texture": "res://assets/icons/perks/iron_will.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        260,
+        642,
+        258,
+        313
+      ]
+    },
+    {
+      "id": "berserk_rage",
+      "texture": "res://assets/icons/perks/berserk_rage.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        522,
+        641,
+        250,
+        314
+      ]
+    },
+    {
+      "id": "heavy_rounds",
+      "texture": "res://assets/icons/perks/heavy_rounds.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        777,
+        650,
+        240,
+        305
+      ]
+    },
+    {
+      "id": "packrat",
+      "texture": "res://assets/icons/perks/packrat.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        1030,
+        637,
+        249,
+        318
+      ]
+    },
+    {
+      "id": "leech_rounds",
+      "texture": "res://assets/icons/perks/leech_rounds.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        1280,
+        628,
+        256,
+        329
+      ]
+    },
+    {
+      "id": "bulwark",
+      "texture": "res://assets/icons/perks/bulwark.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        260,
+        642,
+        258,
+        313
+      ],
+      "note": "capstone: reuses iron_will region until dedicated art exists"
+    },
+    {
+      "id": "onslaught",
+      "texture": "res://assets/icons/perks/onslaught.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        777,
+        650,
+        240,
+        305
+      ],
+      "note": "capstone: reuses heavy_rounds region until dedicated art exists"
+    },
+    {
+      "id": "overdrive",
+      "texture": "res://assets/icons/perks/overdrive.tres",
+      "atlas": "res://assets/icons/perks_atlas.png",
+      "region": [
+        1280,
+        380,
+        256,
+        245
+      ],
+      "note": "capstone: reuses deep_pockets region until dedicated art exists"
+    }
+  ]
+}

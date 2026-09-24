@@ -428,6 +428,14 @@ impl Game3D {
                     if let Some(c) = nc.color {
                         sprite.set_modulate(Color::from_rgba(c[0], c[1], c[2], 1.0));
                     }
+                    if let Some([x, y, w, h]) = nc.sprite_region.filter(|r| r.iter().all(|v| v.is_finite()) && r[0] >= 0.0 && r[1] >= 0.0 && r[2] > 0.0 && r[3] > 0.0) {
+                        let height = nc.sprite_height.filter(|v| v.is_finite() && *v > 0.0).unwrap_or(2.0);
+                        sprite.set_region_rect(Rect2::new(Vector2::new(x, y), Vector2::new(w, h)));
+                        sprite.set_pixel_size(height / h);
+                        sprite.set_position(Vector3::new(nc.pos[0], height * 0.5, nc.pos[1]));
+                        sprite.set_texture_filter(TextureFilter::LINEAR);
+                        sprite.set_meta("static_atlas", &true.to_variant());
+                    }
                     self.base_mut().add_child(&sprite);
                     sprites.push(sprite);
                     npcs.push(NpcRt {
@@ -489,6 +497,44 @@ impl Game3D {
             }
         }
         self.cfg = Some(cfg);
+        // Y спавнов карты жёстко 0; приземляем пикапы на реальную поверхность,
+        // как только физика геометрии готова (несколько кадров запаса).
+        self.ground_snap_ticks = 3;
+    }
+
+    /// Опустить наземные пикапы (не данжевые) на поверхность под ними: луч вниз
+    /// из точки над предметом ищет верхнюю грань (пол/рампа/платформа), и спрайт
+    /// садится на неё с зазором `ground_offset`. Идемпотентно — можно звать
+    /// несколько кадров, пока коллайдеры не появятся в физическом мире.
+    pub(super) fn snap_world_pickups(&mut self) {
+        let Some(world) = self.base().get_world_3d() else { return; };
+        let Some(mut space) = world.get_direct_space_state() else { return; };
+        // Луч ловит только статичную геометрию: игрока и врагов исключаем, иначе
+        // предмет мог бы «сесть» на голову врагу, стоящему в точке спавна.
+        let mut exclude: godot::builtin::Array<Rid> = godot::builtin::Array::new();
+        if let Some(p) = self.player() { exclude.push(p.get_rid()); }
+        for e in self.enemies.iter() { exclude.push(e.get_rid()); }
+
+        let targets: Vec<(usize, Vector3, f32)> = self
+            .world_items
+            .iter()
+            .enumerate()
+            .filter(|(_, it)| !it.in_dungeon)
+            .map(|(i, it)| (i, it.node.get_position(), it.ground_offset))
+            .collect();
+        for (i, pos, offset) in targets {
+            let from = Vector3::new(pos.x, 8.0, pos.z);
+            let to = Vector3::new(pos.x, -3.0, pos.z);
+            let Some(mut query) = PhysicsRayQueryParameters3D::create(from, to) else { continue; };
+            query.set_exclude(&exclude);
+            let hit = space.intersect_ray(&query);
+            if hit.is_empty() { continue; }
+            if let Some(y) = hit.get("position").and_then(|v| v.try_to::<Vector3>().ok()).map(|p| p.y) {
+                if let Some(item) = self.world_items.get_mut(i) {
+                    item.node.set_position(Vector3::new(pos.x, y + offset, pos.z));
+                }
+            }
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -883,6 +929,7 @@ impl Game3D {
                 .into(),
                 payload: Payload::Heart,
                 in_dungeon,
+                ground_offset: 0.55,
             });
             return;
         }
@@ -916,6 +963,7 @@ impl Game3D {
             name,
             payload,
             in_dungeon,
+            ground_offset: 0.55,
         });
     }
 
@@ -933,6 +981,7 @@ impl Game3D {
             name: t.name(&self.settings.lang).to_string(),
             payload: Payload::Ammo(t, amount),
             in_dungeon,
+            ground_offset: 0.55,
         });
     }
 
@@ -958,6 +1007,7 @@ impl Game3D {
             name: def.name(&self.settings.lang).to_string(),
             payload: Payload::Weapon(w),
             in_dungeon,
+            ground_offset: 0.65,
         });
     }
 }

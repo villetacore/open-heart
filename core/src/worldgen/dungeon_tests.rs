@@ -63,6 +63,24 @@ fn different_seeds_give_different_dungeons() {
 }
 
 #[test]
+fn campaign_rooms_and_events_survive_packing_for_one_hundred_seeds() {
+    use crate::worldgen::dungeon::RoomRole;
+    let cfg = config();
+    for depth in 1..=4 {
+        for seed in 0..100 {
+            let layout = plan(depth, seed, &cfg);
+            assert!(layout.rooms.len() >= 8, "depth {depth} seed {seed}");
+            for room in &layout.rooms {
+                let (x,z)=room.center();
+                assert!(layout.reachable[z as usize * GRID + x as usize], "unreachable depth {depth} seed {seed}");
+            }
+            if depth>=2 { assert!(layout.rooms.iter().any(|r|r.role==RoomRole::Puzzle)); }
+            if depth>=3 { assert!(layout.rooms.iter().any(|r|r.role==RoomRole::Story)); }
+        }
+    }
+}
+
+#[test]
 fn layout_is_connected_and_sane() {
     let cfg = config();
     for depth in 1..=6u32 {

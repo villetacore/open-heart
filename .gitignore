@@ -31,3 +31,6 @@ tools/preview/
 *.db
 *.db-wal
 *.db-shm
+
+# Terminal client saves and managed server logs
+/.openheart-terminal/

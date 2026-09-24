@@ -32,11 +32,11 @@ impl Game3D {
         self.select_title = Some(title);
 
         let card_w = 480.0;
-        let card_h = 560.0;
+        let card_h = 720.0;
         let gap = 60.0;
         let total = card_w * 3.0 + gap * 2.0;
         let x0 = (HUD_W - total) * 0.5;
-        let y0 = 240.0;
+        let y0 = 180.0;
 
         for i in 0..3 {
             let mut card = Panel::new_alloc();
@@ -69,10 +69,21 @@ impl Game3D {
             card.add_child(&ct);
             self.card_titles.push(ct);
 
+            if let Some(atlas) = self.atlas_cell("res://assets/portraits/classes_atlas.png",3,1,i) {
+                let mut portrait = TextureRect::new_alloc();
+                portrait.set_position(Vector2::new(28.0,132.0));
+                portrait.set_size(Vector2::new(card_w-56.0,206.0));
+                portrait.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
+                portrait.set_stretch_mode(godot::classes::texture_rect::StretchMode::KEEP_ASPECT_COVERED);
+                portrait.set_texture(&atlas);
+                card.add_child(&portrait);
+                self.class_portraits.push(atlas);
+            }
+
             let mut cb = Label::new_alloc();
-            cb.set_position(Vector2::new(28.0, 150.0));
-            cb.set_size(Vector2::new(card_w - 56.0, card_h - 180.0));
-            cb.add_theme_font_size_override("font_size", 19);
+            cb.set_position(Vector2::new(28.0, 354.0));
+            cb.set_size(Vector2::new(card_w - 56.0, card_h - 380.0));
+            cb.add_theme_font_size_override("font_size", 18);
             cb.add_theme_color_override("font_color", C_MAIN);
             cb.set_autowrap_mode(godot::classes::text_server::AutowrapMode::WORD);
             card.add_child(&cb);
@@ -110,6 +121,12 @@ impl Game3D {
             });
         }
         for (i, c) in classes().iter().enumerate() {
+            if let Some(atlas) = self.class_portraits.get_mut(i) {
+                if let Some(texture) = atlas.get_atlas() {
+                    let width = texture.get_width() as f32 / 3.0;
+                    atlas.set_region(Rect2::new(Vector2::new(i as f32 * width + 12.0, 0.0), Vector2::new(width - 24.0, 500.0)));
+                }
+            }
             self.fill_class_card(i, c);
         }
         if let Some(ref mut p) = self.select_panel {
@@ -134,7 +151,7 @@ impl Game3D {
                 ("Роль", "Скорость", "Оружие", "Спеки")
             };
             b.set_text(&format!(
-                "{}: {}\n\n{}\n\nHP: {:.0}\n{}: {:.1}\n{}: {}\n\n{}:\n• {}\n• {}\n• {}",
+                "{}: {}\n{}\n\nHP: {:.0}  ·  {}: {:.1}\n{}: {}\n\n{}: {} / {} / {}",
                 labels.0,
                 c.role(lang),
                 c.description(lang),
@@ -148,10 +165,16 @@ impl Game3D {
                 c.specs[1].name(lang),
                 c.specs[2].name(lang),
             ));
+            let abilities=self.cfg.as_ref().map(|cfg|cfg.player_abilities.iter().filter(|a|a.class==i).map(|a|format!("[{}] {}",if a.slot==0 {"F"} else {"G"},a.name(lang))).collect::<Vec<_>>().join("  ·  ")).unwrap_or_default();
+            let text=b.get_text().to_string();
+            b.set_text(&format!("{text}\n\n{abilities}"));
         }
     }
 
     pub(super) fn open_spec_select(&mut self, class_idx: usize) {
+        for atlas in &mut self.class_portraits {
+            atlas.set_region(Rect2::new(Vector2::new(class_idx as f32*512.0+12.0,0.0),Vector2::new(488.0,500.0)));
+        }
         self.mode = Mode::SpecSelect;
         self.class_pick = class_idx;
         let c = &classes()[class_idx];

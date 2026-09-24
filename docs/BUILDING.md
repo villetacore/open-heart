@@ -53,7 +53,7 @@
 ### Шаг 1 — собрать Rust-библиотеку
 
 ```powershell
-cd rust
+# из корня репозитория (Cargo-workspace: core/ + client/)
 cargo build -p openheart
 ```
 
@@ -65,7 +65,7 @@ Windows — движок будет вызывать её функции нап�
 игры). Скрипты `scripts/run.ps1`/`scripts/build.bat`/`scripts/watch.ps1` копируют её туда сами; при ручной сборке скопируй:
 
 ```powershell
-Copy-Item target\debug\openheart.dll godot\bin\openheart.dll -Force
+Copy-Item target\debug\openheart.dll game\bin\openheart.dll -Force
 ```
 
 Долго собирается **только первый раз** (компилируются все зависимости, включая сам `gdext`).
@@ -88,7 +88,7 @@ $godot = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Mi
 `--path game` — указать, где лежит `project.godot` (у нас в подпапке `game/`, не в корне репо).
 
 Вариант Б — через GUI: запусти Godot без параметров → в диспетчере проектов нажми
-**Import** → укажи `C:\projects\open-heart\godot\project.godot`.
+**Import** → укажи `<путь-к-репозиторию>\game\project.godot`.
 
 ### Шаг 3 — запустить игру
 
@@ -118,7 +118,7 @@ $godot = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Mi
 Каждый раз после изменения `.rs`-файла:
 
 ```powershell
-cd rust
+# из корня репозитория
 cargo build -p openheart
 ```
 

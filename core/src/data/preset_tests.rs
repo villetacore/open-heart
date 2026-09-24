@@ -1334,3 +1334,82 @@ fn all_presets_parse_and_link() {
 fn embedded_fallbacks_parse() {
     crate::config::embedded_configs_parse_for_test();
 }
+
+/// Умения игрока каждого пресета (если файл есть) обязаны быть полными и
+/// локализованными: `ability::parse` требует непустые RU/EN имя и описание,
+/// корректные числа, валидный тип урона, иконку в границах атласа и покрытие
+/// двух слотов на каждый из трёх классов.
+#[test]
+fn preset_player_abilities_are_valid() {
+    for preset in preset_dirs() {
+        let name = preset.file_name().unwrap().to_string_lossy().to_string();
+        let Some(text) = read(&preset, "player_abilities.json") else {
+            continue;
+        };
+        let defs = crate::combat::ability::parse(&text)
+            .unwrap_or_else(|e| panic!("{name}/player_abilities.json: {e}"));
+        assert_eq!(
+            defs.len(),
+            6,
+            "{name}/player_abilities.json: ожидаются 2 умения на каждый из 3 классов"
+        );
+    }
+}
+
+/// Магазин Торговца: у core должны быть товары на продажу, и у каждого товара —
+/// положительная цена (у расходников `value` нулевой, цена идёт от лечения).
+#[test]
+fn merchant_shop_prices_every_consumable() {
+    let core = presets_root().join("core");
+    let items: ItemsFile = parse(&core, "items.json");
+    let for_sale: Vec<_> = items.items.iter().filter(|i| i.is_for_sale()).collect();
+    assert!(!for_sale.is_empty(), "core/items.json: Торговцу нечего продавать");
+    for item in for_sale {
+        assert!(
+            item.shop_price() > 0,
+            "core/items.json: у товара '{}' неположительная цена",
+            item.id
+        );
+        assert!(
+            item.sell_price() > 0 && item.sell_price() <= item.shop_price(),
+            "core/items.json: цена продажи '{}' должна быть в (0, закупочной]",
+            item.id
+        );
+    }
+}
+
+/// Паспорт баланса оружия (docs/WEAPON_BALANCE.md): ростер core обязан держать
+/// восемь канонических стволов, покрывать три типа урона и соблюдать
+/// экономику — меле без боезапаса и на короткой дистанции, дальнобойное с
+/// боезапасом и увеличенной дистанцией. Уникальность профилей/альт-огня
+/// проверяет `all_presets_parse_and_link`.
+#[test]
+fn weapon_roster_matches_balance_passport() {
+    use crate::weapon::{DmgType, WeaponId};
+    let core = presets_root().join("core");
+    let weapons = crate::weapon::parse(&must_read(&core, "weapons.json"))
+        .unwrap_or_else(|e| panic!("core/weapons.json: {e}"));
+
+    let ids: HashSet<WeaponId> = weapons.iter().map(|w| w.id).collect();
+    assert_eq!(ids.len(), weapons.len(), "core/weapons.json: дублирующиеся id оружия");
+    for id in WeaponId::ALL {
+        assert!(ids.contains(&id), "core/weapons.json: нет канонического оружия '{}'", id.id());
+    }
+
+    let types: HashSet<DmgType> = weapons.iter().map(|w| w.dmg_type).collect();
+    for ty in [DmgType::Physical, DmgType::Energy, DmgType::Fire] {
+        assert!(types.contains(&ty), "core/weapons.json: ни одно оружие не наносит урон типа {ty:?}");
+    }
+
+    for w in &weapons {
+        assert!(w.damage > 0.0 && w.range > 0.0, "core/weapons.json: '{}' с нулевым уроном/дистанцией", w.name_en);
+        let melee = matches!(w.id, WeaponId::Sword | WeaponId::Chainsaw);
+        if melee {
+            assert!(w.ammo.is_none(), "core/weapons.json: меле '{}' не должно тратить боезапас", w.name_en);
+            assert!(w.range <= 5.0, "core/weapons.json: у меле '{}' дистанция как у дальнобойного", w.name_en);
+        } else {
+            assert!(w.ammo.is_some(), "core/weapons.json: дальнобойное '{}' обязано тратить боезапас", w.name_en);
+            assert!(w.range >= 10.0, "core/weapons.json: у дальнобойного '{}' слишком короткая дистанция", w.name_en);
+        }
+    }
+}

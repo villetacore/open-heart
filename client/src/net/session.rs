@@ -5,7 +5,7 @@
 //! (`WebSocketPeer`) остаётся тонкой обёрткой в [`super::NetClient`].
 
 use openheart_core::protocol::{
-    self, ClientMessage, Hello, PlayerInfo, Reject, ServerMessage, Welcome, World,
+    self, ClientMessage, Hello, PlayerInfo, Reject, Save, ServerMessage, Welcome, World,
 };
 use openheart_core::sim::{Event, Fire, HitClaim, Input, Snapshot};
 
@@ -30,6 +30,9 @@ pub enum NetEvent {
         peer: u16,
         world: World,
         players: Vec<PlayerInfo>,
+        /// Персонаж, которого помнит сервер. Он важнее локального сейва:
+        /// на сервере прогресс свой, и затирать им одиночную игру нельзя.
+        character: Option<Save>,
     },
     /// Состояние мира на тик сервера.
     Snapshot(Snapshot),
@@ -137,6 +140,7 @@ impl Session {
             peer: welcome.peer,
             world: welcome.world,
             players: welcome.players,
+            character: welcome.character,
         }
     }
 
@@ -166,11 +170,30 @@ impl Session {
         }
     }
 
+    pub fn send_command(&mut self, kind: &str, args: serde_json::Value) {
+        if self.is_ready() { self.queue(ClientMessage::Command(serde_json::json!({"kind":kind,"args":args}))); }
+    }
+
     /// Заявить о попадании. Урон посчитает сервер — он же может отказать.
     pub fn send_hit(&mut self, hit: HitClaim) {
         if self.is_ready() {
             self.queue(ClientMessage::Hit(hit));
         }
+    }
+
+    /// Отправить состояние персонажа на хранение серверу.
+    ///
+    /// Слишком большой блоб не шлём вовсе: сервер его всё равно отбросит, а
+    /// канал занять успеет.
+    pub fn send_save(&mut self, save: Save) {
+        if !self.is_ready() {
+            return;
+        }
+        if save.data.len() > openheart_core::protocol::MAX_SAVE_BYTES {
+            godot::global::godot_warn!("[net] сейв больше допустимого, не отправлен");
+            return;
+        }
+        self.queue(ClientMessage::Save(save));
     }
 
     /// Измерение задержки; ответ придёт как [`NetEvent::Pong`].

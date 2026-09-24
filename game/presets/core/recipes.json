@@ -75,6 +75,28 @@
       "station": "bench",
       "requires_flag": "blueprint_injector",
       "time": 4.0
+    },
+    {
+      "id": "shard_refine",
+      "name_ru": "Раскрошить слиток",
+      "name_en": "Refine bar",
+      "inputs": [
+        { "item": "silver_bar", "qty": 1 }
+      ],
+      "output": "neon_shard",
+      "output_qty": 2,
+      "time": 1.0
+    },
+    {
+      "id": "starter_brew",
+      "name_ru": "Малое зелье",
+      "name_en": "Small potion",
+      "inputs": [
+        { "item": "neon_shard", "qty": 1 }
+      ],
+      "output": "small_potion",
+      "output_qty": 1,
+      "time": 0.8
     }
   ]
 }

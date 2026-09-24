@@ -62,7 +62,7 @@ func _run() -> void:
 	_check(quest_chains.offered == quest_chains.total, "not every quest can be accepted")
 	_check(quest_chains.completed == quest_chains.total, "not every quest can be completed")
 	_check(quest_chains.exploration_completed == 2, "dungeon exploration quest chain is incomplete")
-	_check(quest_chains.chains == 5, "quest roster is not grouped into five content chains")
+	_check(quest_chains.chains >= 8, "quest roster is missing the new quarter chains")
 	_check(quest_chains.reward_quests == quest_chains.total, "not every quest has an item reward")
 	_check(quest_chains.awarded_reward_qty == quest_chains.expected_reward_qty, "quest item rewards were not fully granted")
 	_check(quest_chains.journal_localized, "quest chain journal is not localized")
@@ -93,7 +93,7 @@ func _run() -> void:
 	print("RUNTIME_SMOKE quest_navigation localized=%s target=%s cycle=%s" % [quest_navigation.localized, quest_navigation.target, quest_navigation.cycled])
 	var quest_journal: Dictionary = game.runtime_smoke_quest_journal()
 	_check(quest_journal.localized, "quest journal is not localized RU/EN")
-	_check(quest_journal.chains == 5, "quest journal does not show five chains")
+	_check(quest_journal.chains >= 8, "quest journal is missing the new quarter chains")
 	_check(quest_journal.states, "quest journal does not distinguish active and completed stages")
 	_check(quest_journal.rewards, "quest journal omits stage rewards")
 	_check(quest_journal.panel_visible, "quest journal panel did not open")
@@ -314,6 +314,12 @@ func _run() -> void:
 			dungeon.hazards,
 		])
 
+	var skills: Dictionary = game.runtime_smoke_player_skills()
+	_check(skills.activated, "player skill did not activate")
+	_check(skills.persisted, "ability recovery was lost on save")
+	_check(skills.icons == 2, "ability HUD is incomplete")
+	_check(skills.perks == 21, "interactive perk grid is incomplete")
+	print("RUNTIME_SMOKE player_skills activated=%s persisted=%s perk_cards=%s" % [skills.activated, skills.persisted, skills.perks])
 	game.runtime_smoke_shutdown_audio()
 	game.queue_free()
 	await process_frame

@@ -13,8 +13,8 @@ use crate::locale::t;
 
 use super::{Game3D, Mode};
 
-/// Сколько рецептов показываем: больше цифр на клавиатуре всё равно нет.
-const MAX_ROWS: usize = 9;
+/// Сколько рецептов показываем и крафтим по цифрам 1–8 (как в панели перков).
+const MAX_ROWS: usize = 8;
 
 impl Game3D {
     /// Собрать панель крафта. Вызывается один раз при построении HUD.
@@ -89,21 +89,32 @@ impl Game3D {
             self.close_craft();
             return;
         }
-        for (index, action) in ["choice_1", "choice_2", "choice_3", "choice_4"]
-            .into_iter()
-            .enumerate()
-        {
-            if input.is_action_just_pressed(action) {
+        // Цифры 1–8 крафтят рецепт из списка (те же клавиши, что в панели перков).
+        for index in 0..MAX_ROWS {
+            if input.is_action_just_pressed(&format!("weapon_{}", index + 1)) {
                 self.try_craft(index);
                 return;
             }
         }
     }
 
-    /// Станции рядом с игроком. Пока их не строят — верстак есть только в хабе,
-    /// и то условно; настоящие станции появятся вместе со строительством (B4).
+    /// Станции крафта рядом с игроком: физические верстаки из карты
+    /// (`stations` в hub.json). Станочные рецепты (`station: "bench"`) доступны
+    /// только когда игрок стоит в зоне такой станции; безстаночные — где угодно.
     fn nearby_stations(&self) -> Vec<String> {
-        Vec::new()
+        let Some(player) = self.player() else {
+            return Vec::new();
+        };
+        let pos = player.get_global_position();
+        let mut out: Vec<String> = self
+            .station_zones
+            .iter()
+            .filter(|(_, center, radius)| pos.distance_to(*center) <= *radius)
+            .map(|(kind, _, _)| kind.clone())
+            .collect();
+        out.sort();
+        out.dedup();
+        out
     }
 
     /// Выполнить рецепт под номером `index` из показанного списка.

@@ -6,6 +6,7 @@ use super::*;
 
 impl Game3D {
     pub(super) fn process_explore(&mut self) {
+        if self.maybe_end_campaign() { return; }
         let lang = self.settings.lang.clone();
         self.update_world_district();
         self.update_nearby();
@@ -97,6 +98,11 @@ impl Game3D {
             } else if want_fire && self.shoot_cd <= 0.0 {
                 self.try_fire();
             }
+        }
+
+        // активные умения класса (F / G)
+        for (slot, action) in ["ability_primary", "ability_secondary"].iter().enumerate() {
+            if input.is_action_just_pressed(*action) { self.try_player_ability(slot); }
         }
 
         // быстрое лечение
@@ -252,8 +258,7 @@ impl Game3D {
             self.close_inventory();
         }
         if Input::singleton().is_action_just_pressed("interact") {
-            self.use_first_consumable();
-            self.refresh_inventory_ui();
+            self.ui_use_item();
         }
     }
 
@@ -387,6 +392,8 @@ impl Game3D {
                         } else {
                             "Портал запечатан — убей стража данжа".to_string()
                         }
+                    } else if self.dungeon_depth == 4 && self.state.as_ref().is_some_and(|s| !s.has("campaign_completed")) {
+                        if lang == "en" { "[E] Return home — campaign finale".to_string() } else { "[E] Вернуться домой — финал истории".to_string() }
                     } else {
                         if lang == "en" {
                             format!("[E] Descend deeper (depth {})", self.dungeon_depth + 1)
@@ -450,6 +457,10 @@ impl Game3D {
                         "Портал запечатан! Сначала убей стража."
                     });
                 } else {
+                    if self.dungeon_depth == 4 && self.state.as_ref().is_some_and(|s| !s.has("campaign_completed")) {
+                        self.exit_dungeon();
+                        return;
+                    }
                     let d = self.dungeon_depth + 1;
                     self.enter_dungeon(d);
                 }

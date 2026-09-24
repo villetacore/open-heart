@@ -4,10 +4,11 @@
 #              Не знает про движок. Линкуется в клиент и собирается в core.wasm,
 #              который крутит сервер (docs/MULTIPLAYER.md §4).
 #   client/  — клиент: расширение движка (GDExtension) — узлы, рендер, ввод, HUD.
+#   terminal/ — отдельный терминальный клиент: TUI, WebSocket, запуск Go-хоста.
 #
 # Сборка клиента:          cargo build -p openheart --release
 # Сборка ядра для сервера: cargo build -p openheart-core --target wasm32-unknown-unknown --features abi --release
 
 [workspace]
-members = ["core", "client"]
+members = ["core", "client", "terminal"]
 resolver = "2"

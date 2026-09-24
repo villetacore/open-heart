@@ -20,6 +20,7 @@ const (
 	TCmd      = "cmd"
 	TChat     = "chat"
 	TPing     = "ping"
+	TSave     = "save"
 
 	// сервер → клиент
 	TWelcome  = "welcome"
@@ -28,6 +29,20 @@ const (
 	TReject   = "reject"
 	TPong     = "pong"
 )
+
+// Save — состояние персонажа, каким его прислал клиент.
+//
+// Сервер в него не заглядывает: прогресс всё ещё считает клиент, а сервер
+// хранит блоб и отдаёт при следующем входе. Разбор появится, когда прогресс
+// переедет в ядро (docs/MULTIPLAYER.md §12, N7).
+type Save struct {
+	Ver  int    `json:"ver"`
+	Data string `json:"data"`
+}
+
+// MaxSaveBytes — предел на состояние персонажа. Сейв ощутимо меньше; лимит
+// нужен, чтобы через него не грузили в базу что попало.
+const MaxSaveBytes = 64 * 1024
 
 // Envelope — обёртка любого сообщения.
 type Envelope struct {
@@ -172,6 +187,8 @@ type Welcome struct {
 	ContentHash string       `json:"content_hash"`
 	World       World        `json:"world"`
 	Players     []PlayerInfo `json:"players"`
+	// Character — сохранённый персонаж, если сервер его помнит.
+	Character *Save `json:"character,omitempty"`
 }
 
 // Значения Ent.Kind.

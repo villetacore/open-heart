@@ -102,10 +102,53 @@ jobs:
         run: go test ./...
         working-directory: server
 
+# ── 1в. Смоук-барьер: headless-прогон реальной сборки (все триггеры) ────────────
+# Явный барьер качества перед релизом (RELEASE_PLAN §3.8, §10-G): собираем DEBUG
+# DLL (в ней доступны runtime_smoke_* функции клиента) и гоняем комплексный
+# сценарий tools/runtime_smoke.gd — локализация, районы, ростер врагов, квест-
+# цепочки, профили оружия/модов, слабые точки, умения игрока и persist сейва.
+# Скрипт сам возвращает quit(1) при провале, что валит job и (через needs) весь
+# релиз. Export-шаблоны здесь не нужны: --import и --script их не требуют.
+  smoke:
+    name: "Smoke: headless runtime"
+    needs: [test, backend]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+
+      # DEBUG-сборка намеренно: runtime_smoke_* объявлены под #[cfg(debug_assertions)].
+      - name: Build debug DLL
+        run: cargo build -p openheart
+
+      - name: Copy .so → game/bin/
+        run: cp target/debug/libopenheart.so game/bin/libopenheart.so
+
+      - name: Install Godot ${{ env.GODOT_VER }}
+        run: |
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VER}"
+          wget -q "$BASE/Godot_v${GODOT_VER}_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VER}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+
+      - name: Import assets
+        working-directory: game
+        run: godot --headless --import 2>&1 || true
+
+      - name: Runtime smoke
+        working-directory: game
+        run: godot --headless --path . --script res://tools/runtime_smoke.gd
+
 # ── 2. Авто-тег (только push→main или ручной запуск) ───────────────────────────
   tag:
     name: "Bump & Tag"
-    needs: [test, backend]
+    needs: [test, backend, smoke]
     runs-on: ubuntu-24.04
     if: >
       github.event_name != 'pull_request' &&

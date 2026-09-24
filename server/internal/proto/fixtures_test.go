@@ -106,3 +106,36 @@ func TestServerFixtures(t *testing.T) {
 		t.Errorf("отказ разобрался неверно: %+v", reject)
 	}
 }
+
+// Сейв персонажа сервер не разбирает — но конверт и границы обязан понимать
+// так же, как клиент.
+func TestSaveFixture(t *testing.T) {
+	env := fixture(t, "save.json")
+	if env.T != TSave {
+		t.Fatalf("тег %q, ожидался %q", env.T, TSave)
+	}
+	var save Save
+	if err := env.Into(&save); err != nil {
+		t.Fatal(err)
+	}
+	if save.Ver != 4 {
+		t.Errorf("ver = %d, ожидался 4", save.Ver)
+	}
+	if len(save.Data) == 0 || len(save.Data) > MaxSaveBytes {
+		t.Errorf("data выглядит неправдоподобно: %d байт", len(save.Data))
+	}
+}
+
+func TestWelcomeCarriesCharacter(t *testing.T) {
+	env := fixture(t, "welcome.json")
+	var welcome Welcome
+	if err := env.Into(&welcome); err != nil {
+		t.Fatal(err)
+	}
+	if welcome.Character == nil {
+		t.Fatal("персонаж потерялся")
+	}
+	if welcome.Character.Ver != 4 || welcome.Character.Data == "" {
+		t.Errorf("персонаж разобрался неверно: %+v", welcome.Character)
+	}
+}

@@ -600,6 +600,7 @@ impl Game3D {
         let (x, y, w, h) = NPC_IDLE_FRAMES[self.npc_anim_frame];
         let rect = Rect2::new(Vector2::new(x, y), Vector2::new(w, h));
         for sprite in self.npc_sprites.iter_mut() {
+            if sprite.has_meta("static_atlas") { continue; }
             sprite.set_region_rect(rect);
         }
     }
@@ -671,7 +672,13 @@ impl Game3D {
     // ── Сохранение ───────────────────────────────────────────────────────────
 
     pub(super) fn auto_save(&mut self) {
-        if !self.autosave_enabled {
+        if self.creative || !self.autosave_enabled {
+            return;
+        }
+        // На сервере персонаж свой, и локальный сейв одиночной игры он затирать
+        // не должен: отправляем состояние туда, откуда пришли.
+        if self.net_ready() {
+            self.net_save_timer = f32::MAX;
             return;
         }
         if let Some(ref state) = self.state {

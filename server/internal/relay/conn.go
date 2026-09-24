@@ -30,6 +30,7 @@ type StreamConn struct {
 	addr   string
 
 	once   sync.Once
+	sendMu sync.Mutex // linearizes queue admission against Close
 	closed chan struct{}
 }
 
@@ -79,12 +80,19 @@ func (c *StreamConn) Send(tag string, d any) error {
 }
 
 func (c *StreamConn) SendRaw(data []byte) error {
+	c.sendMu.Lock()
 	select {
 	case <-c.closed:
+		c.sendMu.Unlock()
 		return net.ErrClosed
+	default:
+	}
+	select {
 	case c.out <- data:
+		c.sendMu.Unlock()
 		return nil
 	default:
+		c.sendMu.Unlock()
 		c.Close("backlog")
 		return ErrBacklog
 	}
@@ -98,7 +106,9 @@ func (c *StreamConn) Reject(reason, detail string) {
 
 func (c *StreamConn) Close(reason string) {
 	c.once.Do(func() {
+		c.sendMu.Lock()
 		close(c.closed)
+		c.sendMu.Unlock()
 		_ = c.stream.Close()
 	})
 }

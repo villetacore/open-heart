@@ -83,6 +83,15 @@ func (s *server) serve(ctx context.Context, conn wire.Conn) {
 			return
 		}
 
+		// Сейв — дело сессии, а не симуляции: комната про базу не знает.
+		if env.T == proto.TSave {
+			var save proto.Save
+			if err := env.Into(&save); err == nil {
+				s.storeCharacter(player, save)
+			}
+			continue
+		}
+
 		// Переход между комнатами обрабатывает сессия: комната про соседей не знает.
 		if next := s.roomSwitch(ctx, current, player, env); next != nil {
 			current = next
@@ -215,12 +224,15 @@ func (s *server) handshake(ctx context.Context, conn wire.Conn) (*room.Player, e
 		return nil, reject(proto.RejBanned, "%s", banned)
 	}
 
-	return &room.Player{
+	player := &room.Player{
 		Nickname:   nickname,
 		UserID:     userID,
 		AccountRef: ref,
 		Conn:       conn,
-	}, nil
+	}
+	// Персонажа достаём до входа в комнату: он уезжает в welcome.
+	player.Character = s.loadCharacter(player)
+	return player, nil
 }
 
 // authorize разбирает блок auth в соответствии с режимом сервера.

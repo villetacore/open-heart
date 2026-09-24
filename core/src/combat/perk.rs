@@ -188,6 +188,12 @@ pub fn perks() -> &'static [PerkDef] {
     load(None, None);
     PERKS.read().unwrap().expect("perks after load")
 }
+/// Стоимость одного ранга перка в очках (0 — если перк неизвестен).
+/// Нужна для возврата очков при сбросе билда ([`crate::game_state::GameState::respec_perks`]).
+pub fn perk_cost(id: &str) -> u32 {
+    perks().iter().find(|p| p.id == id).map(|p| p.cost).unwrap_or(0)
+}
+
 pub fn synergies() -> &'static [SynergyDef] {
     if let Some(s) = *SYNERGIES.read().unwrap() {
         return s;

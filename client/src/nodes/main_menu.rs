@@ -17,7 +17,7 @@ const W: f32 = 1920.0;
 const H: f32 = 1080.0;
 const BTN_W: f32 = 340.0;
 const BTN_H: f32 = 58.0;
-const BTN_X: f32 = (W - BTN_W) * 0.5;
+const BTN_X: f32 = 120.0;
 /// Сколько серверов помещается на экране. Прокрутки в этом меню нет, а фильтр
 /// по данным пресета всё равно отсекает большую часть чужих.
 const SERVER_ROWS: usize = 6;
@@ -31,6 +31,7 @@ pub struct MainMenu {
 
     // Ректы кнопок для hit-теста
     r_new: Rect2,
+    r_creative: Rect2,
     r_cont: Rect2,
     r_preset: Rect2,
     r_connect: Rect2,
@@ -68,6 +69,7 @@ pub struct MainMenu {
     lbl_title: Option<Gd<Label>>,
     lbl_subtitle: Option<Gd<Label>>,
     lbl_new: Option<Gd<Label>>,
+    lbl_creative: Option<Gd<Label>>,
     lbl_continue: Option<Gd<Label>>,
     lbl_preset: Option<Gd<Label>>,
     lbl_preset_desc: Option<Gd<Label>>,
@@ -254,6 +256,7 @@ impl IControl for MainMenu {
             settings: Settings::default(),
             show_settings: false,
             r_new: btn_rect(0.0),
+            r_creative: btn_rect(0.0),
             r_cont: btn_rect(0.0),
             r_preset: btn_rect(0.0),
             r_connect: btn_rect(0.0),
@@ -283,6 +286,7 @@ impl IControl for MainMenu {
             lbl_title: None,
             lbl_subtitle: None,
             lbl_new: None,
+            lbl_creative: None,
             lbl_continue: None,
             lbl_preset: None,
             lbl_preset_desc: None,
@@ -395,6 +399,15 @@ impl MainMenu {
             ),
         );
         self.base_mut().add_child(&panel);
+        if let Some(texture) = godot::classes::ResourceLoader::singleton().load("res://assets/illustrations/menu_femboy_city.png").and_then(|r| r.try_cast::<godot::classes::Texture2D>().ok()) {
+            let mut art = godot::classes::TextureRect::new_alloc();
+            art.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
+            art.set_stretch_mode(godot::classes::texture_rect::StretchMode::KEEP_ASPECT_COVERED);
+            art.set_texture(&texture);
+            art.set_size(Vector2::new(W, H));
+            art.set_mouse_filter(godot::classes::control::MouseFilter::IGNORE);
+            self.base_mut().add_child(&art);
+        }
     }
 
     fn build_main_panel(&mut self, lang: &str) {
@@ -422,7 +435,7 @@ impl MainMenu {
         );
         self.lbl_subtitle = Some(subtitle);
 
-        let btn_start_y = H * 0.42;
+        let btn_start_y = 340.0;
         let gap = BTN_H + 20.0;
 
         // Кнопка «Новая игра»
@@ -476,6 +489,15 @@ impl MainMenu {
         self.r_quit = btn_rect(btn_start_y + gap * 5.0);
         let quit_label = self.make_btn(t("menu_quit", lang), self.r_quit);
         self.lbl_quit = Some(quit_label);
+        self.r_creative = btn_rect(btn_start_y + gap * 6.0);
+        self.lbl_creative = Some(self.make_btn(if lang == "en" {"CREATIVE · all unlocked"} else {"КРЕАТИВ · всё доступно"}, self.r_creative));
+        for label in [self.lbl_title.as_mut(), self.lbl_subtitle.as_mut()].into_iter().flatten() {
+            let height = label.get_size().y;
+            label.set_position(Vector2::new(100.0, if height > 40.0 {150.0} else {246.0}));
+            label.set_size(Vector2::new(580.0, height));
+            label.set_horizontal_alignment(HorizontalAlignment::LEFT);
+        }
+        if let Some(desc) = self.lbl_preset_desc.as_mut() { desc.set_position(Vector2::new(BTN_X, btn_start_y + gap * 2.0 + BTN_H)); desc.set_size(Vector2::new(BTN_W, 24.0)); }
 
         // Подсказка внизу
         let controls = add_label(
@@ -698,6 +720,7 @@ impl MainMenu {
 
     fn refresh_main_labels(&mut self) {
         let lang = self.settings.lang.as_str();
+        if let Some(label) = self.lbl_creative.as_mut() { label.set_text(if lang == "en" {"CREATIVE · all unlocked"} else {"КРЕАТИВ · всё доступно"}); }
         if let Some(label) = self.lbl_subtitle.as_mut() {
             label.set_text(t("menu_subtitle", lang));
         }
@@ -726,6 +749,7 @@ impl MainMenu {
         for label in [
             self.lbl_subtitle.as_mut(),
             self.lbl_new.as_mut(),
+            self.lbl_creative.as_mut(),
             self.lbl_continue.as_mut(),
             self.lbl_preset.as_mut(),
             self.lbl_preset_desc.as_mut(),
@@ -747,6 +771,11 @@ impl MainMenu {
     // ── Обработка кликов ──────────────────────────────────────────────────────
 
     fn handle_main_click(&mut self, pos: Vector2) {
+        if self.r_creative.contains_point(pos) {
+            crate::nodes::game::creative::request();
+            self.load_scene("res://main.tscn");
+            return;
+        }
         if self.r_new.contains_point(pos) {
             save::delete();
             self.load_scene("res://main.tscn");

@@ -1079,6 +1079,44 @@ pub fn generate(
         }
     }
 
+    // Гарантия хотя бы одного хазарда на данж: механику нужно показать уже на
+    // первой глубине (план §6). Если случайность не расставила ни одного —
+    // ставим один принудительно. phase_offset фиксирован, чтобы не трогать rng
+    // и не сдвигать детерминизм остальной генерации.
+    if hazards.is_empty() {
+        if let Some(r) = rooms
+            .iter()
+            .enumerate()
+            .find(|(k, r)| *k != 0 && *k != boss_idx && r.w >= 5 && r.h >= 5)
+            .map(|(_, r)| r)
+        {
+            let (cx, cz) = r.center();
+            let lp = cell_at(cx, cz, r.floor_y);
+            let kind = if r.hazard_dps > 0.0 { r.hazard_kind } else { HazardKind::Blood };
+            let dps = (if r.hazard_dps > 0.0 { r.hazard_dps } else { 16.0 }) + depth as f32 * 2.0;
+            let hazard_color = crate::convert::color(kind.color());
+            let slab = make_glow_slab(
+                lp + Vector3::new(0.0, 0.03, 0.0),
+                Vector3::new(CELL * 1.6, 0.06, CELL * 1.6),
+                t_lava.as_ref(),
+                hazard_color,
+                1.0,
+            );
+            root.add_child(&slab);
+            let ll = make_light(lp + Vector3::new(0.0, 0.8, 0.0), hazard_color, 1.1, 6.0);
+            root.add_child(&ll);
+            hazards.push(HazardZone {
+                pos: lp,
+                radius: r.hazard_radius.max(2.5),
+                dps,
+                kind,
+                phase_offset: 1.5,
+                phase: HazardPhase::Dormant,
+                player_inside: false,
+            });
+        }
+    }
+
     // Алтарь в боссовой комнате
     let (b_cx, b_cz) = rooms[boss_idx].center();
     let b_floor = rooms[boss_idx].floor_y;

@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "status": "ready_to_place_not_added_to_campaign_map",
+  "entries": [
+    {
+      "id": "heart_bow_sign",
+      "name_ru": "Сердце с бантом",
+      "texture": "res://assets/decor/femboy_quarter/heart_bow_sign.tres",
+      "scene": "res://assets/decor/femboy_quarter/heart_bow_sign.tscn",
+      "region": [
+        0,
+        0,
+        512,
+        500
+      ],
+      "visual_height_m": 2.048,
+      "collision": false
+    },
+    {
+      "id": "atelier_sign",
+      "name_ru": "Вывеска ателье",
+      "texture": "res://assets/decor/femboy_quarter/atelier_sign.tres",
+      "scene": "res://assets/decor/femboy_quarter/atelier_sign.tscn",
+      "region": [
+        512,
+        0,
+        512,
+        500
+      ],
+      "visual_height_m": 2.048,
+      "collision": false
+    },
+    {
+      "id": "tea_house_sign",
+      "name_ru": "Вывеска чайной",
+      "texture": "res://assets/decor/femboy_quarter/tea_house_sign.tres",
+      "scene": "res://assets/decor/femboy_quarter/tea_house_sign.tscn",
+      "region": [
+        1024,
+        0,
+        512,
+        500
+      ],
+      "visual_height_m": 2.048,
+      "collision": false
+    },
+    {
+      "id": "rose_stained_glass",
+      "name_ru": "Витраж с розами",
+      "texture": "res://assets/decor/femboy_quarter/rose_stained_glass.tres",
+      "scene": "res://assets/decor/femboy_quarter/rose_stained_glass.tscn",
+      "region": [
+        0,
+        500,
+        512,
+        524
+      ],
+      "visual_height_m": 2.048,
+      "collision": false
+    },
+    {
+      "id": "heart_city_banner",
+      "name_ru": "Знамя квартала",
+      "texture": "res://assets/decor/femboy_quarter/heart_city_banner.tres",
+      "scene": "res://assets/decor/femboy_quarter/heart_city_banner.tscn",
+      "region": [
+        512,
+        500,
+        512,
+        524
+      ],
+      "visual_height_m": 2.048,
+      "collision": false
+    },
+    {
+      "id": "dressing_mirror",
+      "name_ru": "Зеркало примерочной",
+      "texture": "res://assets/decor/femboy_quarter/dressing_mirror.tres",
+      "scene": "res://assets/decor/femboy_quarter/dressing_mirror.tscn",
+      "region": [
+        1024,
+        500,
+        512,
+        524
+      ],
+      "visual_height_m": 2.048,
+      "collision": false
+    }
+  ]
+}

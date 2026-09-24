@@ -8,6 +8,14 @@ impl Game3D {
     /// Сцена по id: сначала dialogues.json пресета (данные приоритетнее кода —
     /// пресет может переопределять встроенные сцены), затем story.rs.
     pub(super) fn resolve_scene(&self, id: &str) -> Option<Scene> {
+        if id == "wardrobe" { return Some(self.wardrobe_scene()); }
+        if id == "atelier_work" { return self.make_giver_scene(if self.settings.lang == "en" {"Silas"} else {"Сайлас"}, "stylist"); }
+        if id == "tea_work" { return self.make_giver_scene(if self.settings.lang == "en" {"Ren"} else {"Рен"}, "ren"); }
+        if id == "courier_work" { return self.make_giver_scene(if self.settings.lang == "en" {"Mika"} else {"Мика"}, "mika"); }
+        if let Some(giver) = id.strip_prefix("giver:") {
+            let name = self.npcs.iter().find(|n| n.id == giver).map(|n| n.name.as_str()).unwrap_or(giver);
+            return self.make_giver_scene(name, giver);
+        }
         if id.is_empty() {
             return None;
         }
@@ -25,6 +33,12 @@ impl Game3D {
         let scene_kind = npc.scene.clone();
         let quest_id = npc.quest.clone();
         self.bump_quests("interact", &npc_id);
+
+        // Торговец открывает магазин, а не диалог (план §5, OPEN_QUESTIONS A1).
+        if npc_id == "merchant" {
+            self.open_shop();
+            return;
+        }
 
         // 1) story-персонажи: динамический выбор сцены из story.rs
         // 2) конкретный scene_id
@@ -392,6 +406,7 @@ impl Game3D {
     }
 
     pub(super) fn select_choice(&mut self, idx: usize) {
+        if self.mode != Mode::Dialogue || !self.at_choices { return; }
         let (effects, next) = {
             let scene = match self.scene.as_ref() {
                 Some(s) => s,
@@ -440,6 +455,7 @@ impl Game3D {
                 self.scene = Some(sc);
                 self.line_idx = 0;
                 self.at_choices = false;
+                if next_id == "wardrobe" { self.at_choices = true; }
                 self.refresh_dlg_ui();
                 return;
             }
@@ -459,6 +475,10 @@ impl Game3D {
     }
 
     pub(super) fn refresh_dlg_ui(&mut self) {
+        if self.scene.as_ref().is_some_and(|s| s.lines.is_empty()) {
+            if let Some(scene) = self.scene.as_mut() { scene.lines.push(Line::narr("…")); }
+            self.at_choices = true;
+        }
         let (speaker, text, choices_text): (String, String, Vec<String>) = {
             let scene = match self.scene.as_ref() {
                 Some(s) => s,
@@ -532,5 +552,6 @@ impl Game3D {
         if let Some(ref mut vbox) = self.choice_box {
             vbox.set_visible(self.at_choices && !choices_text.is_empty());
         }
+        self.refresh_dialogue_actions();
     }
 }

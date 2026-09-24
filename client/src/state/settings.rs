@@ -94,7 +94,7 @@ impl Default for Settings {
             vsync: true,
             fov: 75.0,
             post_fx: true,
-            post_intensity: 1.0,
+            post_intensity: 0.35,
             glow: true,
             shadows: true,
             screen_shake: true,

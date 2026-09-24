@@ -256,6 +256,8 @@ impl EnemyCfg {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ItemCfg {
+    #[serde(default)]
+    pub icon: Option<usize>,
     pub id: String,
     pub name_ru: String,
     pub name_en: String,
@@ -269,6 +271,10 @@ pub struct ItemCfg {
     pub color_b: f32,
 }
 
+/// Фиксированные цены магазина Торговца для того, что не описано в items.json.
+pub const AMMO_PACK_PRICE: i32 = 20;
+pub const WEAPON_CORE_PRICE: i32 = 120;
+
 impl ItemCfg {
     pub fn name(&self, lang: &str) -> &str {
         if lang == "en" {
@@ -276,6 +282,25 @@ impl ItemCfg {
         } else {
             &self.name_ru
         }
+    }
+
+    /// Продаётся ли предмет у Торговца (пока — только расходники).
+    pub fn is_for_sale(&self) -> bool {
+        self.category == "consumable"
+    }
+
+    /// Цена покупки у Торговца. У расходников `value` нулевой, поэтому цена
+    /// выводится из силы лечения; у прочего — из `value`.
+    pub fn shop_price(&self) -> i32 {
+        match self.category.as_str() {
+            "consumable" => ((self.heal.unwrap_or(10.0) as i32) * 2).max(10),
+            _ => (self.value as i32).max(1),
+        }
+    }
+
+    /// Цена продажи Торговцу — половина закупочной (но не меньше 1).
+    pub fn sell_price(&self) -> i32 {
+        (self.shop_price() / 2).max(1)
     }
 }
 
@@ -395,6 +420,11 @@ pub struct NpcCfg {
     pub name_en: String,
     #[serde(default)]
     pub sprite: String, // имя файла в characters/ (npc_vale...)
+    /// Optional static atlas crop: x, y, width, height. Omit for animated legacy sheets.
+    #[serde(default)]
+    pub sprite_region: Option<[f32; 4]>,
+    #[serde(default)]
+    pub sprite_height: Option<f32>,
     pub pos: [f32; 2], // x, z на карте мира
     #[serde(default)]
     pub color: Option<[f32; 3]>,
@@ -837,6 +867,7 @@ pub(crate) struct ItemsFile {
 // ── GameConfig ────────────────────────────────────────────────────────────────
 
 pub struct GameConfig {
+    pub player_abilities: Vec<crate::combat::ability::AbilityDef>,
     pub enemies: Vec<EnemyCfg>,
     pub items: Vec<ItemCfg>,
     pub level: LevelCfg,
@@ -1076,6 +1107,11 @@ impl GameConfig {
 
         Self {
             enemies,
+            player_abilities: read_data(base, "player_abilities")
+                .and_then(|text| match crate::combat::ability::parse(&text) {
+                    Ok(defs) => Some(defs),
+                    Err(error) => { crate::warn!("player_abilities: {error}"); None }
+                }).unwrap_or_else(crate::combat::ability::defaults),
             items,
             level,
             npcs,

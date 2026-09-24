@@ -342,5 +342,58 @@
         "add": 0.04
       }
     ]
+  },
+  {
+    "id": "bulwark",
+    "name_en": "Bulwark", "desc_en": "Capstone: +40 max HP, +5% lifesteal, ability cooldowns −5%.",
+    "branch": "survival",
+    "tier": 4.0,
+    "max_ranks": 1.0,
+    "cost": 3.0,
+    "requires": [
+      "juggernaut:2"
+    ],
+    "name_ru": "Оплот",
+    "desc_ru": "Капстоун: +40 к максимуму HP, +5% вампиризма, кулдаун умений −5%.",
+    "effects": [
+      { "stat": "max_hp", "add": 40.0 },
+      { "stat": "lifesteal", "add": 0.05 },
+      { "stat": "cd", "mult": 0.95 }
+    ]
+  },
+  {
+    "id": "onslaught",
+    "name_en": "Onslaught", "desc_en": "Capstone: +20% damage and −7% cooldowns.",
+    "branch": "offense",
+    "tier": 4.0,
+    "max_ranks": 1.0,
+    "cost": 3.0,
+    "requires": [
+      "executioner:2"
+    ],
+    "name_ru": "Натиск",
+    "desc_ru": "Капстоун: +20% урона и −7% кулдаунов.",
+    "effects": [
+      { "stat": "dmg", "add": 0.2 },
+      { "stat": "cd", "mult": 0.93 }
+    ]
+  },
+  {
+    "id": "overdrive",
+    "name_en": "Overdrive", "desc_en": "Capstone: +35% ammo, +8% move speed, −7% cooldowns.",
+    "branch": "utility",
+    "tier": 4.0,
+    "max_ranks": 1.0,
+    "cost": 3.0,
+    "requires": [
+      "deep_pockets:2"
+    ],
+    "name_ru": "Форсаж",
+    "desc_ru": "Капстоун: +35% боезапаса, +8% скорости, −7% кулдаунов.",
+    "effects": [
+      { "stat": "ammo", "add": 0.35 },
+      { "stat": "speed", "mult": 1.08 },
+      { "stat": "cd", "mult": 0.93 }
+    ]
   }
 ]

@@ -48,7 +48,8 @@ GROUND = 200.0
 CITY = 86.0
 # Шаг сетки участков. 8 м — это дом в 6 м с двухметровым переулком.
 CELL = 8.0
-GAP = 2.0
+# Шире зазор между домами: переулки читаются, город перестаёт быть «свалкой».
+GAP = 3.0
 
 PLAYER_SPAWN = [0.0, 1.1, 12.0]
 GATE = [0.0, 2.6, -58.0]
@@ -136,6 +137,28 @@ DISTRICTS = [
     },
 ]
 
+# Профиль застройки района — чтобы кварталы читались разными, а не только по
+# цвету. fill: доля сохраняемых участков (меньше = просторнее); big: тяга к
+# крупным объёмам; tiers: шанс ступенчатого силуэта; canopy: низкие навесы у
+# фасада (рынок). Разрежённость + разные объёмы = «районы разными» и «меньше
+# свалки» одновременно.
+DISTRICT_PROFILE = {
+    "heart_plaza":    {"fill": 0.50, "big": 0.30, "tiers": 0.55, "canopy": False},
+    "night_market":   {"fill": 0.82, "big": 0.15, "tiers": 0.20, "canopy": True},
+    "mercy_ward":     {"fill": 0.52, "big": 0.45, "tiers": 0.55, "canopy": False},
+    "silent_archive": {"fill": 0.42, "big": 0.80, "tiers": 0.85, "canopy": False},
+    "foundry_ring":   {"fill": 0.68, "big": 0.85, "tiers": 0.35, "canopy": False},
+    "descent_shrine": {"fill": 0.48, "big": 0.25, "tiers": 0.30, "canopy": False},
+}
+DEFAULT_PROFILE = {"fill": 0.66, "big": 0.40, "tiers": 0.50, "canopy": False}
+
+
+def profile_of(district) -> dict:
+    if district is None:
+        return DEFAULT_PROFILE
+    return DISTRICT_PROFILE.get(district["id"], DEFAULT_PROFILE)
+
+
 # Улицы — прямоугольники (x0, z0, x1, z1). По ним не строят, вдоль них ставят
 # фасады, фонари и неоновые полосы.
 STREETS = [
@@ -177,6 +200,15 @@ BEACONS = [
      0.016),
 ]
 
+# Станции крафта: тип и точка. Ставятся у площади, чтобы верстак было видно
+# от спавна. Зона взаимодействия — в hub.json (поле `stations`), геометрию
+# рисуют blocks/props здесь же.
+STATIONS = [
+    ("bench", (-22.0, 9.0)),
+    ("bench", (22.0, 9.0)),
+]
+
+
 # Куда строить нельзя ни при каких условиях: (x, z, радиус).
 def keepouts() -> list[tuple[float, float, float]]:
     zones: list[tuple[float, float, float]] = [
@@ -195,6 +227,8 @@ def keepouts() -> list[tuple[float, float, float]]:
             zones.append((float(pos[0]), float(pos[1]), 5.0))
     for beacon in BEACONS:
         zones.append((beacon[1][0], beacon[1][1], 5.0))
+    for _kind, (sx, sz) in STATIONS:
+        zones.append((sx, sz, 4.5))
     return zones
 
 
@@ -235,6 +269,7 @@ class Map:
         self.routes: list[dict] = []
         self.beacons: list[dict] = []
         self.clusters: list[dict] = []
+        self.stations: list[dict] = []
         self.occupied: list[tuple[float, float, float]] = []  # x, z, радиус
         self.tile_lights: dict[tuple[int, int], int] = defaultdict(int)
         self.skipped_lights = 0
@@ -290,7 +325,7 @@ def build_plaza(m: Map) -> None:
     """Площадь Сердца: приподнятый круг, ступени с четырёх сторон, фонтан."""
     m.blocks.append(
         {"shape": "cylinder", "pos": v3(0, 0, 0), "radius": 14.0, "height": 0.55,
-         "tex": "floor_main", "uv": 5.0}
+         "tex": "floor_city_stone", "uv": 5.0}
     )
     # Постамента у фонтана нет: через центр площади идёт дорога от спавна к
     # вратам, и любой бортик её перекрывает.
@@ -303,7 +338,7 @@ def build_plaza(m: Map) -> None:
                 "from": v3(dx * 19.5, 0.0, dz * 19.5),
                 "to": v3(dx * 13.0, 0.55, dz * 13.0),
                 "width": 9.0,
-                "tex": "floor_main",
+                "tex": "floor_city_stone",
                 "uv": 3.0,
             }
         )
@@ -379,6 +414,31 @@ def build_shrine(m: Map) -> None:
              "tex": "liquid_red", "emission": [0.65, 0.14, 0.3], "uv": 4.0}
         )
     m.take(0, -58.0, 12.0)
+
+
+def build_stations(m: Map) -> None:
+    """Верстаки крафта: физические станции у площади.
+
+    Дают доступ к станочным рецептам (`station: "bench"`), когда игрок стоит
+    в их зоне. Янтарный контур — по цветовому языку плана «интерактивность».
+    """
+    for kind, (x, z) in STATIONS:
+        m.blocks.append(
+            {"shape": "box", "pos": v3(x, 0.5, z), "size": [3.2, 1.0, 1.8], "rot": 0.0,
+             "tex": "wall_market", "uv": 2.0}
+        )
+        m.glows.append(
+            {"pos": v3(x, 1.04, z), "size": [3.2, 0.06, 1.8], "tex": "liquid_red",
+             "emission": [1.0, 0.62, 0.2], "uv": 1.0}
+        )
+        m.props.append({"tex": "furn_desk", "pos": v3(x, 1.0, z), "px": 0.02})
+        # Парящая вывеска-маркер, чтобы верстак читался издали.
+        m.flats.append(
+            {"tex": "neon_pills", "pos": v3(x, 3.0, z), "rot": 0.0, "px": 0.016, "glow": True}
+        )
+        m.light([x, 2.4, z], [1.0, 0.66, 0.28], 1.1, 8.0)
+        m.take(x, z, 2.6)
+        m.stations.append({"kind": kind, "pos": [r1(x), r1(z)], "radius": 4.5})
 
 
 def build_skywalk(m: Map) -> None:
@@ -489,6 +549,13 @@ def build_lots(m: Map, zones) -> None:
                     break
 
     for cx, cz, w, d in lots:
+        # Пояс башен по краю оставляем целиком — это горизонт города. Внутренние
+        # участки прореживаем по профилю района: архив — редкие башни, рынок —
+        # плотные ряды. Так кварталы читаются разными и исчезает «свалка коробок».
+        if max(abs(cx), abs(cz)) <= 60.0:
+            prof = profile_of(district_of(cx, cz))
+            if m.rng.random() > prof["fill"]:
+                continue
         place_building(m, cx, cz, w, d)
 
 
@@ -516,6 +583,7 @@ OUTER_SIGNS = ["neon_hearts", "neon_boys", "neon_catface", "neon_love_wins", "ne
 
 def place_building(m: Map, cx: float, cz: float, w: float, d: float) -> None:
     district = district_of(cx, cz)
+    prof = profile_of(district)
     edge = max(abs(cx), abs(cz)) > 60.0
     if edge:
         # Пояс башен по краю: он и есть горизонт города, без него карта
@@ -539,7 +607,8 @@ def place_building(m: Map, cx: float, cz: float, w: float, d: float) -> None:
     entry = m.buildings[-1]
 
     # Второй ярус с отступом: силуэт перестаёт быть частоколом одинаковых плит.
-    if height > 12.0 and m.rng.random() < 0.65:
+    # Частота — из профиля района: архив ступенчатый, рынок почти плоский.
+    if height > 12.0 and m.rng.random() < prof["tiers"]:
         th = round(m.rng.uniform(2.5, height * 0.45), 1)
         m.blocks.append(
             {
@@ -581,8 +650,33 @@ def place_building(m: Map, cx: float, cz: float, w: float, d: float) -> None:
         }
     )
 
-    # Ряды светящихся окон: главное, что отличает дом от чёрной коробки.
-    rows = int(min(4, max(1, height // 4.5)))
+    # Навес рынка: низкий козырёк вдоль фасада с тёплой подсветкой снизу —
+    # силуэт квартала сразу отличается от башен архива и объёмов литейки.
+    if prof["canopy"] and height > 4.0:
+        aw = 1.6
+        m.blocks.append(
+            {
+                "shape": "box",
+                "pos": v3(cx + nx * (w / 2.0 + aw / 2.0), 3.0, cz + nz * (d / 2.0 + aw / 2.0)),
+                "size": [r1(w * 0.9) if nx == 0 else aw, 0.18, aw if nx == 0 else r1(d * 0.9)],
+                "rot": 0.0,
+                "tex": "wall_market",
+                "uv": 2.0,
+            }
+        )
+        m.glows.append(
+            {
+                "pos": v3(cx + nx * (w / 2.0 + aw / 2.0), 2.86, cz + nz * (d / 2.0 + aw / 2.0)),
+                "size": [r1(w * 0.8) if nx == 0 else 1.3, 0.05, 1.3 if nx == 0 else r1(d * 0.8)],
+                "tex": "liquid_red",
+                "emission": [1.0, 0.5, 0.24],
+                "uv": 2.0,
+            }
+        )
+
+    # Ряды светящихся окон: главное, что отличает дом от чёрной коробки. Меньше
+    # полос — меньше неонового шума, силуэт читается спокойнее (план §7).
+    rows = int(min(3, max(1, height // 6.0)))
     # Разброс по этажам и по яркости: одинаковые полосы на всех домах читаются
     # как обои, а не как окна.
     jitter = m.rng.uniform(-0.6, 0.9)
@@ -606,12 +700,12 @@ def place_building(m: Map, cx: float, cz: float, w: float, d: float) -> None:
 
     # Вывеска — только на части домов: если светится каждый, не светится ни один.
     # И только пока на плитке есть место под лампу: движок зажигает её сам.
-    chance = 0.16 if edge else 0.34
+    chance = 0.10 if edge else 0.22
     wants_sign = bool(signs) and m.rng.random() < chance
     if wants_sign and m.reserve_light(cx, cz):
         entry["sign"] = signs[m.rng.randrange(len(signs))]
         entry["sign_side"] = side
-    elif signs and m.rng.random() < 0.55:
+    elif signs and m.rng.random() < 0.32:
         # Плоский неон над входом — дешевле вывески: без лампы.
         m.flats.append(
             {
@@ -627,7 +721,7 @@ def place_building(m: Map, cx: float, cz: float, w: float, d: float) -> None:
     street_props = ["street_bench", "street_trashcan", "street_vending", "street_phone",
                     "street_bags", "street_cone", "street_dumpster", "street_fan_unit",
                     "street_grate_table"]
-    for _ in range(m.rng.randint(0, 2)):
+    for _ in range(m.rng.randint(0, 1)):
         along = m.rng.uniform(-0.34, 0.34)
         px = cx + nx * (w / 2.0 + 1.5) + (0.0 if nx else w * along)
         pz = cz + nz * (d / 2.0 + 1.5) + (0.0 if nz else d * along)
@@ -839,6 +933,7 @@ def build(spawns: dict) -> dict:
 
     build_plaza(m)
     build_shrine(m)
+    build_stations(m)
     build_beacons(m)
     build_lots(m, zones)
     build_streets(m)
@@ -883,7 +978,7 @@ def build(spawns: dict) -> dict:
         "gate": GATE,
         "ground": {
             "size": GROUND,
-            "tex": "floor_main",
+            "tex": "floor_city_stone",
             "uv": 4.0,
             "border_h": 18.0,
             "border_tex": "wall_arena",
@@ -892,6 +987,7 @@ def build(spawns: dict) -> dict:
         "decor_clusters": m.clusters,
         "route_layers": m.routes,
         "skyline_beacons": m.beacons,
+        "stations": m.stations,
         "blocks": m.blocks,
         "buildings": m.buildings,
         "glows": m.glows,

@@ -1,0 +1,20 @@
+[package]
+name = "openheart-terminal"
+version = "0.1.0"
+edition = "2021"
+description = "OpenHeart terminal client and local server launcher"
+
+[[bin]]
+name = "oh-terminal"
+path = "src/main.rs"
+
+[dependencies]
+openheart-core = { path = "../core" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+crossterm = "0.28"
+ratatui = "0.29"
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "net", "time", "sync", "macros"] }
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
+futures-util = { version = "0.3", features = ["sink"] }

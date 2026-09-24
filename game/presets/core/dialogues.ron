@@ -2332,4 +2332,3404 @@
             },
         ],
     },
+    /*[55]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "atelier_work",
+                "text": {
+                    "en": "How can I help?",
+                    "ru": "Чем помочь ателье?",
+                },
+            },
+            /*[1]*/ {
+                "next": "wardrobe",
+                "text": {
+                    "en": "Choose a personal emblem.",
+                    "ru": "Подобрать деталь образа.",
+                },
+            },
+            /*[2]*/ {
+                "next": "atelier_story",
+                "text": {
+                    "en": "Why open your atelier here?",
+                    "ru": "Почему ты открылся именно здесь?",
+                },
+            },
+            /*[3]*/ {
+                "text": {
+                    "en": "I\'ll visit later.",
+                    "ru": "Загляну позже.",
+                },
+            },
+        ],
+        "id": "atelier_intro",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "stylist",
+                "speaker": {
+                    "en": "Silas",
+                    "ru": "Сайлас",
+                },
+                "text": {
+                    "en": "Welcome. I\'m Silas, the tailor. I make clothes for grown men who love skirts, lace, sharp waistcoats, or all three. You don\'t have to earn the right to be yourself here.",
+                    "ru": "Добро пожаловать. Я Сайлас, мастер ателье. Шьём для взрослых парней, которым близки юбки, кружево, строгие жилеты — или всё сразу. Здесь не нужно заслуживать право быть собой.",
+                },
+            },
+        ],
+    },
+    /*[56]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "flag": "atelier_support",
+                        "kind": "flag",
+                    },
+                ],
+                "next": "atelier_intro",
+                "text": {
+                    "en": "I want more places like this.",
+                    "ru": "Хочу, чтобы таких мест стало больше.",
+                },
+            },
+            /*[1]*/ {
+                "next": "atelier_work",
+                "text": {
+                    "en": "Let\'s get to work.",
+                    "ru": "Давай к делу.",
+                },
+            },
+        ],
+        "id": "atelier_story",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "stylist",
+                "speaker": {
+                    "en": "Silas",
+                    "ru": "Сайлас",
+                },
+                "text": {
+                    "en": "I used to make what people expected of me. Now I make clothes that feel right to wear. Victor carried the machine; the medic brought lining fabric. This place was built by more hands than mine.",
+                    "ru": "Раньше я шил то, что от меня ожидали. Теперь хочу шить то, в чём людям хорошо. Виктор помог перенести станок, медик принёс ткань для подкладки. Это место построено не только моими руками.",
+                },
+            },
+            /*[1]*/ {
+                "speaker": {
+                    "en": "Silas",
+                    "ru": "Сайлас",
+                },
+                "text": {
+                    "en": "I like lace. I also know how to repair armor. Those things were never in conflict.",
+                    "ru": "Мне нравится кружево. Ещё я умею чинить броню. Одно никогда не мешало другому.",
+                },
+            },
+        ],
+    },
+    /*[57]*/ {
+        "id": "atelier_work",
+        "lines": [
+            /*[0]*/ {
+                "speaker": "Сайлас",
+                "text": {
+                    "en": "Let\'s see what needs doing.",
+                    "ru": "Посмотрим, чем ты можешь помочь.",
+                },
+            },
+        ],
+    },
+    /*[58]*/ {
+        "id": "wardrobe",
+        "lines": [
+            /*[0]*/ {
+                "speaker": "Сайлас",
+                "text": {
+                    "en": "Choose your personal emblem.",
+                    "ru": "Выбери личный знак героя.",
+                },
+            },
+        ],
+    },
+    /*[59]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "atelier_supplies",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 180,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 80,
+                    },
+                ],
+                "next": "wardrobe",
+                "text": {
+                    "en": "Complete quest and unlock collection.",
+                    "ru": "Завершить задание и открыть коллекцию.",
+                },
+            },
+        ],
+        "id": "atelier_supplies_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "stylist",
+                "speaker": {
+                    "en": "Silas",
+                    "ru": "Сайлас",
+                },
+                "text": {
+                    "en": "That\'s the shade! I\'ve memorized it; keep the shards. The collection is ready and every detail is yours. Don\'t choose the correct one. Choose your own.",
+                    "ru": "Вот этот оттенок! Я запомнил его — осколки оставь себе. Коллекция готова, и все детали теперь твои. Не выбирай «правильную». Выбирай свою.",
+                },
+            },
+        ],
+    },
+    /*[60]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "atelier_courage",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 260,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 120,
+                    },
+                    /*[3]*/ {
+                        "flag": "atelier_restored",
+                        "kind": "flag",
+                    },
+                ],
+                "text": {
+                    "en": "For our quarter.",
+                    "ru": "За наш квартал.",
+                },
+            },
+        ],
+        "id": "atelier_courage_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "stylist",
+                "speaker": {
+                    "en": "Silas",
+                    "ru": "Сайлас",
+                },
+                "text": {
+                    "en": "You came back. The city will remember your victory; I\'ll remember that you stayed yourself. This square has room for armor and ribbons, without anyone having to justify either.",
+                    "ru": "Ты вернулся. Город заметит твою победу, а я замечу, что ты остался собой. На этой площади будут носить и броню, и банты — без необходимости оправдываться.",
+                },
+            },
+        ],
+    },
+    /*[61]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "tea_work",
+                "text": {
+                    "en": "Need a hand?",
+                    "ru": "Нужна помощь?",
+                },
+            },
+            /*[1]*/ {
+                "next": "tea_news",
+                "text": {
+                    "en": "What\'s happening around here?",
+                    "ru": "Что слышно в квартале?",
+                },
+            },
+            /*[2]*/ {
+                "text": {
+                    "en": "See you.",
+                    "ru": "До встречи.",
+                },
+            },
+        ],
+        "id": "tea_intro",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ren",
+                "speaker": {
+                    "en": "Ren",
+                    "ru": "Рен",
+                },
+                "text": {
+                    "en": "Leave the rush outside. I\'m Ren. Armor, lace, or both are welcome here. Just keep a hot plasma gun off the table.",
+                    "ru": "Оставь суету у порога. Я Рен. В моей чайной можно прийти в броне, кружеве или в обоих сразу. Главное — не ставь раскалённый плазмаган на стол.",
+                },
+            },
+        ],
+    },
+    /*[62]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "Thanks. Now I know where to go.",
+                    "ru": "Спасибо, теперь знаю, куда идти.",
+                },
+            },
+        ],
+        "id": "tea_news",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ren",
+                "speaker": {
+                    "en": "Ren",
+                    "ru": "Рен",
+                },
+                "text": {
+                    "en": "Silas opened his atelier across the square; look for the scissors sign. Mika waits on the southern road; hounds block his western route. The catacomb gate stands north. Speak to the warden before your first descent.",
+                    "ru": "Сайлас открыл ателье через площадь — ищи ножницы над входом. Мика ждёт на южной дороге: его посылки застряли из-за гончих на западе. А к северу стоят врата катакомб. Сначала поговори со смотрителем, если идёшь туда впервые.",
+                },
+            },
+        ],
+    },
+    /*[63]*/ {
+        "id": "tea_work",
+        "lines": [
+            /*[0]*/ {
+                "speaker": "Рен",
+                "text": {
+                    "en": "Here\'s what needs doing.",
+                    "ru": "Вот что нужно сделать.",
+                },
+            },
+        ],
+    },
+    /*[64]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "courier_work",
+                "text": {
+                    "en": "I\'ll help clear the road.",
+                    "ru": "Помогу открыть дорогу.",
+                },
+            },
+            /*[1]*/ {
+                "next": "courier_rest",
+                "text": {
+                    "en": "Where can I take a break?",
+                    "ru": "Где здесь можно передохнуть?",
+                },
+            },
+            /*[2]*/ {
+                "text": {
+                    "en": "Stay safe.",
+                    "ru": "Береги себя.",
+                },
+            },
+        ],
+        "id": "courier_intro",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "mika",
+                "speaker": {
+                    "en": "Mika",
+                    "ru": "Мика",
+                },
+                "text": {
+                    "en": "I\'m Mika. I usually deliver letters before the tea gets cold. Today hounds took over the western road. My bag holds medicine and cloth, not monster bait.",
+                    "ru": "Я Мика. Обычно доставляю письма быстрее, чем успевает остыть чай. Сегодня западную дорогу заняли гончие. В сумке лекарства и ткань, а не приманка для чудовищ.",
+                },
+            },
+        ],
+    },
+    /*[65]*/ {
+        "id": "courier_work",
+        "lines": [
+            /*[0]*/ {
+                "speaker": "Мика",
+                "text": {
+                    "en": "About the route.",
+                    "ru": "Расскажу про дорогу.",
+                },
+            },
+        ],
+    },
+    /*[66]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "You have good neighbors.",
+                    "ru": "Хорошие у тебя соседи.",
+                },
+            },
+        ],
+        "id": "courier_rest",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "mika",
+                "speaker": {
+                    "en": "Mika",
+                    "ru": "Мика",
+                },
+                "text": {
+                    "en": "Ren\'s tea house. He remembers everyone\'s favorite tea. Silas once repaired my coat before a run and added this teal ribbon. Says speed should look beautiful.",
+                    "ru": "У Рена в чайной. Он запоминает любимый чай каждого. А Сайлас однажды зашил мне куртку прямо перед рейсом — и добавил вот эту бирюзовую ленту. Говорит, скорость должна выглядеть красиво.",
+                },
+            },
+        ],
+    },
+    /*[67]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "giver:ivo",
+                "text": {
+                    "en": "How can I help?",
+                    "ru": "Чем могу помочь?",
+                },
+            },
+            /*[1]*/ {
+                "next": "neighbors_ivo_craft",
+                "text": {
+                    "en": "Tell me about your craft.",
+                    "ru": "Расскажи о своём деле.",
+                },
+            },
+            /*[2]*/ {
+                "next": "neighbors_ivo_city",
+                "text": {
+                    "en": "How is the quarter doing?",
+                    "ru": "Как живёт квартал?",
+                },
+            },
+            /*[3]*/ {
+                "next": "neighbors_ivo_style",
+                "text": {
+                    "en": "Your style and technology?",
+                    "ru": "Твой стиль и технологии?",
+                },
+            },
+            /*[4]*/ {
+                "text": {
+                    "en": "See you.",
+                    "ru": "До встречи.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "I\'m Ivo, the florist. These roses survived two blackouts and a raid. Now I water them on a schedule, not whenever inspiration strikes.",
+                    "ru": "Я Иво, флорист. Эти розы пережили два отключения света и один налёт. Теперь я поливаю их по расписанию, а не по настроению.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "I used to hide my lace apron under a work jacket. Then I realized other people\'s disapproval would never make my hands more skilled.",
+                    "ru": "Раньше я прятал кружевной фартук под рабочей курткой. Потом понял: чужое неодобрение не сделает мои руки умелее.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "I gave the first bouquet in my new shop to myself. Awkward? A little. But I finally stopped waiting for permission to be happy.",
+                    "ru": "Первый букет в новой лавке я подарил самому себе. Неловко? Немного. Зато впервые не ждал повода, который разрешит мне радоваться.",
+                },
+            },
+        ],
+    },
+    /*[68]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_ivo",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo_craft",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "A neon-edged rose has cool petals. Glowing doesn\'t mean it needs electricity; it stores light during the day.",
+                    "ru": "У розы с неоновым краем лепестки холодные. Свечение не означает, что ей нужен ток: она накапливает свет днём.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Ren gets small arrangements without a strong scent. Tea should smell like tea; flowers shouldn\'t argue with it.",
+                    "ru": "Для Рена я собираю маленькие букеты без сильного запаха. Чай должен пахнуть чаем, а цветы — не спорить с ним.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Buying flowers for a boy? Ask what he likes. There is no universal bouquet for every gentle person.",
+                    "ru": "Хочешь подарить цветы парню — спроси, что ему нравится. Не существует универсального букета для всех нежных людей.",
+                },
+            },
+        ],
+    },
+    /*[69]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_ivo",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo_city",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Yves grows plants by the southern road. I sell cut flowers; he lets them stay alive. We disagree and get along beautifully.",
+                    "ru": "Ив выращивает зелень у южной дороги. Я продаю срезанные цветы, он даёт им остаться живыми. Мы спорим и прекрасно ладим.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Emil saves flour paper for me. It makes good wrapping. Little exchanges like that keep the city together.",
+                    "ru": "Эмиль откладывает для меня бумагу от муки. Из неё выходят хорошие обёртки: город держится на таких мелочах.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "When Mika brings a letter with no return address, I don\'t guess who wrote it. Other people\'s affection doesn\'t have to become public news.",
+                    "ru": "Когда Мика приносит письмо без обратного адреса, я не гадаю, кто его написал. Чужая нежность не обязана быть городской новостью.",
+                },
+            },
+        ],
+    },
+    /*[70]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "giver:noel",
+                "text": {
+                    "en": "How can I help?",
+                    "ru": "Чем могу помочь?",
+                },
+            },
+            /*[1]*/ {
+                "next": "neighbors_noel_craft",
+                "text": {
+                    "en": "Tell me about your craft.",
+                    "ru": "Расскажи о своём деле.",
+                },
+            },
+            /*[2]*/ {
+                "next": "neighbors_noel_city",
+                "text": {
+                    "en": "How is the quarter doing?",
+                    "ru": "Как живёт квартал?",
+                },
+            },
+            /*[3]*/ {
+                "next": "neighbors_noel_style",
+                "text": {
+                    "en": "Your style and technology?",
+                    "ru": "Твой стиль и технологии?",
+                },
+            },
+            /*[4]*/ {
+                "text": {
+                    "en": "See you.",
+                    "ru": "До встречи.",
+                },
+            },
+        ],
+        "id": "neighbors_noel",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Noel. Archivist. If you hear me talking to a book, don\'t interrupt. Sometimes that\'s the only way to catch a copyist\'s mistake.",
+                    "ru": "Ноэль. Архивист. Если слышишь, что я разговариваю с книгой, не мешай: иногда это единственный способ поймать ошибку переписчика.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "An old inventory called my waistcoat women\'s clothing. I corrected it to velvet. The fabric was wrong; the rest is irrelevant to cataloguing.",
+                    "ru": "В старой описи мой жилет назвали женским. Я исправил запись на бархатный. Ткань описали неверно; всё остальное к учёту не относится.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "I preserve more than heroic deeds. Shopping lists will tell our descendants more about us than another statue of a man with a sword.",
+                    "ru": "Я сохраняю не только подвиги. Списки покупок расскажут потомкам о нас больше, чем ещё один памятник человеку с мечом.",
+                },
+            },
+        ],
+    },
+    /*[71]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_noel",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_noel_craft",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Never dry a soaked page over an open flame. Separate the pages with clean paper and call me. Patience costs less than lost memory.",
+                    "ru": "Залитую страницу нельзя сушить над открытым огнём. Проложи листы чистой бумагой и позови меня. Терпение дешевле утраченной памяти.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Researchers repeat one another sometimes. That isn\'t necessarily a lie; two people may have seen the same event from different angles.",
+                    "ru": "В заметках исследователей встречаются повторы. Это не обязательно ложь: двое могли увидеть одно и то же с разных сторон.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "I keep a shelf for unfinished stories. A blank final page is better than an invented happy ending.",
+                    "ru": "У меня есть полка для незаконченных историй. Пустая последняя страница лучше выдуманного счастливого конца.",
+                },
+            },
+        ],
+    },
+    /*[72]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_noel",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_noel_city",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Lucien thinks I come for the silence between songs. I come for the songs. I\'m simply bad at saying that elegantly.",
+                    "ru": "Люсьен думает, что я прихожу слушать его ради тишины между песнями. Я прихожу ради песен. Просто не умею красиво об этом сказать.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Ask the scientist about catacomb echoes. A recording isn\'t a memory; not every voice in a wall deserves your trust.",
+                    "ru": "У учёного спроси про эхо в катакомбах. Запись и воспоминание — разные вещи; не всякому голосу из стены стоит доверять.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "If you find someone\'s name, don\'t erase it for a prettier inscription. This city has restarted its history too often.",
+                    "ru": "Если найдёшь чьё-то имя, не стирай его ради более красивой надписи. Город уже слишком часто начинал историю заново.",
+                },
+            },
+        ],
+    },
+    /*[73]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "giver:lucien",
+                "text": {
+                    "en": "How can I help?",
+                    "ru": "Чем могу помочь?",
+                },
+            },
+            /*[1]*/ {
+                "next": "neighbors_lucien_craft",
+                "text": {
+                    "en": "Tell me about your craft.",
+                    "ru": "Расскажи о своём деле.",
+                },
+            },
+            /*[2]*/ {
+                "next": "neighbors_lucien_city",
+                "text": {
+                    "en": "How is the quarter doing?",
+                    "ru": "Как живёт квартал?",
+                },
+            },
+            /*[3]*/ {
+                "next": "neighbors_lucien_style",
+                "text": {
+                    "en": "Your style and technology?",
+                    "ru": "Твой стиль и технологии?",
+                },
+            },
+            /*[4]*/ {
+                "text": {
+                    "en": "See you.",
+                    "ru": "До встречи.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "I\'m Lucien. I play here in the evenings. I practice by day because people deserve good music, not because inspiration arrived.",
+                    "ru": "Я Люсьен. Играю здесь по вечерам. Днём репетирую не потому, что вдохновение пришло, а потому, что вечером люди заслуживают хорошую музыку.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "I remember my first performance in stockings better than my first concert. My hands shook. Ren brought water and asked for another song.",
+                    "ru": "Первое выступление в чулках я помню лучше первого концерта. Руки дрожали, смычок скрипел. Рен просто принёс воды и попросил следующую песню.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Now I choose clothes by how comfortably I can hold my violin. Sometimes courage looks like a properly hemmed sleeve.",
+                    "ru": "Теперь я выбираю одежду по тому, удобно ли держать скрипку. Иногда смелость выглядит как правильно подшитый рукав.",
+                },
+            },
+        ],
+    },
+    /*[74]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_lucien",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien_craft",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Catacombs return sound with a delay. Don\'t match your steps to an echo; it knows where you were, not where it\'s safe.",
+                    "ru": "Катакомбы возвращают звук с задержкой. Не подстраивай шаг под эхо: оно знает, где ты был, а не где безопасно.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "My violin cracked during the evacuation. Ash reinforced its case and Silas replaced the lining. That\'s why I\'m never truly alone on stage.",
+                    "ru": "Моя скрипка треснула во время эвакуации. Эш укрепил футляр, Сайлас сменил подкладку. Поэтому на сцене нас всегда немного больше одного.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "I never try to outplay a siren. When an alarm starts, the music stops. People need to hear their way home.",
+                    "ru": "Я не играю громче сирены. Когда начинается тревога, музыка останавливается. Люди должны услышать дорогу домой.",
+                },
+            },
+        ],
+    },
+    /*[75]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_lucien",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien_city",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Noel stands at the edge and pretends to read. He turns a page at exactly the same point in every song.",
+                    "ru": "Ноэль стоит с краю и делает вид, что читает. Каждый раз переворачивает страницу в одном и том же месте песни.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Emil asked for a cheerful tune for his queue. I wrote a short one so nobody could learn it well enough to hate it.",
+                    "ru": "Эмиль просит весёлую мелодию для очереди. Я написал короткую — чтобы никто не успел выучить её и возненавидеть.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "The neighborhood evening will happen when it\'s safe. Posters can wait; living listeners matter more than a beautiful schedule.",
+                    "ru": "Вечер квартала начнётся, когда будет безопасно. Афиши могут подождать; живые слушатели важнее красивого расписания.",
+                },
+            },
+        ],
+    },
+    /*[76]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "giver:ash",
+                "text": {
+                    "en": "How can I help?",
+                    "ru": "Чем могу помочь?",
+                },
+            },
+            /*[1]*/ {
+                "next": "neighbors_ash_craft",
+                "text": {
+                    "en": "Tell me about your craft.",
+                    "ru": "Расскажи о своём деле.",
+                },
+            },
+            /*[2]*/ {
+                "next": "neighbors_ash_city",
+                "text": {
+                    "en": "How is the quarter doing?",
+                    "ru": "Как живёт квартал?",
+                },
+            },
+            /*[3]*/ {
+                "next": "neighbors_ash_style",
+                "text": {
+                    "en": "Your style and technology?",
+                    "ru": "Твой стиль и технологии?",
+                },
+            },
+            /*[4]*/ {
+                "text": {
+                    "en": "See you.",
+                    "ru": "До встречи.",
+                },
+            },
+        ],
+        "id": "neighbors_ash",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Ash. I repair lights and other people\'s hasty decisions. If a lamp hisses, step away. If I hiss, bring tea.",
+                    "ru": "Эш. Ремонтирую свет и чужие поспешные решения. Если лампа шипит, отойди. Если шиплю я — принеси чай.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Silas gave me the pink ribbon on my sleeve. It\'s short enough to stay out of machinery. Beauty gets along with safety just fine.",
+                    "ru": "Розовую ленту на рукаве подарил Сайлас. Она короткая и не попадает в механизм. Красота прекрасно уживается с техникой безопасности.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "My father wanted me to become a serious person. I became an electrician, and the woman I already knew myself to be. He accepted the first part sooner.",
+                    "ru": "Отец хотел, чтобы я стала серьёзным человеком. Я стала электриком. И женщиной, которой давно себя знала. С первым он согласился быстрее.",
+                },
+            },
+        ],
+    },
+    /*[77]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_ash",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_ash_craft",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Some neon shards are stable. I compare their glow with the lamps; you can keep the samples.",
+                    "ru": "Неоновые осколки бывают стабильными. Я сравниваю их свечение с лампами — сами образцы можешь оставить себе.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "First I disconnect the circuit, then I repair it. A heroic leap into sparks looks bad in an accident report.",
+                    "ru": "Сначала я отключаю линию, потом чиню. Героический прыжок в искры плохо смотрится в отчёте о несчастном случае.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "If the entire quarter flickers together, one lamp isn\'t the problem. Look for a shared cause, not the most visible fault.",
+                    "ru": "Если весь квартал мигает одновременно, дело не в одной лампе. Ищи общую причину, а не самую заметную поломку.",
+                },
+            },
+        ],
+    },
+    /*[78]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_ash",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_ash_city",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Ren keeps a handleless mug for me. I broke it myself. Before each repair it reminds me not to rush.",
+                    "ru": "Рен держит для меня кружку без ручки. Я сам её разбил и теперь вспоминаю об этом перед каждым ремонтом: торопиться не надо.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Mika knows where rainwater pools. A courier\'s route can be more useful than an old engineering plan.",
+                    "ru": "Мика знает, где во время дождя скапливается вода. Маршрут курьера иногда полезнее старого инженерного плана.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "One day I want to walk down this street without noticing a single lamp. When everything works, good work is nearly invisible.",
+                    "ru": "Хочу однажды пройти по улице и не заметить ни одной лампы. Когда всё работает, хорошая работа почти невидима.",
+                },
+            },
+        ],
+    },
+    /*[79]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "giver:emil",
+                "text": {
+                    "en": "How can I help?",
+                    "ru": "Чем могу помочь?",
+                },
+            },
+            /*[1]*/ {
+                "next": "neighbors_emil_craft",
+                "text": {
+                    "en": "Tell me about your craft.",
+                    "ru": "Расскажи о своём деле.",
+                },
+            },
+            /*[2]*/ {
+                "next": "neighbors_emil_city",
+                "text": {
+                    "en": "How is the quarter doing?",
+                    "ru": "Как живёт квартал?",
+                },
+            },
+            /*[3]*/ {
+                "next": "neighbors_emil_style",
+                "text": {
+                    "en": "Your style and technology?",
+                    "ru": "Твой стиль и технологии?",
+                },
+            },
+            /*[4]*/ {
+                "text": {
+                    "en": "See you.",
+                    "ru": "До встречи.",
+                },
+            },
+        ],
+        "id": "neighbors_emil",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "I\'m Emil. The bread is still hot; the news has gone cold. Eat first, then we\'ll decide how terrible everything is.",
+                    "ru": "Я Эмиль. Хлеб ещё горячий, а новости уже остыли. Сначала поешь, потом решим, насколько всё ужасно.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "People said lace didn\'t suit broad shoulders. I ordered an apron that fit. The problem was the pattern, not me.",
+                    "ru": "Мне говорили, что кружево не подходит широким плечам. Я заказал фартук по размеру. Проблема оказалась в выкройке, а не во мне.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "After the first night of shelling I baked too much. Neighbors arrived with empty pots, and suddenly nothing was left over.",
+                    "ru": "После первой ночи обстрела я испёк слишком много. Соседи пришли с пустыми кастрюлями, и внезапно ничего лишнего не осталось.",
+                },
+            },
+        ],
+    },
+    /*[80]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_emil",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_emil_craft",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "You can\'t threaten dough into rising. It\'s useful to work with something that couldn\'t care less about your rank.",
+                    "ru": "Тесто нельзя заставить подняться угрозами. Иногда полезно работать с чем-то, чему совершенно безразлично твоё звание.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Ren wants plain buns. Lucien wants double icing. I mark their baskets with colored ribbons so I don\'t mix them up.",
+                    "ru": "Рен просит булочки без глазури. Люсьен просит с двойной. Я помечаю корзины цветными лентами, чтобы не перепутать.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "I don\'t throw bread away at closing. The medic takes some; the rest becomes rusks. Yesterday\'s loaf still has a job.",
+                    "ru": "В конце дня хлеб не выбрасываю. Часть забирает медик, часть идёт в сухари. У вчерашней буханки ещё есть работа.",
+                },
+            },
+        ],
+    },
+    /*[81]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_emil",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_emil_city",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Mika\'s bag is heavy. I don\'t secretly add food; I ask if there\'s room. Help should be convenient too.",
+                    "ru": "У Мики тяжёлая сумка. Я не подкладываю еду тайком: спрашиваю, есть ли место. Помощь тоже должна быть удобной.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Ivo brings flowers for the counter. Customers linger and the queue grumbles. I think that\'s a good sign.",
+                    "ru": "Иво приносит цветы на прилавок. Покупатели задерживаются, и очередь ворчит. Наверное, это хороший признак.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "When the road is quieter, we\'ll share a table. Not a victor\'s banquet, just supper for everyone who made it through the day.",
+                    "ru": "Когда дорога станет тише, устроим общий стол. Не пир в честь победителя, а ужин для тех, кто дожил до вечера.",
+                },
+            },
+        ],
+    },
+    /*[82]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "giver:yves",
+                "text": {
+                    "en": "How can I help?",
+                    "ru": "Чем могу помочь?",
+                },
+            },
+            /*[1]*/ {
+                "next": "neighbors_yves_craft",
+                "text": {
+                    "en": "Tell me about your craft.",
+                    "ru": "Расскажи о своём деле.",
+                },
+            },
+            /*[2]*/ {
+                "next": "neighbors_yves_city",
+                "text": {
+                    "en": "How is the quarter doing?",
+                    "ru": "Как живёт квартал?",
+                },
+            },
+            /*[3]*/ {
+                "next": "neighbors_yves_style",
+                "text": {
+                    "en": "Your style and technology?",
+                    "ru": "Твой стиль и технологии?",
+                },
+            },
+            /*[4]*/ {
+                "text": {
+                    "en": "See you.",
+                    "ru": "До встречи.",
+                },
+            },
+        ],
+        "id": "neighbors_yves",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Yves. A gardener without a garden, for now. I\'m starting with boxes. Roots need soil, not a grand proposal.",
+                    "ru": "Ив. Садовник без сада — пока. Начинаю с ящиков: корням не нужен торжественный проект, им нужна земля.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "A skirt is more practical than it looks. I tie the hem up for work and shake the soil off afterward. Silas added deep pockets.",
+                    "ru": "Юбка удобнее, чем кажется. Для работы я подвязываю подол, а после просто стряхиваю землю. Сайлас добавил глубокие карманы.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "My first seedling died here. I wrote down what I did wrong and planted another. Sometimes hope looks like a dull watering log.",
+                    "ru": "Первый росток здесь погиб. Я записал, что сделал неправильно, и посадил следующий. Надежда иногда похожа на скучный журнал полива.",
+                },
+            },
+        ],
+    },
+    /*[83]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_yves",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_yves_craft",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Glowing seeds make a lovely story. Real ones are smaller and look like dust. What matters isn\'t obvious at first glance.",
+                    "ru": "Светящиеся семена — красивая сказка. Настоящие гораздо меньше и выглядят как пыль. Главное в них не видно с первого взгляда.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Don\'t water plants with leftover sweet tea. Ren already warned his regulars, but I\'ll tell you too.",
+                    "ru": "Не поливай растения остатками сладкого чая. Рен уже предупредил постоянных гостей, но я повторю и тебе.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "I don\'t use catacomb soil without testing it. An eerie glow doesn\'t make it fertile. Let the scientist inspect it first.",
+                    "ru": "Землю из катакомб я не беру без проверки. Странное свечение не делает её плодородной. Пусть сначала посмотрит учёный.",
+                },
+            },
+        ],
+    },
+    /*[84]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_yves",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_yves_city",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Ivo thinks a flower should eventually reach someone\'s hands. I think walking past a living bush can be enough.",
+                    "ru": "Иво считает, что цветок должен однажды попасть в чьи-то руки. Я считаю, что иногда достаточно пройти мимо живого куста.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Ash offered grow lights. I asked him to fix the road first. Plants have no urgent evening errands; people do.",
+                    "ru": "Эш предложил подсветку для рассады. Я попросил сначала починить дорогу. У растений нет срочных вечерних дел, у людей есть.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "If we get a garden, I\'ll leave one corner without a sign. Not every place needs to explain itself.",
+                    "ru": "Если появится сад, я оставлю место без таблички. Не каждый уголок должен кому-то что-то объяснять.",
+                },
+            },
+        ],
+    },
+    /*[85]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Ask Ren on the east side of the square whether he wants flowers, then return to Ivo.",
+                            "ru": "Узнай у Рена, нужны ли цветы для чайной. Он стоит на восточной стороне площади. Вернись к Иво.",
+                        },
+                        "id": "neighbors_ivo_1",
+                        "kind": "quest",
+                        "title": {
+                            "en": "Flowers for Tea",
+                            "ru": "Цветы к чаю",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo_1_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "I don\'t want a huge bouquet to inconvenience his guests. Let\'s ask the host first.",
+                    "ru": "Не хочу принести огромный букет туда, где он помешает гостям. Сначала спросим хозяина.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Ask Ren on the east side of the square whether he wants flowers, then return to Ivo.",
+                    "ru": "Узнай у Рена, нужны ли цветы для чайной. Он стоит на восточной стороне площади. Вернись к Иво.",
+                },
+            },
+        ],
+    },
+    /*[86]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo_1_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Ask Ren on the east side of the square whether he wants flowers, then return to Ivo.",
+                    "ru": "Узнай у Рена, нужны ли цветы для чайной. Он стоит на восточной стороне площади. Вернись к Иво.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[87]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_ivo_1",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 90,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 45,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo_1_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "A small, unscented bouquet. Good thing we asked; I was already reaching for lilies.",
+                    "ru": "Небольшой букет, без сильного запаха. Хорошо, что спросили: я уже тянулся за лилиями.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[88]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Collect three neon shards after accepting. Ivo will study their glow; you keep them.",
+                            "ru": "Собери три неоновых осколка после принятия задания. Иво изучит цвет свечения; предметы останутся у тебя.",
+                        },
+                        "id": "neighbors_ivo_2",
+                        "kind": "quest",
+                        "title": {
+                            "en": "Light for Petals",
+                            "ru": "Свет для лепестков",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo_2_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "I want lighting that won\'t make roses look like plastic toys. I need real glow samples.",
+                    "ru": "Хочу подобрать подсветку, которая не превратит розы в пластиковые игрушки. Нужны образцы настоящего свечения.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Collect three neon shards after accepting. Ivo will study their glow; you keep them.",
+                    "ru": "Собери три неоновых осколка после принятия задания. Иво изучит цвет свечения; предметы останутся у тебя.",
+                },
+            },
+        ],
+    },
+    /*[89]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo_2_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Collect three neon shards after accepting. Ivo will study their glow; you keep them.",
+                    "ru": "Собери три неоновых осколка после принятия задания. Иво изучит цвет свечения; предметы останутся у тебя.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[90]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_ivo_2",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 240,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 110,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo_2_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Cool edges, warm centers. Now I know what to ask Ash for. The flowers won\'t need a blinding sign.",
+                    "ru": "Холодный край, тёплая середина. Теперь знаю, о чём попросить Эша. Цветы обойдутся без ослепительной вывески.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[91]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Speak with the scientist about catacomb voices, then return to Noel on the southern road.",
+                            "ru": "Поговори с учёным о голосах катакомб, затем вернись к Ноэлю на южной дороге.",
+                        },
+                        "id": "neighbors_noel_1",
+                        "kind": "quest",
+                        "title": {
+                            "en": "Witness over Rumor",
+                            "ru": "Свидетель вместо слуха",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_noel_1_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Three incompatible accounts reached the archive. Before copying them, I want an expert\'s opinion.",
+                    "ru": "В архив принесли три несовместимые версии одного события. Прежде чем переписывать, я хочу услышать специалиста.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Speak with the scientist about catacomb voices, then return to Noel on the southern road.",
+                    "ru": "Поговори с учёным о голосах катакомб, затем вернись к Ноэлю на южной дороге.",
+                },
+            },
+        ],
+    },
+    /*[92]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_noel_1_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Speak with the scientist about catacomb voices, then return to Noel on the southern road.",
+                    "ru": "Поговори с учёным о голосах катакомб, затем вернись к Ноэлю на южной дороге.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[93]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_noel_1",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 90,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 45,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_noel_1_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "I\'ll keep each account and record its source. Uncertainty is honest when you don\'t disguise it as fact.",
+                    "ru": "Оставлю все версии и отмечу источник каждой. Неизвестность — честная запись, если не выдавать её за факт.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[94]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Clear catacomb depth two and return to Noel. Earlier completion counts.",
+                            "ru": "Пройди второй ярус катакомб и вернись к Ноэлю. Ранее пройденный ярус засчитывается.",
+                        },
+                        "id": "neighbors_noel_2",
+                        "kind": "quest",
+                        "title": {
+                            "en": "A Verified Depth",
+                            "ru": "Достоверная глубина",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_noel_2_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "The map ends depth two at a dead end. Reports describe a battle. I need someone who actually went there.",
+                    "ru": "На плане второй ярус заканчивается тупиком. В отчётах — боем. Нужен человек, который действительно прошёл туда.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Clear catacomb depth two and return to Noel. Earlier completion counts.",
+                    "ru": "Пройди второй ярус катакомб и вернись к Ноэлю. Ранее пройденный ярус засчитывается.",
+                },
+            },
+        ],
+    },
+    /*[95]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_noel_2_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Clear catacomb depth two and return to Noel. Earlier completion counts.",
+                    "ru": "Пройди второй ярус катакомб и вернись к Ноэлю. Ранее пройденный ярус засчитывается.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[96]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_noel_2",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 240,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 110,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_noel_2_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "I\'ll record your account beside the old plan. Maps should warn the living, not protect their authors\' reputations.",
+                    "ru": "Запишу твой рассказ отдельно от старой схемы. Карта должна предупреждать живых, а не защищать репутацию автора.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[97]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Meet Noel by the southern road, then return to Lucien. No private letters need reading.",
+                            "ru": "Познакомься с Ноэлем у южной дороги и вернись к Люсьену. Не нужно читать чужие письма.",
+                        },
+                        "id": "neighbors_lucien_1",
+                        "kind": "quest",
+                        "title": {
+                            "en": "A Listener at the Edge",
+                            "ru": "Слушатель у края",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien_1_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Ask whether my rehearsals disturb the archive. Whenever I try, I end up talking about the weather.",
+                    "ru": "Спроси, удобно ли архиву, когда я репетирую рядом. Сам я каждый раз начинаю говорить о погоде.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Meet Noel by the southern road, then return to Lucien. No private letters need reading.",
+                    "ru": "Познакомься с Ноэлем у южной дороги и вернись к Люсьену. Не нужно читать чужие письма.",
+                },
+            },
+        ],
+    },
+    /*[98]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien_1_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Meet Noel by the southern road, then return to Lucien. No private letters need reading.",
+                    "ru": "Познакомься с Ноэлем у южной дороги и вернись к Люсьену. Не нужно читать чужие письма.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[99]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_lucien_1",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 90,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 45,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien_1_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "He comes for the music? Tomorrow I\'ll start softly, so he can hear it arrive.",
+                    "ru": "Он приходит ради музыки? Тогда завтра сыграю тише в начале, чтобы было слышно, как она появляется.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[100]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Clear the first catacomb depth and tell Lucien. A previous victory counts.",
+                            "ru": "Пройди первый ярус катакомб и сообщи Люсьену. Предыдущая победа тоже подходит.",
+                        },
+                        "id": "neighbors_lucien_2",
+                        "kind": "quest",
+                        "title": {
+                            "en": "A Pause before the Concert",
+                            "ru": "Пауза перед концертом",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien_2_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "I won\'t announce a celebration while people fear the nearest gate. Tell me when the first guardian falls.",
+                    "ru": "Не хочу назначать праздник, пока люди боятся ближайших врат. Расскажи, когда первый страж будет побеждён.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Clear the first catacomb depth and tell Lucien. A previous victory counts.",
+                    "ru": "Пройди первый ярус катакомб и сообщи Люсьену. Предыдущая победа тоже подходит.",
+                },
+            },
+        ],
+    },
+    /*[101]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien_2_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Clear the first catacomb depth and tell Lucien. A previous victory counts.",
+                    "ru": "Пройди первый ярус катакомб и сообщи Люсьену. Предыдущая победа тоже подходит.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[102]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_lucien_2",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 240,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 110,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien_2_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Good. I\'ll start with a short performance. People need time to remember a loud sound can bring good news.",
+                    "ru": "Хорошо. Начну с короткого выступления. Людям нужно время привыкнуть, что громкий звук бывает хорошей новостью.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[103]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Ask Mika at the southern entrance about his route, then return to Ash.",
+                            "ru": "Поговори с Микой у южного входа на площадь о его маршруте, затем вернись к Эшу.",
+                        },
+                        "id": "neighbors_ash_1",
+                        "kind": "quest",
+                        "title": {
+                            "en": "A Dry Route",
+                            "ru": "Маршрут сухих ног",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_ash_1_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Old plans don\'t show puddles. A courier\'s mental map will. Ask him about the dangerous spots.",
+                    "ru": "На старом плане луж нет. У курьера они наверняка есть. Попроси показать опасные места.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Ask Mika at the southern entrance about his route, then return to Ash.",
+                    "ru": "Поговори с Микой у южного входа на площадь о его маршруте, затем вернись к Эшу.",
+                },
+            },
+        ],
+    },
+    /*[104]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_ash_1_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Ask Mika at the southern entrance about his route, then return to Ash.",
+                    "ru": "Поговори с Микой у южного входа на площадь о его маршруте, затем вернись к Эшу.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[105]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_ash_1",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 90,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 45,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_ash_1_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "The southern turn first, then. It\'s good to hear from someone who walks across our work every day.",
+                    "ru": "Значит, сначала южный поворот. Приятно получить совет от того, кто каждый день ходит по нашей работе.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[106]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Find three new neon shards after accepting. Ash examines them; they remain in your inventory.",
+                            "ru": "Найди три новых неоновых осколка после принятия. После осмотра Эшем они останутся в инвентаре.",
+                        },
+                        "id": "neighbors_ash_2",
+                        "kind": "quest",
+                        "title": {
+                            "en": "Lamp Samples",
+                            "ru": "Образцы для фонарей",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_ash_2_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "I need steady brightness, not the strongest flash. Bring three samples for comparison.",
+                    "ru": "Мне нужна стабильная яркость, а не самый сильный всплеск. Принеси три образца для сравнения.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Find three new neon shards after accepting. Ash examines them; they remain in your inventory.",
+                    "ru": "Найди три новых неоновых осколка после принятия. После осмотра Эшем они останутся в инвентаре.",
+                },
+            },
+        ],
+    },
+    /*[107]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_ash_2_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Find three new neon shards after accepting. Ash examines them; they remain in your inventory.",
+                    "ru": "Найди три новых неоновых осколка после принятия. После осмотра Эшем они останутся в инвентаре.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[108]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_ash_2",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 240,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 110,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_ash_2_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "These work as references. Keep them; I needed observations, not another dangerous box.",
+                    "ru": "Эти годятся как эталон. Оставь осколки себе — мне нужны были наблюдения, а не ещё одна опасная коробка.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[109]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Confirm Ren\'s order at the tea house and return to Emil.",
+                            "ru": "Уточни заказ в чайной Рена на площади и вернись к Эмилю.",
+                        },
+                        "id": "neighbors_emil_1",
+                        "kind": "quest",
+                        "title": {
+                            "en": "An Order without Icing",
+                            "ru": "Заказ без глазури",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_emil_1_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "I remember he dislikes sweets, but not how many guests he expects. Better ask than bake blindly.",
+                    "ru": "Я помню, что он не любит сладкое, но не помню, сколько гостей ждёт. Лучше спросить, чем испечь наугад.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Confirm Ren\'s order at the tea house and return to Emil.",
+                    "ru": "Уточни заказ в чайной Рена на площади и вернись к Эмилю.",
+                },
+            },
+        ],
+    },
+    /*[110]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_emil_1_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Confirm Ren\'s order at the tea house and return to Emil.",
+                    "ru": "Уточни заказ в чайной Рена на площади и вернись к Эмилю.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[111]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_emil_1",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 90,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 45,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_emil_1_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "I\'ll make a small batch and keep flour for morning. Caring also means not promising more than you can manage.",
+                    "ru": "Сделаю небольшую партию и оставлю муку на утро. Забота — это ещё и не обещать больше, чем успеешь.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[112]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "After accepting, defeat three blood hounds on the western outskirts or in the catacombs. Return to Emil.",
+                            "ru": "После принятия победи трёх кровавых гончих на западной окраине или в катакомбах. Вернись к Эмилю.",
+                        },
+                        "id": "neighbors_emil_2",
+                        "kind": "quest",
+                        "title": {
+                            "en": "A Safer Shared Table",
+                            "ru": "Безопасный общий стол",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_emil_2_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "I can set a table, not fight a pack. Help reduce the danger along the supply road.",
+                    "ru": "Я умею накрывать на стол, но не отбиваться от стаи. Помоги уменьшить угрозу на дороге с припасами.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "After accepting, defeat three blood hounds on the western outskirts or in the catacombs. Return to Emil.",
+                    "ru": "После принятия победи трёх кровавых гончих на западной окраине или в катакомбах. Вернись к Эмилю.",
+                },
+            },
+        ],
+    },
+    /*[113]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_emil_2_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "After accepting, defeat three blood hounds on the western outskirts or in the catacombs. Return to Emil.",
+                    "ru": "После принятия победи трёх кровавых гончих на западной окраине или в катакомбах. Вернись к Эмилю.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[114]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_emil_2",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 240,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 110,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_emil_2_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "We can carry baskets without running today. I\'ll still post a lookout; three defeated beasts don\'t mean lasting peace.",
+                    "ru": "Сегодня можно донести корзины без бега. Я всё равно оставлю часового: три побеждённых зверя ещё не означают вечный мир.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[115]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Talk to Ivo about flowers for the shared courtyard and return to Yves by the southern road.",
+                            "ru": "Обсуди с Иво цветы для общего двора и вернись к Иву у южной дороги.",
+                        },
+                        "id": "neighbors_yves_1",
+                        "kind": "quest",
+                        "title": {
+                            "en": "A Neighbor in Bloom",
+                            "ru": "Сосед по клумбе",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_yves_1_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "I want a living flowerbed, not a beauty contest. Let\'s talk before picking up shovels.",
+                    "ru": "Хочу живую клумбу, а не спор о том, чьи растения красивее. Начнём с разговора, пока не взялись за лопаты.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Talk to Ivo about flowers for the shared courtyard and return to Yves by the southern road.",
+                    "ru": "Обсуди с Иво цветы для общего двора и вернись к Иву у южной дороги.",
+                },
+            },
+        ],
+    },
+    /*[116]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_yves_1_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Talk to Ivo about flowers for the shared courtyard and return to Yves by the southern road.",
+                    "ru": "Обсуди с Иво цветы для общего двора и вернись к Иву у южной дороги.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[117]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_yves_1",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 90,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 45,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_yves_1_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "We\'ll leave room for roses and ordinary grass. A shared courtyard needn\'t reflect only my taste.",
+                    "ru": "Оставим место и розам, и простой траве. Если двор общий, он не обязан целиком походить на мой вкус.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[118]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "desc": {
+                            "en": "Clear catacomb depth three and return to Yves. Earlier completion counts.",
+                            "ru": "Пройди третий ярус катакомб и вернись к Иву. Уже пройденная глубина учитывается.",
+                        },
+                        "id": "neighbors_yves_2",
+                        "kind": "quest",
+                        "title": {
+                            "en": "Ground beneath Our Feet",
+                            "ru": "Земля под ногами",
+                        },
+                    },
+                ],
+                "text": {
+                    "en": "I\'ll help.",
+                    "ru": "Я помогу.",
+                },
+            },
+            /*[1]*/ {
+                "text": {
+                    "en": "Not yet.",
+                    "ru": "Пока не готов.",
+                },
+            },
+        ],
+        "id": "neighbors_yves_2_offer",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "After tremors from below, I check every planter. I need to know what\'s happening before promising a large garden.",
+                    "ru": "После толчков из глубины я проверяю каждый ящик. Хочу знать, что там происходит, прежде чем обещать большой сад.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Clear catacomb depth three and return to Yves. Earlier completion counts.",
+                    "ru": "Пройди третий ярус катакомб и вернись к Иву. Уже пройденная глубина учитывается.",
+                },
+            },
+        ],
+    },
+    /*[119]*/ {
+        "choices": [
+            /*[0]*/ {
+                "text": {
+                    "en": "I\'ll be back.",
+                    "ru": "Вернусь позже.",
+                },
+            },
+        ],
+        "id": "neighbors_yves_2_progress",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Clear catacomb depth three and return to Yves. Earlier completion counts.",
+                    "ru": "Пройди третий ярус катакомб и вернись к Иву. Уже пройденная глубина учитывается.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Don\'t rush just for a report. I\'d rather you return in one piece.",
+                    "ru": "Не торопись ради отчёта. Мне важнее, чтобы ты вернулся целым.",
+                },
+            },
+        ],
+    },
+    /*[120]*/ {
+        "choices": [
+            /*[0]*/ {
+                "effects": [
+                    /*[0]*/ {
+                        "id": "neighbors_yves_2",
+                        "kind": "quest_done",
+                    },
+                    /*[1]*/ {
+                        "kind": "xp",
+                        "value": 240,
+                    },
+                    /*[2]*/ {
+                        "kind": "gold",
+                        "value": 110,
+                    },
+                ],
+                "text": {
+                    "en": "Collect reward.",
+                    "ru": "Забрать награду.",
+                },
+            },
+        ],
+        "id": "neighbors_yves_2_complete",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Thank you. I\'ll begin with a few sturdy planters. A garden won\'t grow in one conversation, but now I have a plan for tomorrow.",
+                    "ru": "Спасибо. Начну с нескольких крепких ящиков. Сад не вырастет за один разговор, но теперь у меня есть план на завтра.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Thank you for seeing it through. Here is your payment.",
+                    "ru": "Спасибо, что довёл дело до конца. Вот обещанная плата.",
+                },
+            },
+        ],
+    },
+    /*[121]*/ {
+        "id": "giver:ivo",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "Let\'s discuss neighborhood work.",
+                    "ru": "Поговорим о делах квартала.",
+                },
+            },
+        ],
+    },
+    /*[122]*/ {
+        "id": "giver:noel",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "Let\'s discuss neighborhood work.",
+                    "ru": "Поговорим о делах квартала.",
+                },
+            },
+        ],
+    },
+    /*[123]*/ {
+        "id": "giver:lucien",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "Let\'s discuss neighborhood work.",
+                    "ru": "Поговорим о делах квартала.",
+                },
+            },
+        ],
+    },
+    /*[124]*/ {
+        "id": "giver:ash",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Let\'s discuss neighborhood work.",
+                    "ru": "Поговорим о делах квартала.",
+                },
+            },
+        ],
+    },
+    /*[125]*/ {
+        "id": "giver:emil",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Let\'s discuss neighborhood work.",
+                    "ru": "Поговорим о делах квартала.",
+                },
+            },
+        ],
+    },
+    /*[126]*/ {
+        "id": "giver:yves",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "Let\'s discuss neighborhood work.",
+                    "ru": "Поговорим о делах квартала.",
+                },
+            },
+        ],
+    },
+    /*[127]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_ivo",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_ivo_style",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "I\'m a guy who likes mesh, eyeliner and roses. It isn\'t a stage act; I dress this way to buy groceries and repair the flower fridge.",
+                    "ru": "Я парень, которому нравятся сетка, подводка и розы. Это не сценический номер: я так хожу за продуктами и чиню холодильник для цветов.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "My apron has a humidity sensor and my ear a cheap communicator. A beautiful bouquet now also starts with a charged battery.",
+                    "ru": "На фартуке датчик влажности, в ухе дешёвый коммуникатор. Красивый букет теперь начинается ещё и с заряженного аккумулятора.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "ivo",
+                "speaker": {
+                    "en": "Ivo",
+                    "ru": "Иво",
+                },
+                "text": {
+                    "en": "I don\'t want our quarter to look like a museum display. Lace can share space with graffiti, cables and things we made ourselves.",
+                    "ru": "Не хочу, чтобы наш квартал выглядел музейной витриной. Пусть рядом с кружевом будут граффити, провода и вещи, которые мы сделали сами.",
+                },
+            },
+        ],
+    },
+    /*[128]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_noel",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_noel_style",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "I like a feminine look, but use he for me. If you forget, I\'ll correct you and we\'ll move on. This isn\'t an exam in perfect conversation.",
+                    "ru": "Мне нравится женственный образ, но называй меня он. Если забудешь — поправлю, и продолжим разговор. Экзамен на идеального собеседника я не принимаю.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "The archive lives on local drives. When the outside network fails, the city\'s memory shouldn\'t fail with it.",
+                    "ru": "Архив хранится на локальных накопителях. Когда внешняя сеть падает, память города не должна падать вместе с ней.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "noel",
+                "speaker": {
+                    "en": "Noel",
+                    "ru": "Ноэль",
+                },
+                "text": {
+                    "en": "My AR glasses show shelf numbers, not people\'s thoughts. Everyone seems determined to credit them with the second feature.",
+                    "ru": "AR-очки показывают номера полок, а не мысли людей. Вторую функцию кто-то постоянно пытается мне приписать.",
+                },
+            },
+        ],
+    },
+    /*[129]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_lucien",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_lucien_style",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "I like sissy style: bows, gloss, a short skirt and a lot of pink. For me it\'s a chosen look, not an invitation to talk down to me.",
+                    "ru": "Мне близок sissy-стиль: банты, глянец, короткая юбка, очень много розового. Для меня это собственный выбор образа, а не приглашение обращаться со мной свысока.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "I\'m a guy. Ash is a woman. We might wear similar chokers, but matching accessories don\'t make our stories identical.",
+                    "ru": "Я парень. Эш — женщина. Мы можем носить похожие чокеры, но одинаковые вещи не делают наши истории одинаковыми.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "lucien",
+                "speaker": {
+                    "en": "Lucien",
+                    "ru": "Люсьен",
+                },
+                "text": {
+                    "en": "My violin is electric and the rhythm comes from a little drum pad. I love a gentle melody meeting a dirty bass line.",
+                    "ru": "Скрипка электрическая, ритм идёт с маленького драм-пада. Люблю, когда нежная мелодия встречается с грязным басом.",
+                },
+            },
+        ],
+    },
+    /*[130]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_ash",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_ash_style",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "I\'m a trans woman. Around here I\'m Ash, the lighting technician. I\'ll discuss my transition when I choose to; faulty wiring can come straight to me.",
+                    "ru": "Я транс-женщина. Здесь меня знают как Эш, мастерицу по свету. О переходе расскажу, если сама захочу; с неисправной проводкой можешь обращаться сразу.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "My prosthetic runs open firmware. I won\'t let someone\'s subscription decide when I can use my own hand.",
+                    "ru": "На протезе открытая прошивка. Не хочу, чтобы чья-то подписка решала, когда мне пользоваться собственной рукой.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "ash",
+                "speaker": {
+                    "en": "Ash",
+                    "ru": "Эш",
+                },
+                "text": {
+                    "en": "Punk means repairing things, sharing schematics and not asking a corporation for permission to live beautifully.",
+                    "ru": "Панк для меня — уметь чинить, делиться схемами и не спрашивать у корпорации, разрешено ли нам жить красиво.",
+                },
+            },
+        ],
+    },
+    /*[131]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_emil",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_emil_style",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "Yes, I have piercings and a pink apron. No, that doesn\'t make dough rise faster. I checked; it cares more about temperature.",
+                    "ru": "Да, у меня пирсинг и розовый фартук. Нет, от этого тесто не поднимается быстрее. Я проверял: ему важнее температура.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "The oven has a digital controller, but the recipes also exist on paper. Breakfast should happen even when the screen goes dark.",
+                    "ru": "На печи цифровой контроллер, но рецепты записаны и на бумаге. Когда экран гаснет, завтрак всё равно должен состояться.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "emil",
+                "speaker": {
+                    "en": "Emil",
+                    "ru": "Эмиль",
+                },
+                "text": {
+                    "en": "My shirt is from a local band. They paid with a concert and I paid with buns. Both sides think they got the better deal.",
+                    "ru": "Моя футболка от местной группы. Они расплатились концертом, я — булочками. Кажется, обе стороны считают, что выиграли.",
+                },
+            },
+        ],
+    },
+    /*[132]*/ {
+        "choices": [
+            /*[0]*/ {
+                "next": "neighbors_yves",
+                "text": {
+                    "en": "Back to our conversation.",
+                    "ru": "Вернёмся к разговору.",
+                },
+            },
+        ],
+        "id": "neighbors_yves_style",
+        "lines": [
+            /*[0]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "I like skirts with utility pockets and heavy boots. One pocket holds lip gloss; another holds a soil pH sensor.",
+                    "ru": "Мне нравятся юбки с утилитарными карманами и тяжёлые ботинки. В одном кармане блеск для губ, в другом — датчик кислотности почвы.",
+                },
+            },
+            /*[1]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "The watering system works without a cloud service. If a company disappears, the plants shouldn\'t be the first to find out.",
+                    "ru": "Система полива работает без облачного сервиса. Если компания исчезнет, растения не должны узнавать об этом первыми.",
+                },
+            },
+            /*[2]*/ {
+                "portrait": "yves",
+                "speaker": {
+                    "en": "Yves",
+                    "ru": "Ив",
+                },
+                "text": {
+                    "en": "We don\'t have to choose between living gardens and technology. The question is who benefits and who can repair it.",
+                    "ru": "Мы не обязаны выбирать между живым садом и технологиями. Вопрос в том, кому эти технологии помогают и кто умеет их починить.",
+                },
+            },
+        ],
+    },
 ]

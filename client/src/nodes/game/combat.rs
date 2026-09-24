@@ -964,6 +964,7 @@ impl Game3D {
             .into(),
             payload: Payload::Heart,
             in_dungeon,
+            ground_offset: 0.55,
         });
     }
 
@@ -1289,7 +1290,9 @@ impl Game3D {
 
     /// Урон игроку с учётом уязвимости (weakened) + красный флэш.
     pub(super) fn damage_player(&mut self, amount: f32) {
-        let amount = amount * self.player_statuses.vuln_mult();
+        if self.creative { return; }
+        let guard = self.state.as_ref().map(|s| s.abilities.damage_scale()).unwrap_or(1.0);
+        let amount = amount * self.player_statuses.vuln_mult() * guard;
         if let Some(p_gd) = self.player() {
             if let Ok(mut player) = p_gd.try_cast::<Player>() {
                 player.bind_mut().take_damage(amount);
@@ -1337,7 +1340,8 @@ impl Game3D {
             self.damage_player(dot);
         }
         // замедление → множитель скорости; оглушение → флаг стана
-        let sm = self.player_statuses.slow_mult();
+        let sm = self.player_statuses.slow_mult()
+            * self.state.as_ref().map(|s| s.abilities.speed_scale()).unwrap_or(1.0);
         let stunned = self.player_statuses.stunned();
         if let Some(p_gd) = self.player() {
             if let Ok(mut player) = p_gd.try_cast::<Player>() {

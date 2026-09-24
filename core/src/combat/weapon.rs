@@ -387,6 +387,10 @@ pub struct WeaponDef {
     pub alt_fire: Option<AltFireDef>,
     /// Статус, накладываемый на врага при попадании: (id, шанс).
     pub status: Option<(String, f32)>,
+    /// Шанс критического попадания [0..1]. 0 — криты выключены.
+    pub crit_chance: f32,
+    /// Множитель урона при крите (>= 1.0). По умолчанию ×1.5.
+    pub crit_mult: f32,
 }
 
 impl WeaponDef {
@@ -507,6 +511,10 @@ struct WeaponRaw {
     alt_fire: Option<AltFireRaw>,
     #[serde(default)]
     status: Option<StatusRaw>,
+    #[serde(default)]
+    crit_chance: f32,
+    #[serde(default = "default_crit_mult")]
+    crit_mult: f32,
 }
 
 #[derive(Deserialize)]
@@ -673,6 +681,9 @@ fn default_reload_fps() -> f32 {
 fn default_reload_time() -> f32 {
     1.2
 }
+fn default_crit_mult() -> f32 {
+    1.5
+}
 
 impl WeaponRaw {
     fn into_def(self, id: WeaponId) -> Result<WeaponDef, String> {
@@ -789,6 +800,15 @@ impl WeaponRaw {
             || self.accuracy.crosshair_scale <= 0.0
         {
             return Err(format!("weapon '{}': invalid accuracy profile", self.id));
+        }
+        if !self.crit_chance.is_finite() || !(0.0..=1.0).contains(&self.crit_chance) {
+            return Err(format!(
+                "weapon '{}': crit_chance must be between 0 and 1",
+                self.id
+            ));
+        }
+        if !self.crit_mult.is_finite() || self.crit_mult < 1.0 {
+            return Err(format!("weapon '{}': crit_mult must be >= 1.0", self.id));
         }
         let alt_fire = self
             .alt_fire
@@ -925,6 +945,8 @@ impl WeaponRaw {
             },
             alt_fire,
             status: self.status.map(|s| (s.id, s.chance)),
+            crit_chance: self.crit_chance,
+            crit_mult: self.crit_mult,
         })
     }
 }

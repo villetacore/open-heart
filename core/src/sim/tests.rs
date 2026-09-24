@@ -143,6 +143,110 @@ fn hit_claim_damages_and_kills() {
 }
 
 #[test]
+fn crit_multiplies_damage_and_flags_event() {
+    // Пистолет в core-пресете имеет crit_chance > 0 — стреляя достаточно много
+    // раз по бессмертному манекену, обязаны увидеть и криты, и обычные попадания.
+    use crate::weapon::{weapon_def, WeaponId};
+
+    let mut state = delve(0xCA11_AB1E);
+    state.join(1, "crit".into());
+
+    let enemy_id = state.enemies[0].id;
+    let enemy_pos = state.enemies[0].pos;
+    // Делаем цель практически бессмертной, чтобы набрать выборку попаданий.
+    state.enemies[0].hp = 1.0e9;
+    state.enemies[0].max_hp = 1.0e9;
+    state.enemies[0].resist = [0.0; 4];
+    state.players.get_mut(&1).unwrap().pos = enemy_pos + Vec3::new(2.0, 0.0, 0.0);
+
+    let def = weapon_def(WeaponId::Pistol);
+    assert!(def.crit_chance > 0.0, "пистолет в пресете без крита — тест невалиден");
+    let base = def.damage; // resist обнулён выше
+    let crit_amount = base * def.crit_mult;
+
+    let claim = HitClaim {
+        tick: 1,
+        weapon: "pistol".into(),
+        target: enemy_id,
+        pos: enemy_pos,
+        part: 0,
+    };
+
+    let mut saw_crit = false;
+    let mut saw_normal = false;
+    for _ in 0..400 {
+        state.time += 1.0; // сброс кулдауна
+        let events = crate::sim::damage::apply_hit(&mut state, 1, &claim);
+        let dmg = events
+            .iter()
+            .find(|e| e.kind == event::DAMAGE)
+            .expect("попадание не засчитано");
+        let flagged = dmg
+            .extra
+            .as_ref()
+            .and_then(|v| v.get("crit"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        if flagged {
+            saw_crit = true;
+            assert!(
+                (dmg.amount - crit_amount).abs() < 0.01,
+                "крит-урон {} не равен base*mult {}",
+                dmg.amount,
+                crit_amount
+            );
+        } else {
+            saw_normal = true;
+            assert!(
+                (dmg.amount - base).abs() < 0.01,
+                "обычный урон {} не равен base {}",
+                dmg.amount,
+                base
+            );
+        }
+    }
+    assert!(saw_crit, "за 400 выстрелов ни одного крита");
+    assert!(saw_normal, "все выстрелы оказались критами — подозрительно");
+}
+
+#[test]
+fn crit_rolls_are_deterministic_per_seed() {
+    // Один сид — одинаковая последовательность критов (клиент и сервер не расходятся).
+    fn crit_sequence(seed: u64) -> Vec<bool> {
+        let mut state = delve(seed);
+        state.join(1, "det".into());
+        let enemy_id = state.enemies[0].id;
+        let enemy_pos = state.enemies[0].pos;
+        state.enemies[0].hp = 1.0e9;
+        state.enemies[0].max_hp = 1.0e9;
+        state.enemies[0].resist = [0.0; 4];
+        state.players.get_mut(&1).unwrap().pos = enemy_pos + Vec3::new(2.0, 0.0, 0.0);
+        let claim = HitClaim {
+            tick: 1,
+            weapon: "pistol".into(),
+            target: enemy_id,
+            pos: enemy_pos,
+            part: 0,
+        };
+        let mut seq = Vec::new();
+        for _ in 0..64 {
+            state.time += 1.0;
+            let events = crate::sim::damage::apply_hit(&mut state, 1, &claim);
+            let flagged = events
+                .iter()
+                .find(|e| e.kind == event::DAMAGE)
+                .and_then(|e| e.extra.as_ref())
+                .and_then(|v| v.get("crit"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            seq.push(flagged);
+        }
+        seq
+    }
+    assert_eq!(crit_sequence(0x5EED), crit_sequence(0x5EED));
+}
+
+#[test]
 fn hit_claim_from_across_the_map_is_rejected() {
     let mut state = delve(42);
     state.join(1, "cheater".into());

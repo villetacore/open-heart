@@ -60,6 +60,8 @@
         "bob_amount": 8.0,
         "bob_speed": 8.0,
         "cooldown": 0.5,
+        "crit_chance": 0.15,
+        "crit_mult": 2.0,
         "damage": 34.0,
         "dmg_type": "energy",
         "feedback": {
@@ -186,6 +188,8 @@
         "bob_amount": 13.0,
         "bob_speed": 11.0,
         "cooldown": 0.12,
+        "crit_chance": 0.08,
+        "crit_mult": 1.5,
         "damage": 9.0,
         "dmg_type": "physical",
         "feedback": {
@@ -320,6 +324,8 @@
         "bob_amount": 9.0,
         "bob_speed": 8.5,
         "cooldown": 0.38,
+        "crit_chance": 0.18,
+        "crit_mult": 2.0,
         "damage": 16.0,
         "dmg_type": "physical",
         "feedback": {
@@ -463,6 +469,8 @@
         "bob_amount": 11.0,
         "bob_speed": 8.0,
         "cooldown": 0.95,
+        "crit_chance": 0.1,
+        "crit_mult": 1.8,
         "damage": 9.0,
         "dmg_type": "physical",
         "feedback": {
@@ -608,6 +616,8 @@
         "bob_amount": 10.0,
         "bob_speed": 9.5,
         "cooldown": 0.12,
+        "crit_chance": 0.15,
+        "crit_mult": 2.0,
         "damage": 12.0,
         "dmg_type": "physical",
         "feedback": {
@@ -752,6 +762,8 @@
         "bob_amount": 12.0,
         "bob_speed": 10.0,
         "cooldown": 0.3,
+        "crit_chance": 0.08,
+        "crit_mult": 1.75,
         "damage": 30.0,
         "dmg_type": "physical",
         "feedback": {
@@ -902,6 +914,8 @@
         "bob_amount": 7.0,
         "bob_speed": 7.5,
         "cooldown": 0.22,
+        "crit_chance": 0.12,
+        "crit_mult": 2.0,
         "damage": 26.0,
         "dmg_type": "energy",
         "feedback": {
@@ -1052,6 +1066,8 @@
         "bob_amount": 12.0,
         "bob_speed": 7.0,
         "cooldown": 1.15,
+        "crit_chance": 0.05,
+        "crit_mult": 2.5,
         "damage": 95.0,
         "dmg_type": "fire",
         "feedback": {

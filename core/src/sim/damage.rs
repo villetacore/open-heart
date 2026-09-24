@@ -55,7 +55,15 @@ pub fn apply_hit(state: &mut State, peer: u16, claim: &HitClaim) -> Vec<Event> {
     }
 
     let resist = enemy.resist[def.dmg_type.idx()];
-    let amount = (def.damage * (1.0 - resist).clamp(0.0, 2.0)).max(0.0);
+    let base = (def.damage * (1.0 - resist).clamp(0.0, 2.0)).max(0.0);
+    // Крит роллится детерминированно (общий rng состояния), чтобы клиент и сервер
+    // из одного сида видели одинаковые криты (docs/MULTIPLAYER.md §5).
+    let crit = def.crit_chance > 0.0 && state.rng.chance(def.crit_chance);
+    let amount = if crit { base * def.crit_mult } else { base };
+
+    let Some(enemy) = state.enemies.iter_mut().find(|e| e.id == claim.target) else {
+        return events;
+    };
     enemy.hp -= amount;
     // Кто бьёт — тот и получает внимание врага.
     enemy.add_threat(peer, amount);
@@ -65,6 +73,10 @@ pub fn apply_hit(state: &mut State, peer: u16, claim: &HitClaim) -> Vec<Event> {
     damage.target = enemy.id;
     damage.amount = amount;
     damage.pos = Some(enemy.pos);
+    if crit {
+        // Флаг крита едет в extra — клиент показывает крупнее цифры/эффект.
+        damage.extra = Some(serde_json::json!({ "crit": true }));
+    }
     events.push(damage);
 
     if !enemy.alive() {

@@ -1,16 +1,16 @@
 # 📇 Индекс проекта OpenHeart
 
-Достоверная карта репозитория для быстрого анализа: разделение на крейты, каждый
-подпакет с зоной ответственности, данные пресета, ассеты, сервер и инструменты.
-Обновлён 2026-09-20 под текущее дерево кода.
+Достоверная карта репозитория: разделение на крейты, каждый подпакет с зоной
+ответственности, данные пресета, ассеты, сервер и инструменты.
+Обновлён 2026-09-27 под текущее дерево кода.
 
-> Это структурная карта «файл → за что отвечает», а не полный список сигнатур.
-> Точные пути каталогов — в [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md); как что
-> связано в рантайме — в [ARCHITECTURE.md](ARCHITECTURE.md).
+> Структурная карта «файл → за что отвечает», не полный список сигнатур. Точные
+> пути каталогов — в [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md); связи в рантайме
+> — в [ARCHITECTURE.md](ARCHITECTURE.md).
 
-**Сводка:** `core/` ≈ 13 800 строк Rust (94 теста) · `client/` ≈ 18 800 строк Rust
-(GDExtension) · `server/` ≈ 6 400 строк Go · пресет `core` = 19 контент-стемов
-(JSON+RON) + карты · ~200 PNG-ассетов · Python-пайплайн ассетов в `tools/`.
+**Сводка:** `core/` ≈ 14 500 строк Rust (**111 тестов**) · `client/` ≈ 20 000 строк
+Rust (GDExtension) · `server/` ≈ 6 500 строк Go · пресет `core` = 19 контент-стемов
+(JSON+RON) + карта · ~230 PNG-ассетов · Python/PS-пайплайн ассетов в `tools/`.
 
 Три крейта, одно ядро правды:
 
@@ -22,182 +22,156 @@
 
 ---
 
-## 1. Корень репозитория
+## 1. Корень
 
 | Файл | Назначение |
 |---|---|
-| `README.md` | Витрина проекта: фичи, быстрый старт, управление |
-| `CONTRIBUTING.md` | Правила вклада, смоук-чеклист, стиль |
-| `CHANGELOG.md` | История версий (Keep a Changelog) |
-| `LICENSE` | MIT |
-| `scripts/run.ps1` | Сборка Rust + запуск редактора (знает winget-путь Godot) |
-| `scripts/watch.ps1` | Автопересборка DLL при сохранении `.rs` |
-| `scripts/build.{bat,ps1,sh}` | Сборка под платформы + экспорт |
+| `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `LICENSE` | Витрина, правила вклада, история, MIT |
+| `scripts/run.ps1`, `watch.ps1`, `build.{bat,ps1,sh}` | Сборка Rust + запуск/экспорт (знают winget-путь Godot) |
 | `scripts/core-wasm.{ps1,sh}` | Сборка ядра в `core.wasm` для сервера |
+| `.github/workflows/pipeline.yml` | Тесты → смоук-барьер (runtime+content+evening) → авто-тег → сборка платформ → релиз |
 
 ## 2. `core/` — симуляция и данные (без движка)
 
-Точка входа — `lib.rs`. Компилируется и в `core.wasm` (`abi.rs` — C-ABI для Go-хоста).
-Разложено по подпакетам:
+Точка входа — `lib.rs`; `abi.rs` — C-ABI для WASM-хоста (сервер).
 
-### 2.1 Верхний уровень
-
-| Модуль | Отвечает за |
-|---|---|
-| `lib.rs` | Дерево модулей, реэкспорты, регистрация |
-| `abi.rs` | C-ABI поверхности симуляции для WASM-хоста (сервер) |
-| `content.rs` | Абстракция чтения файлов пресета (хост подставляет источник) |
-| `craft.rs` | Логика крафта по рецептам |
-| `math.rs`, `rng.rs`, `log.rs` | `Vec3`/утилиты, детерминированный RNG, логирование |
-| `protocol.rs` + `protocol_fixtures_tests.rs` | Сетевой протокол (источник правды с Go) + фикстуры |
-
-### 2.2 `data/` — data-driven контент
+### 2.1 Верхний уровень / `data/`
 
 | Модуль | Отвечает за |
 |---|---|
-| `format.rs` | Форматы пресета: приоритет **RON → JSON → TOML**, общий разбор |
-| `hash.rs` + `hash_disk_tests.rs` | Отпечаток пресета (sha256), обязан совпадать с Go; пин-хеш в тесте |
-| `config.rs` | `GameConfig`: enemies/items/level/npcs/quests/abilities/статусы/данж/лут/рецепты/brains + **player_abilities** |
-| `classes.rs`, `perk.rs` (в `combat/`) | Классы/спеки; дерево перков и синергии |
-| `item.rs`, `quest.rs`, `recipe_tests.rs` | Инвентарь, журнал квестов, тесты рецептов |
-| `dialogue.rs`, `story.rs`, `character.rs` | Data-driven сцены (приоритет над `story.rs`); авторские сцены; VN-статы |
-| `preset.rs` + `preset_tests.rs` | Загрузка/линковка пресета; тесты «парсится и связывается», JSON↔RON без дрейфа |
+| `lib.rs`, `abi.rs`, `content.rs` | Дерево модулей; C-ABI симуляции; чтение файлов пресета |
+| `math.rs`, `rng.rs`, `log.rs`, `craft.rs` | `Vec3`/утилиты; детерминированный RNG; лог; логика крафта |
+| `protocol.rs` (+`protocol_fixtures_tests.rs`) | Сетевой протокол — источник правды с Go |
+| `data/format.rs` | Форматы пресета: приоритет **RON → JSON → TOML** |
+| `data/hash.rs` (+`hash_disk_tests.rs`) | Отпечаток пресета (sha256), обязан совпасть с Go; пин-хеш в тесте |
+| `data/config.rs` | `GameConfig`: enemies/items/level/npcs/quests/abilities/статусы/данж/лут/рецепты/brains/player_abilities; цены магазина (`shop_price`/`sell_price`) |
+| `data/classes.rs` | Классы/спеки; `Loadout` (+`charge_slot`, `crit_bonus`); `compute_loadout` |
+| `data/preset.rs` (+`preset_tests.rs`) | Загрузка/линковка пресета; тесты «парсится и связывается», JSON↔RON без дрейфа, паспорт баланса оружия |
+| `data/item.rs`, `quest.rs`, `story.rs`, `dialogue.rs`, `character.rs` | Инвентарь; журнал; авторские/data-driven сцены; VN-статы |
+| `data/recipe_tests.rs`, `evening_tests.rs` | Тесты крафта и контент-пака соседей «Свет для общего стола» |
 
-### 2.3 `combat/` — боевые определения
-
-| Модуль | Отвечает за |
-|---|---|
-| `weapon.rs` | 8 оружий, типы урона/боезапаса, магазины и релоад, арсенал |
-| `ability.rs` | **Умения игрока**: `AbilityDef`, `AbilityState` (кулдауны, guard/speed), прицеливание, валидация (2 умения × 3 класса) |
-| `perk.rs` | Перки, синергии, агрегация модификаторов |
-| `status.rs` | Статусы урона (dot/slow/stun/vulnerable) |
-| `mod.rs` | Общая боевая математика/связки |
-
-### 2.4 `sim/` — авторитетная симуляция (offline и сервер)
+### 2.2 `combat/` — боевые определения
 
 | Модуль | Отвечает за |
 |---|---|
-| `mod.rs` | `State`: игроки, враги, тик, урон, движение, античит-лимиты скорости |
-| `abilities.rs` | Серверная валидация каста умения игрока (кулдаун/смерть/оглушение/видимость/цели/лечение) |
-| `enemy.rs`, `damage.rs`, `loot.rs` | ИИ врагов, расчёт урона/резистов, дроп |
-| `world.rs` | Проходимость/геометрия для симуляции |
-| `rescue.rs` + `*_tests.rs`, `coop_tests.rs`, `party_tests.rs`, `threat_tests.rs`, `brain_tests.rs` | Воскрешение, кооп, партия, агро, обученные поведения — с тестами |
+| `weapon.rs` | 8 оружий, типы урона/боезапаса, магазины+релоад, **крит (crit_chance/crit_mult)**, арсенал |
+| `ability.rs` | Умения игрока: `AbilityDef`, `AbilityState` (кулдауны, **заряды**, guard/speed), валидация 2×3 |
+| `perk.rs` | Перки, синергии, `PerkMods` (hp/speed/dmg/cd/lifesteal/ammo/**crit**) |
+| `status.rs`, `mod.rs` | Статусы урона (dot/slow/stun/vulnerable); общая математика |
 
-### 2.5 `ai/`, `state/`, `worldgen/`
+### 2.3 `sim/` — авторитетная симуляция (offline и сервер)
 
 | Модуль | Отвечает за |
 |---|---|
-| `ai/policy.rs`, `ai/net.rs`, `ai/mod.rs` | `Brain` (обученные веса поведения), валидация, инференс |
-| `state/game_state.rs` | Всё «чистое» состояние игрока/мира: уровень/XP/перки/флаги/сердца/seed (+ VN-наследие для диалогов) |
+| `mod.rs` | `State`: игроки, враги, тик, движение, античит-лимиты |
+| `damage.rs` | Расчёт урона: резисты и **крит** (слабые точки — на клиенте, `combat.rs`) |
+| `abilities.rs` | Серверная валидация каста умения игрока |
+| `enemy.rs`, `loot.rs`, `world.rs` | ИИ врагов; дроп; проходимость |
+| `rescue.rs`, `*_tests.rs` (coop/party/threat/brain/rescue/tests) | Воскрешение, кооп, агро, поведения — с тестами |
+
+### 2.4 `ai/`, `state/`, `worldgen/`
+
+| Модуль | Отвечает за |
+|---|---|
+| `ai/policy.rs`, `net.rs`, `mod.rs` | `Brain` (обученные веса поведения), валидация, инференс |
+| `state/game_state.rs` | Состояние игрока/мира: уровень/XP/перки/флаги/сердца/seed; экономика (`spend_gold`, сброс/крафт перков) |
 | `state/save.rs` | Сериализация `user://save.json`; новые поля через `#[serde(default)]` |
-| `worldgen/dungeon.rs` + `dungeon_tests.rs` | Процедурный данж: комнаты/высоты/темы/босс/`floor_map`, тесты связности |
-| `worldgen/map_def.rs`, `nav.rs`, `mod.rs` | Схема карты из данных; A*-навигация врагов |
+| `worldgen/dungeon.rs` (+`dungeon_tests.rs`) | Процедурный данж: комнаты/высоты/темы/босс/`floor_map` |
+| `worldgen/map_def.rs`, `nav.rs` | Схема карты (районы/маяки/маршруты/**станции**); A*-навигация |
 
 ## 3. `client/` — GDExtension (Godot/Redot)
 
-Точка входа расширения — `lib.rs` (`impl ExtensionLibrary`); классы `Game3D`, `Player`,
-`Enemy`, `MainMenu`, `Npc` регистрируются автоматически через `#[derive(GodotClass)]`.
+Точка входа расширения — `lib.rs` (`ExtensionLibrary`); классы `Game3D`/`Player`/
+`Enemy`/`MainMenu`/`Npc` регистрируются через `#[derive(GodotClass)]`.
 
-### 3.1 `nodes/` — игровые ноды
-
-| Модуль | Отвечает за |
-|---|---|
-| `nodes/player.rs` | FPS-контроллер (WASD/мышь/прыжок/спринт), статы задаёт `Game3D` |
-| `nodes/enemy.rs` | Нода врага: AI-обёртка, резисты, анимация листа, hurt-flash |
-| `nodes/npc.rs`, `nodes/main_menu.rs` | NPC-обёртка; меню (новая игра/продолжить/кооп/пресеты/настройки) |
-
-### 3.2 `nodes/game/` — главный узел `Game3D` (разбит на модули)
-
-`mod.rs` держит `struct Game3D`, константы, диспетчеры `#[func]` и объявления подмодулей.
-Каждый подмодуль — `impl Game3D` через `use super::*;`.
+### 3.1 `nodes/game/` — узел `Game3D` (разбит на модули; каждый — `impl Game3D` через `use super::*`)
 
 | Модуль | Отвечает за |
 |---|---|
-| `mod.rs` | Определение `Game3D`, enum-ы режимов/полезной нагрузки, аксессоры игроков, диспетчеры UI |
+| `mod.rs` | `struct Game3D`, enum-ы, аксессоры игроков, диспетчеры `#[func]` |
 | `lifecycle.rs` | Godot-виртуальные `init`/`ready`/`input`/`process` |
 | `tables.rs` | Статические таблицы: `NPC_DATA` (фолбэк), лукапы спрайтов/сцен |
-| `gameplay.rs` | Ввод в игре, взаимодействия, пикапы, порталы, привязка умений F/G |
-| `combat.rs` | Боёвка, эффекты, урон от врагов, статусы игрока |
-| `abilities.rs` | **Умения игрока**: каст (offline и сеть), FX, HUD способностей |
-| `hud.rs`, `hud_update.rs` | Построение и обновление HUD (здоровье/оружие/цель/миникарта) |
-| `items.rs`, `crafting.rs`, `interface.rs` | Инвентарь, крафт, общие UI-компоненты панелей |
-| `class_select.rs`, `conversation.rs` | Выбор класса/спека; диалоги и квест-раннер |
-| `environment.rs`, `delve.rs` | Построение мира/освещения; данж-цикл |
-| `campaign.rs` | Финал кампании: завершение, эпилог, титры, флаг завершения |
-| `net.rs` | Сетевой клиент игры: применение событий сервера к сцене |
-| `runtime_smoke.rs` | Debug-only смоук-хуки для `game/tools/runtime_smoke.gd` (`#[godot_api(secondary)]`) |
+| `gameplay.rs` | Ввод, взаимодействия, пикапы, порталы, привязка умений F/G |
+| `combat.rs` | Боёвка, **крит (offline)**, эффекты, урон врагов, статусы игрока |
+| `abilities.rs` | Умения игрока: каст (offline+сеть), заряды, FX, HUD |
+| `hud.rs`, `hud_update.rs`, `interface.rs` | HUD; обновление; общие UI-компоненты панелей |
+| `items.rs`, `crafting.rs`, `shop.rs` | Инвентарь; крафт (рецепты+станции); **магазин Торговца** (купля/продажа) |
+| `class_select.rs`, `conversation.rs` | Выбор класса/спека; диалоги, квест-раннер |
+| `environment.rs`, `delve.rs` | Построение мира/освещения/станций; данж-цикл, гарантия хазарда |
+| `campaign.rs` | Финал: эпилог, титры, флаг завершения |
+| `creative.rs` | Креатив-режим (F2/меню): всё доступно + **боевая арена** (волны врагов) |
+| `presentation.rs` | Декор/арт соседей (контент-пак), загрузка `.tres` |
+| `net.rs` | Сетевой клиент игры |
+| `runtime_smoke.rs`, `content_smoke.rs` | Debug-only смоук-хуки (`#[godot_api(secondary)]`) |
 
-### 3.3 `net/`, `data/`, `state/`, `support/`, `worldgen/`, `bin/`
+### 3.2 `nodes/`, `net/`, `data/`, `state/`, `support/`, `worldgen/`, `bin/`
 
 | Модуль | Отвечает за |
 |---|---|
-| `net/mod.rs`, `session.rs`, `host.rs`, `master.rs` | Сетевая сессия, хост, связь с мастер-сервером/релеем |
-| `data/content.rs` | ContentDb: загрузка пресета в рантайме, поиск в `res://`+`user://` |
-| `state/save.rs`, `settings.rs` | Обёртки сейва/настроек над ядром (`user://`) |
-| `support/gfx.rs`, `convert.rs`, `locale.rs` | Построение мешей/спрайтов/света; конвертация Vec3↔Vector3; локализация HUD/меню |
-| `worldgen/world.rs`, `map.rs`, `dungeon.rs` | Legacy-мир кодом (фолбэк), сборка карты и данжа в сцену |
-| `bin/preset_migrate.rs` | CLI-миграция контента пресета в RON |
+| `nodes/player.rs`, `enemy.rs`, `npc.rs`, `main_menu.rs` | FPS-контроллер; нода врага; NPC; меню (+кнопки Креатив/Арена) |
+| `net/{mod,session,host,master}.rs` | Сетевая сессия, хост, мастер-сервер/релей |
+| `data/content.rs` | ContentDb: загрузка пресета, поиск в `res://`+`user://` |
+| `state/{save,settings}.rs` | Обёртки сейва/настроек (сложность, язык, звук) |
+| `support/{gfx,convert,locale}.rs` | Меши/спрайты/свет; Vec3↔Vector3; локализация |
+| `worldgen/{world,map,dungeon}.rs` | Legacy-мир (фолбэк); сборка карты (+станции) и данжа в сцену |
+| `bin/preset_migrate.rs` | CLI-миграция контента в RON |
 
 ## 4. `server/` — Go-бэкенд
 
 | Путь | Отвечает за |
 |---|---|
 | `cmd/oh-server/` | Игровой сервер комнаты: сессии, персонажи, партия, релей, анонс |
-| `cmd/oh-master/` | Мастер-сервер: список серверов, лимиты, релей туннелей |
-| `cmd/oh-probe/` | Диагностическая утилита |
-| `internal/sim/` | Хост симуляции через `core.wasm` (`sim.go`/`wasm.go`/`stub.go`) |
-| `internal/room/` | Логика комнаты и лута (+ тесты) |
-| `internal/relay/` | `StreamConn` поверх туннеля (`conn.go` — исправлен race `SendRaw`/`Close`), кадры, хаб |
-| `internal/proto/` | Протокол на Go — зеркало `core/protocol.rs` (+ фикстуры) |
-| `internal/content/` | `Hash(presetDir)` — совпадает с `core/src/data/hash.rs` |
-| `internal/auth/`, `store/`, `registry/`, `config/`, `wire/` | Аутентификация, хранилище (сервер/мастер/персонажи), реестр, конфиг, транспорт |
+| `cmd/oh-master/`, `oh-probe/` | Мастер-сервер (список/лимиты/релей туннелей); диагностика |
+| `internal/sim/` | Хост симуляции через `core.wasm` |
+| `internal/room/`, `relay/`, `proto/`, `content/` | Комната+лут; `StreamConn` (race `SendRaw`/`Close` починен); протокол; `Hash` пресета |
+| `internal/auth/`, `store/`, `registry/`, `config/`, `wire/` | Аутентификация, хранилище, реестр, конфиг, транспорт |
 
 ## 5. `game/` — проект движка
 
 | Путь | Назначение |
 |---|---|
-| `project.godot` | Godot 4.7, рендерер mobile (Forward Mobile/Vulkan), стретч 1920×1080, input-actions (в т.ч. `ability_primary`/`ability_secondary`) |
+| `project.godot` | Godot 4.7, рендерер mobile/Vulkan, стретч 1920×1080, input-actions (incl. `ability_primary/secondary`) |
 | `OpenHeart.gdextension` | Платформа → `res://bin/openheart.{dll,so,dylib}`; `reloadable=true` |
-| `main_menu.tscn`, `main.tscn` | Стартовая и игровая сцены |
 | `addons/oh_editor/` | Редактор игры (вкладка OpenHeart): схемы категорий, CRUD, копия пресета, «замок ядра» |
-| `tools/runtime_smoke.gd`, `presentation_smoke.gd` | Смоук-сценарии (дёргают `runtime_smoke_*` из клиента) |
+| `tools/*.gd` | Смоуки: `runtime_smoke`, `content_smoke`, `evening_smoke`, `release_smoke`, `presentation_smoke` |
 
-### 5.1 `game/presets/core` — контент («данные = игра»)
+### 5.1 `game/presets/core` — контент (RON авторский + JSON)
 
-Каждый контент-стем есть в **RON (авторский) и JSON**; при наличии RON игра читает его
-первым (см. `data/format.rs`). Тест `json_and_ron_sources_do_not_drift` следит за совпадением.
-Форматы — [DATA_FORMATS.md](DATA_FORMATS.md).
-
-Стемы: `weapons`, `weapon_mods`, `classes`, `perks`, `synergies`, `enemies`, `items`,
-`npcs`, `quests`, `dialogues`, `abilities` (враги), **`player_abilities`** (умения игрока),
-`affixes`, `statuses`, `dungeon`, `loot`, `level`, `recipes`, `preset` (+ `maps/hub.json`).
+19 стемов (у большинства RON+JSON, тест `json_and_ron_sources_do_not_drift` следит за
+совпадением): `weapons` (+крит), `weapon_mods`, `classes` (+charge_slot), `perks` (+crit),
+`synergies`, `enemies`, `items`, `npcs`, `quests` (цепочки + соседи), `dialogues`,
+`abilities` (враги), `player_abilities`, `affixes`, `statuses`, `dungeon`, `loot`, `level`,
+`recipes`, `preset` (+ `maps/hub.json`). Форматы — [DATA_FORMATS.md](DATA_FORMATS.md).
 
 ### 5.2 `game/assets/`
 
-Спрайты персонажей/оружия/пикапов/пропсов, эффекты, UI, текстуры хаба и тем данжа, небо.
-Иконки контента — атласами: `icons/abilities_atlas.png`, `icons/items_atlas.png`,
-`portraits/classes_atlas.png` (индекс задаёт `icon` в данных). Исходники — в `*_raw/`.
+Спрайты/эффекты/UI/текстуры/небо; иконки атласами (`icons/{abilities,items,weapons,perks,cosmetics}_atlas`),
+портреты (`portraits/classes*`), **соседи** (`illustrations/neighbors`, `portraits/neighbors`,
+`decor/femboy_quarter`), музыка/звуки. Индекс в данных задаёт регион атласа; `.tres` — AtlasTexture.
 
-## 6. `tools/` — пайплайн ассетов (Python + Pillow)
+## 6. `tools/` — пайплайн ассетов (Python/PS + Pillow)
 
-| Скрипт | Назначение |
-|---|---|
-| `aigen.py` | ИИ-генерация ассетов (клиент к SD-серверу) + постобработка |
-| `slice_atlases.py`, `slice_props.py`, `slice_fix.py` | Нарезка атласов/пропсов, правочные проходы |
-| `build_hub_map.py` | Генерация `maps/hub.json` |
-| `ASSET_GUIDE.md` | Промпты и спецификации форматов |
+`aigen.py` (ИИ-генерация), `slice_*`/`process_sprites.py` (нарезка), `build_hub_map.py`
+(карта хаба + станции), `build_neighbors_atlases.py`/`add_neighbors_content.py`/
+`add_evening_content.py` (контент-пак соседей), `repair_generated_assets.py`, `ASSET_GUIDE.md`.
 
-## 7. Быстрые ответы («мне нужно…»)
+## 7. Планы и производство
+
+Актуальные: [RELEASE_PLAN_2026-09-20.md](RELEASE_PLAN_2026-09-20.md) (доведение до релиза),
+[ART_AND_CONTENT_PLAN_2026-09-27.md](ART_AND_CONTENT_PLAN_2026-09-27.md),
+[WEAPON_BALANCE.md](WEAPON_BALANCE.md) (паспорт оружия+крит),
+[CONTENT_PACK_NEIGHBORHOOD_01.md](CONTENT_PACK_NEIGHBORHOOD_01.md) (соседи).
+Историческое: [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) (частично устарел — см. баннер).
+
+## 8. Быстрые ответы («мне нужно…»)
 
 | Вопрос | Ответ |
 |---|---|
 | Точка входа логики? | `client/src/lib.rs` → `Game3D` в `main.tscn` → `nodes/game/lifecycle.rs::ready()` |
-| Где загружаются данные? | `content::load_preset()` + `core::data::config::GameConfig::load_from()` |
-| Как выбирается карта? | `worldgen/map::load_map(preset,"hub")`; нет файла → `worldgen/world::build_world()` (legacy) |
-| Где урон? | `nodes/game/combat.rs` → `Enemy::take_damage`; в сети — `core::sim` (авторитетно) |
-| Где умения игрока? | Данные `player_abilities.*` → `core/combat/ability.rs` (+ `sim/abilities.rs` на сервере) → `nodes/game/abilities.rs` (ввод F/G в `gameplay.rs`) |
+| Где урон/крит? | offline: `nodes/game/combat.rs::hit_enemy` (крит+слабые точки); online: `core/sim/damage.rs` (крит+резисты) |
+| Где умения игрока? | данные `player_abilities.*` → `core/combat/ability.rs` (+заряды) → `nodes/game/abilities.rs` |
 | Где прокачка? | `core/state/game_state.rs::add_xp` → `classes::compute_loadout` + `perk::mods_for` |
+| Магазин/крафт/арена? | `nodes/game/shop.rs`; `crafting.rs` (+станции карты); `creative.rs` (арена) |
 | Где сейв? | `core/state/save.rs` ↔ `user://save.json` |
-| Финал кампании? | `nodes/game/campaign.rs` (проверка на `dungeon_depth == 4`) |
-| Почему клиента не пускает на сервер? | Разошёлся `content_hash` пресета — сверь `core/data/hash.rs` ↔ `server/internal/content`; при изменении контента обнови пин-хеш в `core/src/data/hash_disk_tests.rs` |
+| Клиента не пускает на сервер? | Разошёлся `content_hash` — сверь `core/data/hash.rs` ↔ `server/internal/content`; при смене контента обнови пин в `hash_disk_tests.rs` |
 | Как сделать «свою игру»? | Скопировать пресет (вкладка OpenHeart → «Создать копию») — [EDITOR.md](EDITOR.md) |

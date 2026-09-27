@@ -429,7 +429,15 @@ impl Game3D {
             let critical = enemy.bind().weak_point_multiplier_at(hit_position) > 1.0;
             return (0.0, critical);
         }
-        Self::apply_precise_damage(enemy, hit_position, damage, damage_type)
+        // Крит оружия (crit_chance/crit_mult) — тот же расчёт, что в серверном
+        // sim::damage; иначе data-driven крит не работал бы в одиночной игре.
+        // Стакается с уроном по слабой точке внутри apply_precise_damage.
+        let def = weapon_def(self.arsenal.current);
+        let weapon_crit = def.crit_chance > 0.0 && self.rng.chance(def.crit_chance);
+        let crit_mult = if weapon_crit { def.crit_mult } else { 1.0 };
+        let (dealt, weak_crit) =
+            Self::apply_precise_damage(enemy, hit_position, damage * crit_mult, damage_type);
+        (dealt, weak_crit || weapon_crit)
     }
 
     pub(super) fn apply_precise_damage(

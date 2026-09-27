@@ -80,12 +80,16 @@
     /*[4]*/ {
         "branch": "offense",
         "cost": 1.0,
-        "desc_en": "+6% damage per rank.",
-        "desc_ru": "+6% урона за ранг.",
+        "desc_en": "+6% damage and +3% critical chance per rank.",
+        "desc_ru": "+6% урона и +3% шанса крита за ранг.",
         "effects": [
             /*[0]*/ {
                 "add": 0.06,
                 "stat": "dmg",
+            },
+            {
+                "add": 0.03,
+                "stat": "crit",
             },
         ],
         "id": "sharpshooter",

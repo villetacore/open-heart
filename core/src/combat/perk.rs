@@ -105,7 +105,8 @@ pub struct PerkMods {
     pub dmg_add: f32, // добавка к dmg_mult (доля)
     pub cd_mult: f32, // множитель кулдауна (меньше = быстрее)
     pub lifesteal_add: f32,
-    pub ammo_add: f32, // добавка к ammo_mult
+    pub ammo_add: f32,  // добавка к ammo_mult
+    pub crit_add: f32,  // добавка к шансу крита оружия (0..1)
 }
 
 impl Default for PerkMods {
@@ -117,6 +118,7 @@ impl Default for PerkMods {
             cd_mult: 1.0,
             lifesteal_add: 0.0,
             ammo_add: 0.0,
+            crit_add: 0.0,
         }
     }
 }
@@ -131,6 +133,7 @@ impl PerkMods {
             "cd" => self.cd_mult *= e.mult.powi(r),
             "lifesteal" => self.lifesteal_add += e.add * rank as f32,
             "ammo" => self.ammo_add += e.add * rank as f32,
+            "crit" => self.crit_add += e.add * rank as f32,
             other => {
                 crate::warn!("perk effect: unknown stat '{}'", other)
             }
@@ -260,4 +263,19 @@ pub fn available(owned: &HashMap<String, u32>, points: u32) -> Vec<&'static Perk
         })
         .take(8)
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sharpshooter_adds_weapon_crit_chance() {
+        let mut owned = HashMap::new();
+        owned.insert("sharpshooter".to_string(), 3);
+        let mods = mods_for(&owned);
+        // sharpshooter даёт +3% крита за ранг → 9% на трёх рангах.
+        assert!((mods.crit_add - 0.09).abs() < 1e-4, "crit_add={}", mods.crit_add);
+        assert!(mods.dmg_add > 0.0, "перк также сохраняет прибавку урона");
+    }
 }

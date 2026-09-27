@@ -75,18 +75,22 @@
   },
   {
     "id": "sharpshooter",
-    "name_en": "Sharpshooter", "desc_en": "+6% damage per rank.",
+    "name_en": "Sharpshooter", "desc_en": "+6% damage and +3% critical chance per rank.",
     "branch": "offense",
     "tier": 1.0,
     "max_ranks": 3.0,
     "cost": 1.0,
     "requires": [],
     "name_ru": "Меткач",
-    "desc_ru": "+6% урона за ранг.",
+    "desc_ru": "+6% урона и +3% шанса крита за ранг.",
     "effects": [
       {
         "stat": "dmg",
         "add": 0.06
+      },
+      {
+        "stat": "crit",
+        "add": 0.03
       }
     ]
   },

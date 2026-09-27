@@ -433,7 +433,9 @@ impl Game3D {
         // sim::damage; иначе data-driven крит не работал бы в одиночной игре.
         // Стакается с уроном по слабой точке внутри apply_precise_damage.
         let def = weapon_def(self.arsenal.current);
-        let weapon_crit = def.crit_chance > 0.0 && self.rng.chance(def.crit_chance);
+        // Перки на крит прибавляются к базовому шансу оружия (0..1).
+        let crit_chance = (def.crit_chance + self.loadout.crit_bonus).clamp(0.0, 1.0);
+        let weapon_crit = crit_chance > 0.0 && self.rng.chance(crit_chance);
         let crit_mult = if weapon_crit { def.crit_mult } else { 1.0 };
         let (dealt, weak_crit) =
             Self::apply_precise_damage(enemy, hit_position, damage * crit_mult, damage_type);

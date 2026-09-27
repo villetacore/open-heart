@@ -262,6 +262,8 @@ pub struct Loadout {
     pub ammo_mult: f32,
     /// Слот умения со вторым зарядом от специализации (None — у всех по одному).
     pub charge_slot: Option<usize>,
+    /// Прибавка к шансу крита оружия от перков (0..1). Спеки его пока не дают.
+    pub crit_bonus: f32,
 }
 
 pub fn compute_loadout(class_idx: usize, spec_idx: usize, level: u32) -> Loadout {
@@ -277,6 +279,7 @@ pub fn compute_loadout(class_idx: usize, spec_idx: usize, level: u32) -> Loadout
         lifesteal: s.lifesteal,
         ammo_mult: s.ammo_mult,
         charge_slot: s.charge_slot,
+        crit_bonus: 0.0,
     }
 }
 

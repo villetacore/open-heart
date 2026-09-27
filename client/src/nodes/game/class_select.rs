@@ -284,6 +284,7 @@ impl Game3D {
         self.loadout.cd_mult *= mods.cd_mult;
         self.loadout.lifesteal += mods.lifesteal_add;
         self.loadout.ammo_mult += mods.ammo_add;
+        self.loadout.crit_bonus += mods.crit_add;
         self.loadout.max_hp = self.loadout.max_hp.max(40.0);
 
         // Второй заряд умения от специализации (план §5): спек может дать одному

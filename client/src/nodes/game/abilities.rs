@@ -13,7 +13,7 @@ impl Game3D {
         let Some(player) = self.player().and_then(|p| p.try_cast::<Player>().ok()) else { return; };
         let (alive, stunned) = { let p = player.bind(); (!p.dead && p.hp > 0.0, p.stunned) };
         if !alive || stunned { return; }
-        if self.state.as_ref().unwrap().abilities.cooldowns[slot] > 0.0 {
+        if !self.state.as_ref().unwrap().abilities.ready(slot) {
             self.show_flash(if self.settings.lang == "en" { "Ability is recovering" } else { "Умение восстанавливается" });
             return;
         }
@@ -118,11 +118,21 @@ impl Game3D {
     pub(super) fn update_ability_hud(&mut self) {
         for slot in 0..2 {
             let Some(def) = self.player_ability(slot) else { continue; };
-            let cd = self.state.as_ref().unwrap().abilities.cooldowns[slot];
+            let (cd, charges, max) = {
+                let a = &self.state.as_ref().unwrap().abilities;
+                (a.cooldowns[slot], a.charges[slot], a.max_charges[slot].max(1))
+            };
+            let ready = charges > 0;
+            let en = self.settings.lang == "en";
             if let Some(label) = self.ability_labels.get_mut(slot) {
-                label.set_text(&format!("[{}] {}\n{}", if slot==0 {"F"} else {"G"}, def.name(&self.settings.lang),
-                    if cd > 0.0 { format!("{:.1}s",cd) } else if self.settings.lang=="en" {"READY".into()} else {"ГОТОВО".into()}));
-                label.add_theme_color_override("font_color", if cd>0.0 {C_DIM} else {Self::ability_color(def.icon)});
+                let status = if ready {
+                    let base = if en { "READY" } else { "ГОТОВО" };
+                    if max > 1 { format!("{base} ×{charges}") } else { base.to_string() }
+                } else {
+                    format!("{:.1}s", cd)
+                };
+                label.set_text(&format!("[{}] {}\n{}", if slot==0 {"F"} else {"G"}, def.name(&self.settings.lang), status));
+                label.add_theme_color_override("font_color", if ready {Self::ability_color(def.icon)} else {C_DIM});
                 label.set_tooltip_text(def.description(&self.settings.lang));
             }
             if let Some(atlas) = self.ability_icons.get_mut(slot) {

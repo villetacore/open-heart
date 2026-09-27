@@ -50,15 +50,16 @@
       {
         "id": "whirlwind",
         "name_ru": "Вихрь",
-        "desc_ru": "+20% скорость бега, удары на 25% быстрее.",
+        "desc_ru": "+20% скорость бега, умения на 25% быстрее, второй заряд первого умения.",
         "name_en": "Whirlwind",
-        "desc_en": "+20% movement speed and 25% faster attacks.",
+        "desc_en": "+20% move speed, abilities recover 25% faster, a second charge of the first ability.",
         "hp_bonus": -20.0,
         "speed_mult": 1.2,
         "dmg_mult": 1.0,
         "cd_mult": 0.75,
         "lifesteal": 0.0,
-        "ammo_mult": 1.0
+        "ammo_mult": 1.0,
+        "charge_slot": 0
       }
     ]
   },

@@ -39,8 +39,9 @@
             /*[2]*/ {
                 "ammo_mult": 1.0,
                 "cd_mult": 0.75,
-                "desc_en": "+20% movement speed and 25% faster attacks.",
-                "desc_ru": "+20% скорость бега, удары на 25% быстрее.",
+                "charge_slot": 0,
+                "desc_en": "+20% move speed, abilities recover 25% faster, a second charge of the first ability.",
+                "desc_ru": "+20% скорость бега, умения на 25% быстрее, второй заряд первого умения.",
                 "dmg_mult": 1.0,
                 "hp_bonus": -20.0,
                 "id": "whirlwind",

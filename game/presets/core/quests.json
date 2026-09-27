@@ -1067,5 +1067,140 @@
     "offer_scene": "neighbors_yves_2_offer",
     "progress_scene": "neighbors_yves_2_progress",
     "complete_scene": "neighbors_yves_2_complete"
+  },
+  {
+    "id": "evening_circuit",
+    "title_ru": "Свет без мерцания",
+    "title_en": "A Steady Light",
+    "desc_ru": "После принятия синхронизируй одну группу из трёх реле в комнате головоломки на глубине 2 или ниже. Вернись к Эш на южную дорогу. Старые решения не засчитываются.",
+    "desc_en": "After accepting, synchronize one group of three relays in a puzzle room at depth 2 or deeper. Return to Ash on the southern road. Earlier solutions do not count.",
+    "giver": "ash",
+    "chain_ru": "Свет для общего стола",
+    "chain_en": "Light for the Shared Table",
+    "stage": 1,
+    "kind": "solve_puzzle",
+    "target": "*",
+    "count": 1,
+    "requires": [
+      "neighbors_ash_2"
+    ],
+    "reward_xp": 180,
+    "reward_gold": 70,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 1
+      }
+    ],
+    "offer_scene": "evening_circuit_offer",
+    "progress_scene": "evening_circuit_progress",
+    "complete_scene": "evening_circuit_complete"
+  },
+  {
+    "id": "evening_memory",
+    "title_ru": "Не только имена победителей",
+    "title_en": "More Than Victors’ Names",
+    "desc_ru": "После принятия найди и прослушай одно эхо памяти в сюжетной комнате на глубине 3 или ниже. Вернись к Ноэлю. Уже услышанные до принятия записи не засчитываются.",
+    "desc_en": "After accepting, listen to one memory echo in a story room at depth 3 or deeper. Return to Noel. Echoes heard before acceptance do not count.",
+    "giver": "noel",
+    "chain_ru": "Свет для общего стола",
+    "chain_en": "Light for the Shared Table",
+    "stage": 2,
+    "kind": "discover_lore",
+    "target": "*",
+    "count": 1,
+    "requires": [
+      "evening_circuit",
+      "neighbors_noel_2"
+    ],
+    "reward_xp": 180,
+    "reward_gold": 70,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 1
+      }
+    ],
+    "offer_scene": "evening_memory_offer",
+    "progress_scene": "evening_memory_progress",
+    "complete_scene": "evening_memory_complete"
+  },
+  {
+    "id": "evening_music",
+    "title_ru": "Тише, чем обычно",
+    "title_en": "Softer Than Usual",
+    "desc_ru": "После принятия поговори с Ивом в южной части квартала о тихом месте рядом с двором. Вернись к Люсьену.",
+    "desc_en": "After accepting, speak with Yves in the southern quarter about a quiet place beside the courtyard. Return to Lucien.",
+    "giver": "lucien",
+    "chain_ru": "Свет для общего стола",
+    "chain_en": "Light for the Shared Table",
+    "stage": 3,
+    "kind": "interact",
+    "target": "yves",
+    "count": 1,
+    "requires": [
+      "evening_memory",
+      "neighbors_lucien_2"
+    ],
+    "reward_xp": 90,
+    "reward_gold": 35,
+    "reward_items": [
+      {
+        "id": "medkit",
+        "qty": 1
+      }
+    ],
+    "offer_scene": "evening_music_offer",
+    "progress_scene": "evening_music_progress",
+    "complete_scene": "evening_music_complete"
+  },
+  {
+    "id": "evening_table",
+    "title_ru": "Место за столом",
+    "title_en": "A Place at the Table",
+    "desc_ru": "После принятия пригласи Рена из чайной на площади, затем вернись к Эмилю на южную дорогу. За завершение появится общий стол рядом с пекарем.",
+    "desc_en": "After accepting, invite Ren from the tea house on the square, then return to Emil on the southern road. Completing this quest adds a shared table beside the baker.",
+    "giver": "emil",
+    "chain_ru": "Свет для общего стола",
+    "chain_en": "Light for the Shared Table",
+    "stage": 4,
+    "kind": "interact",
+    "target": "ren",
+    "count": 1,
+    "requires": [
+      "evening_music",
+      "neighbors_emil_2"
+    ],
+    "reward_xp": 160,
+    "reward_gold": 60,
+    "reward_items": [
+      {
+        "id": "bread",
+        "qty": 2
+      }
+    ],
+    "world_change": {
+      "id": "shared_table",
+      "pattern": "table",
+      "pos": [
+        -11.0,
+        0.0,
+        43.0
+      ],
+      "color": [
+        1.0,
+        0.66,
+        0.36
+      ],
+      "scale": 1.0,
+      "sprite": "",
+      "activity": "crowd",
+      "activity_count": 2,
+      "activity_radius": 2.5,
+      "activity_speed": 0.3
+    },
+    "offer_scene": "evening_table_offer",
+    "progress_scene": "evening_table_progress",
+    "complete_scene": "evening_table_complete"
   }
 ]

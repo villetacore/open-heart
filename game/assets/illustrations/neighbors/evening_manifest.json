@@ -1,0 +1,12 @@
+{
+  "id": "shared_evening_v1",
+  "generator": "built-in image_gen",
+  "mode": "new illustration using identity reference",
+  "reference": "game/assets/portraits/neighbors/modern_atlas.png",
+  "source": "exec-bbb28937-d292-4328-b7f6-46a1e27eb83b.png",
+  "image": "res://assets/illustrations/neighbors/shared_evening_v1.png",
+  "consumer": "evening_epilogue",
+  "prompt": "Create a single wide 16:9 story illustration for OpenHeart, romantic neon gothic action RPG. A modest shared neighborhood dinner after the lamps have been repaired, in a gothic courtyard linked to a small bakery. Warm bread, roses wrapped in brown paper, tea and mismatched plates on one modest communal wooden table; repaired cyan lantern and restrained pink heart neon against dark plum stone. Exactly SIX clearly adult residents aged 28-40 gather with natural relaxed poses. Use the supplied portrait sheet ONLY as character identity and clothing reference, not as a layout. Ivo: dark curly hair, brown skin, short beard, mesh shirt and rose florist apron. Noel: pale long lavender hair shaved on one side, blue glasses and dark technical jacket. Lucien: slim blond feminine man with pink heart collar and black punk clothing, electric violin resting safely beside his chair. Ash: adult woman with short silver hair and practical black/cyan electrical workwear. Emil: stocky smiling bearded man with curly pink hair and pastel baker apron. Yves: long black hair with green accents, slim feminine man in dark green practical gardening clothing. Preserve each character's identity and adult age, expressive everyday warmth, feminine men not substituted with women, Ash remains a woman. Medium-wide eye-level view, all six faces visible, room for a seventh empty chair in foreground inviting the player. Distinct readable silhouettes, one coherent scene, no panels, no text, no letters, no UI, no logo. Painterly game illustration, clear large forms, controlled details, warm human focus rather than spectacle. This is a narrative illustration, not a gameplay screenshot.",
+  "status": "linked",
+  "note": "Narrative illustration. The world change is a separate geometric table, not a recreation of this painted courtyard."
+}

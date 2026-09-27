@@ -11,6 +11,25 @@ use crate::game_state::GameState;
 
 const LOCALIZED_SEPARATOR: char = '\u{1f}';
 
+/// Explicit artwork uses the existing portrait field; legacy neighbor IDs
+/// retain their old behavior. Invalid or unknown references return no artwork.
+pub fn artwork_path(scene: &str, portrait: &str) -> Option<String> {
+    if let Some(relative) = portrait.strip_prefix("res://assets/") {
+        let valid = !relative.contains('\\')
+            && relative.split('/').all(|part| !part.is_empty() && part != "." && part != "..")
+            && (relative.ends_with(".png") || relative.ends_with(".tres"));
+        return valid.then(|| portrait.to_string());
+    }
+    if ["ivo", "noel", "lucien", "ash", "emil", "yves"].contains(&portrait) {
+        let folder = if scene.ends_with("_city") { "illustrations" } else { "portraits" };
+        return Some(format!("res://assets/{folder}/neighbors/{portrait}.tres"));
+    }
+    if scene == "wardrobe" {
+        return Some("res://assets/illustrations/costumes/femboy_classes_fullbody.png".into());
+    }
+    None
+}
+
 pub fn localized(value: &str, lang: &str) -> String {
     let Some((ru, en)) = value.split_once(LOCALIZED_SEPARATOR) else {
         return value.to_string();

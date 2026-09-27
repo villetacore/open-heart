@@ -21,6 +21,8 @@ pub struct SpecDef {
     pub lifesteal: f32,
     pub ammo_mult: f32,
     pub extra_weapon: Option<WeaponId>,
+    /// Слот умения (0/1), которому этот спек даёт второй заряд (план §5).
+    pub charge_slot: Option<usize>,
 }
 
 pub struct ClassDef {
@@ -99,6 +101,8 @@ struct SpecRaw {
     ammo_mult: f32,
     #[serde(default)]
     extra_weapon: Option<String>,
+    #[serde(default)]
+    charge_slot: Option<usize>,
 }
 
 #[derive(Deserialize)]
@@ -150,6 +154,7 @@ impl SpecRaw {
             lifesteal: self.lifesteal,
             ammo_mult: self.ammo_mult,
             extra_weapon: extra,
+            charge_slot: self.charge_slot.filter(|slot| *slot < 2),
         })
     }
 }
@@ -255,6 +260,8 @@ pub struct Loadout {
     pub cd_mult: f32,
     pub lifesteal: f32,
     pub ammo_mult: f32,
+    /// Слот умения со вторым зарядом от специализации (None — у всех по одному).
+    pub charge_slot: Option<usize>,
 }
 
 pub fn compute_loadout(class_idx: usize, spec_idx: usize, level: u32) -> Loadout {
@@ -269,6 +276,7 @@ pub fn compute_loadout(class_idx: usize, spec_idx: usize, level: u32) -> Loadout
         cd_mult: s.cd_mult,
         lifesteal: s.lifesteal,
         ammo_mult: s.ammo_mult,
+        charge_slot: s.charge_slot,
     }
 }
 

@@ -18,3 +18,5 @@ mod hash_disk_tests;
 mod preset_tests;
 #[cfg(test)]
 mod recipe_tests;
+#[cfg(test)]
+mod evening_tests;

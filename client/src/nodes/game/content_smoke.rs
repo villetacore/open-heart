@@ -18,6 +18,88 @@ impl Game3D {
 #[godot_api(secondary)]
 impl Game3D {
     #[func]
+    fn runtime_evening_smoke(&mut self) -> VarDictionary {
+        let mut result = VarDictionary::new();
+        self.autosave_enabled = false;
+        self.state = Some(GameState::new("Evening test"));
+        self.confirm_class(1, 0);
+        self.creative = false;
+        let steps = [
+            ("evening_circuit", "ash", "solve_puzzle", "2"),
+            ("evening_memory", "noel", "discover_lore", "3"),
+            ("evening_music", "lucien", "interact", "yves"),
+            ("evening_table", "emil", "interact", "ren"),
+        ];
+        // Existing side stories are entry requirements, not part of this smoke.
+        for giver in ["ash", "noel", "lucien", "emil"] {
+            for stage in 1..=2 {
+                let id = format!("neighbors_{giver}_{stage}");
+                let state = self.state.as_mut().unwrap();
+                state.quests.add(&id, &id, "test prerequisite");
+                state.quests.complete(&id);
+            }
+        }
+        // A direct link to an authored offer must not bypass dependencies.
+        self.scene = self.resolve_scene("evening_table_offer");
+        self.mode = Mode::Dialogue;
+        self.at_choices = true;
+        self.select_choice(0);
+        result.set("locked_offer", !self.state.as_ref().unwrap().quests.has("evening_table"));
+        let gold_before = self.state.as_ref().unwrap().gold;
+        for (id, giver, event, target) in steps {
+            self.bump_quests(event, target);
+            result.set(format!("{id}_fresh").as_str(), !self.state.as_ref().unwrap().quest_kills.contains_key(id));
+            self.smoke_giver_choice(giver);
+            result.set(format!("{id}_accepted").as_str(), self.state.as_ref().unwrap().quests.is_active(id));
+            // A direct completion link is insufficient without its event.
+            self.scene = self.resolve_scene(&format!("{id}_complete"));
+            self.mode = Mode::Dialogue;
+            self.at_choices = true;
+            self.select_choice(0);
+            result.set(format!("{id}_no_early_reward").as_str(), self.state.as_ref().unwrap().quests.is_active(id));
+            self.bump_quests(event, "wrong_target");
+            // Wildcard puzzle/lore objectives accept any depth, social ones do not.
+            if event == "interact" {
+                result.set(format!("{id}_target").as_str(), !self.state.as_ref().unwrap().quest_kills.contains_key(id));
+            }
+            self.bump_quests(event, target);
+            let json = save::SaveData::from_game(self.state.as_ref().unwrap(), 100.0, &self.arsenal).to_json().unwrap();
+            let (restored, _, _) = save::SaveData::from_json(&json).unwrap().into_game();
+            self.state = Some(restored);
+            result.set(format!("{id}_saved").as_str(), self.state.as_ref().unwrap().quest_kills.get(id) == Some(&1));
+            self.smoke_giver_choice(giver);
+            result.set(format!("{id}_completed").as_str(), self.state.as_ref().unwrap().quests.is_completed(id));
+            let repeat = self.make_quest_scene(giver, id).unwrap();
+            result.set(format!("{id}_no_repeat").as_str(), !repeat.choices.iter().flat_map(|c| &c.effects).any(|e| matches!(e, Effect::QuestDone(_))));
+        }
+        result.set("reward_total", self.state.as_ref().unwrap().gold == gold_before + 235);
+        result.set("ending_flag", self.state.as_ref().unwrap().has("shared_evening"));
+        result.set("food_reward", self.state.as_ref().unwrap().inventory.items.iter().any(|i| i.id == "bread" && i.qty == 2));
+        self.refresh_quest_world_changes();
+        self.refresh_quest_world_changes();
+        let tables = self.base().get_children().iter_shared().filter(|n| n.get_name() == "QuestEvolution_shared_table").count();
+        result.set("one_table", tables == 1);
+        self.scene = self.resolve_scene("evening_epilogue");
+        self.line_idx = 0;
+        self.refresh_dlg_ui();
+        result.set("ending_art", self.dialogue_portrait.as_ref().is_some_and(|p| p.is_visible() && p.get_texture().is_some()));
+        self.scene = Some(Scene { id: "unknown_art".into(), lines: vec![Line::new("", "unknown_npc", "Test")], choices: vec![] });
+        self.refresh_dlg_ui();
+        result.set("old_art_cleared", self.dialogue_portrait.as_ref().is_some_and(|p| !p.is_visible() && p.get_texture().is_none()));
+        for neighbor in ["ivo", "noel", "lucien", "ash", "emil", "yves"] {
+            self.scene = self.resolve_scene(&format!("neighbors_{neighbor}_city"));
+            self.refresh_dlg_ui();
+            result.set(format!("{neighbor}_city_art").as_str(), self.dialogue_portrait.as_ref().is_some_and(|p| p.is_visible() && p.get_texture().is_some()));
+        }
+        self.scene = self.resolve_scene("evening_epilogue");
+        self.mode = Mode::Dialogue;
+        self.at_choices = false;
+        if let Some(panel) = self.dlg_panel.as_mut() { panel.set_visible(true); }
+        self.refresh_dlg_ui();
+        result
+    }
+
+    #[func]
     fn runtime_content_smoke(&mut self) -> VarDictionary {
         let mut result = VarDictionary::new();
         result.set("creative_session", self.creative && !self.autosave_enabled && self.net.is_none());

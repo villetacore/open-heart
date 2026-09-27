@@ -286,6 +286,18 @@ impl Game3D {
         self.loadout.ammo_mult += mods.ammo_add;
         self.loadout.max_hp = self.loadout.max_hp.max(40.0);
 
+        // Второй заряд умения от специализации (план §5): спек может дать одному
+        // слоту два заряда. Сеть спек-нейтральна, поэтому только в одиночной игре.
+        let charge_slot = self.loadout.charge_slot;
+        if !self.net_ready() {
+            if let Some(state) = self.state.as_mut() {
+                for slot in 0..2 {
+                    let max = if charge_slot == Some(slot) { 2 } else { 1 };
+                    state.abilities.set_max_charges(slot, max);
+                }
+            }
+        }
+
         let c = &classes()[class_idx];
         let s = &c.specs[spec_idx];
 

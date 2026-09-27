@@ -2548,6 +2548,17 @@
     "choices": [
       {
         "text": {
+          "ru": "Об общем вечере…",
+          "en": "About our shared evening…"
+        },
+        "requires": {
+          "quest_done": "evening_music",
+          "not_flag": "shared_evening"
+        },
+        "next": "evening_ren_invitation"
+      },
+      {
+        "text": {
           "ru": "Нужна помощь?",
           "en": "Need a hand?"
         },
@@ -2746,6 +2757,16 @@
       },
       {
         "text": {
+          "ru": "Как тебе общий вечер?",
+          "en": "How was our shared evening?"
+        },
+        "requires": {
+          "flag": "shared_evening"
+        },
+        "next": "evening_after_ivo"
+      },
+      {
+        "text": {
           "ru": "До встречи.",
           "en": "See you."
         }
@@ -2911,6 +2932,16 @@
           "en": "Your style and technology?"
         },
         "next": "neighbors_noel_style"
+      },
+      {
+        "text": {
+          "ru": "Как тебе общий вечер?",
+          "en": "How was our shared evening?"
+        },
+        "requires": {
+          "flag": "shared_evening"
+        },
+        "next": "evening_after_noel"
       },
       {
         "text": {
@@ -3082,6 +3113,16 @@
       },
       {
         "text": {
+          "ru": "Как тебе общий вечер?",
+          "en": "How was our shared evening?"
+        },
+        "requires": {
+          "flag": "shared_evening"
+        },
+        "next": "evening_after_lucien"
+      },
+      {
+        "text": {
           "ru": "До встречи.",
           "en": "See you."
         }
@@ -3247,6 +3288,16 @@
           "en": "Your style and technology?"
         },
         "next": "neighbors_ash_style"
+      },
+      {
+        "text": {
+          "ru": "Как тебе общий вечер?",
+          "en": "How was our shared evening?"
+        },
+        "requires": {
+          "flag": "shared_evening"
+        },
+        "next": "evening_after_ash"
       },
       {
         "text": {
@@ -3418,6 +3469,16 @@
       },
       {
         "text": {
+          "ru": "Как тебе общий вечер?",
+          "en": "How was our shared evening?"
+        },
+        "requires": {
+          "flag": "shared_evening"
+        },
+        "next": "evening_after_emil"
+      },
+      {
+        "text": {
           "ru": "До встречи.",
           "en": "See you."
         }
@@ -3558,6 +3619,17 @@
     "choices": [
       {
         "text": {
+          "ru": "Об общем вечере…",
+          "en": "About our shared evening…"
+        },
+        "requires": {
+          "quest_done": "evening_memory",
+          "not_flag": "shared_evening"
+        },
+        "next": "evening_yves_corner"
+      },
+      {
+        "text": {
           "ru": "Чем могу помочь?",
           "en": "How can I help?"
         },
@@ -3583,6 +3655,16 @@
           "en": "Your style and technology?"
         },
         "next": "neighbors_yves_style"
+      },
+      {
+        "text": {
+          "ru": "Как тебе общий вечер?",
+          "en": "How was our shared evening?"
+        },
+        "requires": {
+          "flag": "shared_evening"
+        },
+        "next": "evening_after_yves"
       },
       {
         "text": {
@@ -5729,6 +5811,927 @@
           "en": "Back to our conversation."
         },
         "next": "neighbors_yves"
+      }
+    ]
+  },
+  {
+    "id": "evening_circuit_offer",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Эш",
+          "en": "Ash"
+        },
+        "portrait": "ash",
+        "text": {
+          "ru": "Образцы помогли подобрать лампы. Но питание всё ещё скачет. Для общего вечера нужна схема, которая выдержит больше одного фонаря.",
+          "en": "The samples helped us choose lamps, but the supply is still unstable. Our shared evening needs a circuit that can support more than one lantern."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Эш",
+          "en": "Ash"
+        },
+        "portrait": "ash",
+        "text": {
+          "ru": "Внизу сохранились релейные группы. Синхронизируй одну по порядку и запомни последовательность. Я повторю её на нашей линии — вытаскивать из стены провода не надо.",
+          "en": "Relay groups survive below. Synchronize one in order and remember the sequence. I can reproduce it here; there is no need to pull wires out of the walls."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Эш",
+          "en": "Ash"
+        },
+        "portrait": "res://assets/illustrations/neighbors/ash.tres",
+        "text": {
+          "ru": "После принятия синхронизируй одну группу из трёх реле в комнате головоломки на глубине 2 или ниже. Вернись к Эш на южную дорогу. Старые решения не засчитываются.",
+          "en": "After accepting, synchronize one group of three relays in a puzzle room at depth 2 or deeper. Return to Ash on the southern road. Earlier solutions do not count."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Я помогу.",
+          "en": "I’ll help."
+        },
+        "effects": [
+          {
+            "kind": "quest",
+            "id": "evening_circuit",
+            "title": {
+              "ru": "Свет без мерцания",
+              "en": "A Steady Light"
+            },
+            "desc": {
+              "ru": "После принятия синхронизируй одну группу из трёх реле в комнате головоломки на глубине 2 или ниже. Вернись к Эш на южную дорогу. Старые решения не засчитываются.",
+              "en": "After accepting, synchronize one group of three relays in a puzzle room at depth 2 or deeper. Return to Ash on the southern road. Earlier solutions do not count."
+            }
+          }
+        ]
+      },
+      {
+        "text": {
+          "ru": "Вернусь позже.",
+          "en": "I’ll return later."
+        }
+      }
+    ]
+  },
+  {
+    "id": "evening_circuit_progress",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Эш",
+          "en": "Ash"
+        },
+        "portrait": "ash",
+        "text": {
+          "ru": "Ищи комнату с тремя реле со второго яруса. Ошибка сбрасывает порядок, но не закрывает попытку. Мне нужен устойчивый цикл, а не самая быстрая попытка.",
+          "en": "Look for a room with three relays from depth two onward. A mistake resets the sequence, but you can retry. I need a stable cycle, not a speed record."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Продолжу.",
+          "en": "I’ll keep going."
+        }
+      }
+    ]
+  },
+  {
+    "id": "evening_circuit_complete",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Эш",
+          "en": "Ash"
+        },
+        "portrait": "ash",
+        "text": {
+          "ru": "Теперь понимаю, где терялся импульс. Лампы перестанут спорить друг с другом. Я закончу монтаж, а ты загляни к Ноэлю: он ищет историю для вечера.",
+          "en": "Now I see where the pulse was getting lost. The lamps can stop arguing with one another. I will finish the wiring; visit Noel, who is looking for a story for the evening."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Завершить задание.",
+          "en": "Complete quest."
+        },
+        "effects": [
+          {
+            "kind": "quest_done",
+            "id": "evening_circuit"
+          },
+          {
+            "kind": "xp",
+            "value": 180
+          },
+          {
+            "kind": "gold",
+            "value": 70
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "evening_memory_offer",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Ноэль",
+          "en": "Noel"
+        },
+        "portrait": "noel",
+        "text": {
+          "ru": "Для вечера все предлагают рассказ о победе. Я хочу оставить место тем, кто жил здесь между победами.",
+          "en": "Everyone suggests a victory story for the evening. I want room for the people who lived here between victories."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Ноэль",
+          "en": "Noel"
+        },
+        "portrait": "noel",
+        "text": {
+          "ru": "На третьем ярусе встречаются эхо памяти. Послушай одно целиком. Принеси не легенду, а то, что действительно услышишь. Даже если там будет только чей-то страх.",
+          "en": "Memory echoes appear from depth three onward. Listen to one in full. Bring back what you actually hear, not a legend, even if all it contains is someone’s fear."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Ноэль",
+          "en": "Noel"
+        },
+        "portrait": "res://assets/illustrations/neighbors/noel.tres",
+        "text": {
+          "ru": "После принятия найди и прослушай одно эхо памяти в сюжетной комнате на глубине 3 или ниже. Вернись к Ноэлю. Уже услышанные до принятия записи не засчитываются.",
+          "en": "After accepting, listen to one memory echo in a story room at depth 3 or deeper. Return to Noel. Echoes heard before acceptance do not count."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Я помогу.",
+          "en": "I’ll help."
+        },
+        "effects": [
+          {
+            "kind": "quest",
+            "id": "evening_memory",
+            "title": {
+              "ru": "Не только имена победителей",
+              "en": "More Than Victors’ Names"
+            },
+            "desc": {
+              "ru": "После принятия найди и прослушай одно эхо памяти в сюжетной комнате на глубине 3 или ниже. Вернись к Ноэлю. Уже услышанные до принятия записи не засчитываются.",
+              "en": "After accepting, listen to one memory echo in a story room at depth 3 or deeper. Return to Noel. Echoes heard before acceptance do not count."
+            }
+          }
+        ]
+      },
+      {
+        "text": {
+          "ru": "Вернусь позже.",
+          "en": "I’ll return later."
+        }
+      }
+    ]
+  },
+  {
+    "id": "evening_memory_progress",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Ноэль",
+          "en": "Noel"
+        },
+        "portrait": "noel",
+        "text": {
+          "ru": "Эхо ищи в тихой сюжетной комнате, не среди реле. Коснись источника памяти. Не нужно приписывать голосу имя, если он сам его не назвал.",
+          "en": "Look for an echo in a quiet story room, not among the relays. Interact with the memory source. Do not assign the voice a name it never gave."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Продолжу.",
+          "en": "I’ll keep going."
+        }
+      }
+    ]
+  },
+  {
+    "id": "evening_memory_complete",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Ноэль",
+          "en": "Noel"
+        },
+        "portrait": "noel",
+        "text": {
+          "ru": "Запишу твой пересказ как свидетельство, не как окончательную правду. Сегодня за столом можно говорить и о том, чего мы пока не понимаем.",
+          "en": "I will record your account as testimony, not a final truth. Tonight there is room at the table for things we do not yet understand."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Ноэль",
+          "en": "Noel"
+        },
+        "portrait": "noel",
+        "text": {
+          "ru": "Люсьен готовит музыку. Кажется, он боится нарушить тишину больше, чем я — заговорить. Спроси, не нужна ли ему помощь.",
+          "en": "Lucien is preparing the music. I think he fears breaking the silence more than I fear speaking. Ask whether he needs a hand."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Завершить задание.",
+          "en": "Complete quest."
+        },
+        "effects": [
+          {
+            "kind": "quest_done",
+            "id": "evening_memory"
+          },
+          {
+            "kind": "xp",
+            "value": 180
+          },
+          {
+            "kind": "gold",
+            "value": 70
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "evening_music_offer",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Люсьен",
+          "en": "Lucien"
+        },
+        "portrait": "lucien",
+        "text": {
+          "ru": "Я могу сыграть громко. Хочу понять, умею ли сыграть так, чтобы никто не чувствовал себя запертым на концерте.",
+          "en": "I can play loudly. I want to know whether I can play without making anyone feel trapped at a concert."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Люсьен",
+          "en": "Lucien"
+        },
+        "portrait": "lucien",
+        "text": {
+          "ru": "Поговори с Ивом. У сада нужен свободный угол, куда можно отойти с чашкой. Это будет частью вечера, а не местом для тех, кому «не понравилось».",
+          "en": "Talk to Yves. We need a quiet corner by the garden where someone can take their cup. It should be part of the evening, not a place for people who “didn’t like it”."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Люсьен",
+          "en": "Lucien"
+        },
+        "portrait": "res://assets/illustrations/neighbors/lucien.tres",
+        "text": {
+          "ru": "После принятия поговори с Ивом в южной части квартала о тихом месте рядом с двором. Вернись к Люсьену.",
+          "en": "After accepting, speak with Yves in the southern quarter about a quiet place beside the courtyard. Return to Lucien."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Я помогу.",
+          "en": "I’ll help."
+        },
+        "effects": [
+          {
+            "kind": "quest",
+            "id": "evening_music",
+            "title": {
+              "ru": "Тише, чем обычно",
+              "en": "Softer Than Usual"
+            },
+            "desc": {
+              "ru": "После принятия поговори с Ивом в южной части квартала о тихом месте рядом с двором. Вернись к Люсьену.",
+              "en": "After accepting, speak with Yves in the southern quarter about a quiet place beside the courtyard. Return to Lucien."
+            }
+          }
+        ]
+      },
+      {
+        "text": {
+          "ru": "Вернусь позже.",
+          "en": "I’ll return later."
+        }
+      }
+    ]
+  },
+  {
+    "id": "evening_music_progress",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Люсьен",
+          "en": "Lucien"
+        },
+        "portrait": "lucien",
+        "text": {
+          "ru": "Ив у южной дороги. Спроси о тихом уголке и возвращайся. Пока подберу мелодию, которая не пытается заполнить собой весь двор.",
+          "en": "Yves is by the southern road. Ask about the quiet corner and come back. I will find a melody that does not try to fill the entire courtyard."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Продолжу.",
+          "en": "I’ll keep going."
+        }
+      }
+    ]
+  },
+  {
+    "id": "evening_music_complete",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Люсьен",
+          "en": "Lucien"
+        },
+        "portrait": "lucien",
+        "text": {
+          "ru": "Оставим проход свободным. Первую сыграю тихо, а потом послушаю разговоры. Теперь к Эмилю: музыка без ужина слишком похожа на репетицию.",
+          "en": "We will leave the path clear. I will play the first tune softly, then listen to the conversation. See Emil next; music without dinner feels too much like rehearsal."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Завершить задание.",
+          "en": "Complete quest."
+        },
+        "effects": [
+          {
+            "kind": "quest_done",
+            "id": "evening_music"
+          },
+          {
+            "kind": "xp",
+            "value": 90
+          },
+          {
+            "kind": "gold",
+            "value": 35
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "evening_table_offer",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Эмиль",
+          "en": "Emil"
+        },
+        "portrait": "emil",
+        "text": {
+          "ru": "С дорогой ты уже помог, свет Эш наладила. Осталось не забыть человека, который обычно наливает чай всем остальным.",
+          "en": "You helped with the road; Ash fixed the lights. Now we must remember the person who usually pours tea for everyone else."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Эмиль",
+          "en": "Emil"
+        },
+        "portrait": "emil",
+        "text": {
+          "ru": "Загляни к Рену. Сегодня он гость. Чашки у нас есть. Возвращайся вместе с добрыми новостями — хлеб как раз успеет остыть.",
+          "en": "Visit Ren. Tonight he is a guest. We have cups. Come back with the good news; the bread will have cooled by then."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Эмиль",
+          "en": "Emil"
+        },
+        "portrait": "res://assets/illustrations/neighbors/emil.tres",
+        "text": {
+          "ru": "После принятия пригласи Рена из чайной на площади, затем вернись к Эмилю на южную дорогу. За завершение появится общий стол рядом с пекарем.",
+          "en": "After accepting, invite Ren from the tea house on the square, then return to Emil on the southern road. Completing this quest adds a shared table beside the baker."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Я помогу.",
+          "en": "I’ll help."
+        },
+        "effects": [
+          {
+            "kind": "quest",
+            "id": "evening_table",
+            "title": {
+              "ru": "Место за столом",
+              "en": "A Place at the Table"
+            },
+            "desc": {
+              "ru": "После принятия пригласи Рена из чайной на площади, затем вернись к Эмилю на южную дорогу. За завершение появится общий стол рядом с пекарем.",
+              "en": "After accepting, invite Ren from the tea house on the square, then return to Emil on the southern road. Completing this quest adds a shared table beside the baker."
+            }
+          }
+        ]
+      },
+      {
+        "text": {
+          "ru": "Вернусь позже.",
+          "en": "I’ll return later."
+        }
+      }
+    ]
+  },
+  {
+    "id": "evening_table_progress",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Эмиль",
+          "en": "Emil"
+        },
+        "portrait": "emil",
+        "text": {
+          "ru": "Рен в чайной на площади. Не проси приносить посуду и не превращай приглашение в новый заказ. Просто скажи, что мы его ждём.",
+          "en": "Ren is at the tea house on the square. Do not ask him to bring dishes or turn the invitation into another order. Just tell him we are expecting him."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Продолжу.",
+          "en": "I’ll keep going."
+        }
+      }
+    ]
+  },
+  {
+    "id": "evening_table_complete",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Эмиль",
+          "en": "Emil"
+        },
+        "portrait": "emil",
+        "text": {
+          "ru": "Значит, ставим ещё одну чашку. Стол готов. Это не награда только для победителя — это ужин для всех, кто дожил до вечера.",
+          "en": "Then we will set out another cup. The table is ready. This is not a prize just for the victor; it is dinner for everyone who made it to evening."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Завершить задание.",
+          "en": "Complete quest."
+        },
+        "effects": [
+          {
+            "kind": "quest_done",
+            "id": "evening_table"
+          },
+          {
+            "kind": "xp",
+            "value": 160
+          },
+          {
+            "kind": "gold",
+            "value": 60
+          },
+          {
+            "kind": "flag",
+            "flag": "shared_evening"
+          }
+        ],
+        "next": "evening_epilogue"
+      }
+    ]
+  },
+  {
+    "id": "evening_epilogue",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Эш",
+          "en": "Ash"
+        },
+        "portrait": "res://assets/illustrations/neighbors/shared_evening_v1.png",
+        "text": {
+          "ru": "Видишь? Ни мерцания. Я почти забыла, как выглядит просто свет.",
+          "en": "See? No flicker. I had almost forgotten what ordinary light looks like."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Эмиль",
+          "en": "Emil"
+        },
+        "portrait": "res://assets/illustrations/neighbors/shared_evening_v1.png",
+        "text": {
+          "ru": "Тарелок хватит. А если придёт ещё кто-то, подвинемся. Из-за лишнего гостя никого домой не отправляют.",
+          "en": "There are enough plates. If someone else comes, we will make room. Nobody gets sent home for being one guest too many."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Иво",
+          "en": "Ivo"
+        },
+        "portrait": "res://assets/illustrations/neighbors/shared_evening_v1.png",
+        "text": {
+          "ru": "Цветы без сильного запаха, как просил Рен. Впервые за неделю мне не хочется ничего поправлять в букете.",
+          "en": "Unscented flowers, as Ren asked. For the first time this week, I do not want to adjust the bouquet."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Ив",
+          "en": "Yves"
+        },
+        "portrait": "res://assets/illustrations/neighbors/shared_evening_v1.png",
+        "text": {
+          "ru": "У сада оставлен проход. Захочешь тишины — отойди. Место за столом останется твоим.",
+          "en": "The path by the garden is clear. Step away if you need quiet. Your place at the table will still be yours."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Люсьен",
+          "en": "Lucien"
+        },
+        "portrait": "res://assets/illustrations/neighbors/shared_evening_v1.png",
+        "text": {
+          "ru": "Первую сыграю тихо. Хочу сначала услышать, как вы разговариваете.",
+          "en": "I will play the first one softly. I want to hear everyone talking first."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Ноэль",
+          "en": "Noel"
+        },
+        "portrait": "res://assets/illustrations/neighbors/shared_evening_v1.png",
+        "text": {
+          "ru": "Дату я записал. Остальное попробую запомнить без бумаги.",
+          "en": "I have written down the date. I will try to remember the rest without paper."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Останусь на чашку чая.",
+          "en": "I’ll stay for a cup of tea."
+        }
+      },
+      {
+        "text": {
+          "ru": "Ещё вернусь. Берегите друг друга.",
+          "en": "I’ll be back. Look after one another."
+        }
+      }
+    ]
+  },
+  {
+    "id": "evening_after_ivo",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Иво",
+          "en": "Ivo"
+        },
+        "portrait": "res://assets/illustrations/neighbors/ivo.tres",
+        "text": {
+          "ru": "Ноэль попросил сохранить засохший цветок из букета. Не для описи. Просто попросил.",
+          "en": "Noel asked me to keep a dried flower from the bouquet. Not for an inventory. He simply asked."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Иво",
+          "en": "Ivo"
+        },
+        "portrait": "res://assets/illustrations/neighbors/ivo.tres",
+        "text": {
+          "ru": "Наутро я снова открыл холодильник и принял поставку. Хороший вечер не отменяет работу. Зато напоминает, для кого она.",
+          "en": "The next morning I opened the fridge and received a delivery. A good evening does not cancel work. It reminds you who it is for."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Вспомним тот вечер.",
+          "en": "Remember that evening."
+        },
+        "next": "evening_epilogue"
+      },
+      {
+        "text": {
+          "ru": "Вернёмся к разговору.",
+          "en": "Back to our conversation."
+        },
+        "next": "neighbors_ivo"
+      }
+    ]
+  },
+  {
+    "id": "evening_after_noel",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Ноэль",
+          "en": "Noel"
+        },
+        "portrait": "res://assets/illustrations/neighbors/noel.tres",
+        "text": {
+          "ru": "В записи о вечере нет списка заслуг. Есть имена тех, кто пришёл, и пятно от чая.",
+          "en": "The record of our evening has no list of achievements. It has the names of those who came and a tea stain."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Ноэль",
+          "en": "Noel"
+        },
+        "portrait": "res://assets/illustrations/neighbors/noel.tres",
+        "text": {
+          "ru": "Пятно оставлю. Источники иногда сообщают больше, когда их не пытаются привести в идеальный вид.",
+          "en": "I will keep the stain. Sources sometimes tell you more when you stop trying to make them perfect."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Вспомним тот вечер.",
+          "en": "Remember that evening."
+        },
+        "next": "evening_epilogue"
+      },
+      {
+        "text": {
+          "ru": "Вернёмся к разговору.",
+          "en": "Back to our conversation."
+        },
+        "next": "neighbors_noel"
+      }
+    ]
+  },
+  {
+    "id": "evening_after_lucien",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Люсьен",
+          "en": "Lucien"
+        },
+        "portrait": "res://assets/illustrations/neighbors/lucien.tres",
+        "text": {
+          "ru": "Я сыграл тише, чем на репетиции. Оказалось, никто не перестаёт слушать только потому, что может свободно разговаривать.",
+          "en": "I played more softly than at rehearsal. People did not stop listening just because they could talk freely."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Люсьен",
+          "en": "Lucien"
+        },
+        "portrait": "res://assets/illustrations/neighbors/lucien.tres",
+        "text": {
+          "ru": "В следующий раз попрошу кого-нибудь выбрать первую песню. Не хочу, чтобы общий вечер зависел только от моего настроения.",
+          "en": "Next time I will ask someone else to choose the first song. A shared evening should not depend only on my mood."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Вспомним тот вечер.",
+          "en": "Remember that evening."
+        },
+        "next": "evening_epilogue"
+      },
+      {
+        "text": {
+          "ru": "Вернёмся к разговору.",
+          "en": "Back to our conversation."
+        },
+        "next": "neighbors_lucien"
+      }
+    ]
+  },
+  {
+    "id": "evening_after_ash",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Эш",
+          "en": "Ash"
+        },
+        "portrait": "res://assets/illustrations/neighbors/ash.tres",
+        "text": {
+          "ru": "Ночью я всё-таки проверила линию ещё раз. Привычка. Но впервые делала это без страха, что сейчас кто-то позовёт из темноты.",
+          "en": "I checked the circuit once more that night. Habit. For once, I did not expect someone to call from the dark."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Эш",
+          "en": "Ash"
+        },
+        "portrait": "res://assets/illustrations/neighbors/ash.tres",
+        "text": {
+          "ru": "Если лампы снова погаснут, мы знаем, с чего начать. Надёжность — это ещё и возможность починить всё второй раз.",
+          "en": "If the lamps go out again, we know where to start. Reliability also means being able to repair something a second time."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Вспомним тот вечер.",
+          "en": "Remember that evening."
+        },
+        "next": "evening_epilogue"
+      },
+      {
+        "text": {
+          "ru": "Вернёмся к разговору.",
+          "en": "Back to our conversation."
+        },
+        "next": "neighbors_ash"
+      }
+    ]
+  },
+  {
+    "id": "evening_after_emil",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Эмиль",
+          "en": "Emil"
+        },
+        "portrait": "res://assets/illustrations/neighbors/emil.tres",
+        "text": {
+          "ru": "Хлеб закончился раньше чая. Считаю это хорошим результатом. Осталось только вернуть Рену его чашку — он всё равно принёс свою.",
+          "en": "We ran out of bread before tea. I call that a success. Now I must return Ren’s cup; he brought his own anyway."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Эмиль",
+          "en": "Emil"
+        },
+        "portrait": "res://assets/illustrations/neighbors/emil.tres",
+        "text": {
+          "ru": "Стол оставим. Ему не обязательно ждать следующего праздника. Завтра за ним можно просто позавтракать.",
+          "en": "We will keep the table. It need not wait for another celebration. Tomorrow someone can simply have breakfast there."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Вспомним тот вечер.",
+          "en": "Remember that evening."
+        },
+        "next": "evening_epilogue"
+      },
+      {
+        "text": {
+          "ru": "Вернёмся к разговору.",
+          "en": "Back to our conversation."
+        },
+        "next": "neighbors_emil"
+      }
+    ]
+  },
+  {
+    "id": "evening_after_yves",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Ив",
+          "en": "Yves"
+        },
+        "portrait": "res://assets/illustrations/neighbors/yves.tres",
+        "text": {
+          "ru": "В тихом уголке кто-то оставил две чашки рядом. Значит, тишину тоже можно разделить.",
+          "en": "Someone left two cups together in the quiet corner. Silence can be shared too."
+        }
+      },
+      {
+        "speaker": {
+          "ru": "Ив",
+          "en": "Yves"
+        },
+        "portrait": "res://assets/illustrations/neighbors/yves.tres",
+        "text": {
+          "ru": "Я убрал чашки, но не поставил табличку. Пусть это место остаётся приглашением, а не инструкцией.",
+          "en": "I cleared the cups but put up no sign. Let the place remain an invitation, not an instruction."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Вспомним тот вечер.",
+          "en": "Remember that evening."
+        },
+        "next": "evening_epilogue"
+      },
+      {
+        "text": {
+          "ru": "Вернёмся к разговору.",
+          "en": "Back to our conversation."
+        },
+        "next": "neighbors_yves"
+      }
+    ]
+  },
+  {
+    "id": "evening_yves_corner",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Ив",
+          "en": "Yves"
+        },
+        "portrait": "yves",
+        "text": {
+          "ru": "Оставлю проход вдоль клумб. И скамейку подальше от сцены. Передай Люсьену: уходить в тишину — не значит уходить от него.",
+          "en": "I will leave a path beside the beds and a bench away from the stage. Tell Lucien that stepping into quiet does not mean stepping away from him."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Передам. Спасибо.",
+          "en": "I’ll tell them. Thank you."
+        },
+        "next": "neighbors_yves"
+      }
+    ]
+  },
+  {
+    "id": "evening_ren_invitation",
+    "lines": [
+      {
+        "speaker": {
+          "ru": "Рен",
+          "en": "Ren"
+        },
+        "portrait": "ren",
+        "text": {
+          "ru": "Мне не нужно ничего приносить? Даже чайник? Тогда я приду. Непривычно слышать приглашение, в котором нет заказа.",
+          "en": "I do not need to bring anything? Not even a kettle? Then I will come. An invitation without an order takes some getting used to."
+        }
+      }
+    ],
+    "choices": [
+      {
+        "text": {
+          "ru": "Передам. Спасибо.",
+          "en": "I’ll tell them. Thank you."
+        },
+        "next": "tea_intro"
       }
     ]
   }

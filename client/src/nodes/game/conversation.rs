@@ -170,7 +170,9 @@ impl Game3D {
         let progress = self.quest_progress(&q);
         let ready = progress >= q.count;
 
-        let custom_scene = if !taken {
+        let custom_scene = if done {
+            None
+        } else if !taken {
             q.offer_scene.as_deref()
         } else if ready {
             q.complete_scene.as_deref()
@@ -431,6 +433,21 @@ impl Game3D {
             (avail[idx].effects.clone(), avail[idx].next.clone())
         };
         let lvl_before = self.state.as_ref().map(|s| s.level).unwrap_or(1);
+        // Authored scenes can be reached by a direct `next` link too. Enforce
+        // quest conditions here, not only when choosing a giver's scene.
+        if let (Some(cfg), Some(state)) = (self.cfg.as_ref(), self.state.as_ref()) {
+            let invalid = effects.iter().any(|effect| match effect {
+                Effect::QuestDone(id) => cfg.quest(id).is_some_and(|quest| {
+                    !state.quests.is_active(id) || self.quest_progress(quest) < quest.count
+                }),
+                Effect::Quest { id, .. } => cfg.quest(id).is_some_and(|quest| {
+                    state.quests.has(id)
+                        || !quest.requires.iter().all(|required| state.quests.is_completed(required))
+                }),
+                _ => false,
+            });
+            if invalid { return; }
+        }
         let msgs = self
             .state
             .as_mut()
@@ -531,6 +548,11 @@ impl Game3D {
         };
         if let Some(ref mut lbl) = self.dlg_text {
             lbl.set_text(&display);
+            if let Some(parent) = lbl.get_parent() {
+                if let Ok(mut scroll) = parent.try_cast::<ScrollContainer>() {
+                    scroll.set_v_scroll(0);
+                }
+            }
         }
         let cl = [
             self.cl0.as_mut(),

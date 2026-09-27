@@ -72,7 +72,20 @@ impl Game3D {
         if let Some(mut panel) = self.dlg_panel.clone() {
             place(&panel, 0.5, 0.5, 160.0, 180.0, 1600.0, 760.0);
             if let Some(t) = self.dlg_speaker.as_mut() { t.set_position(Vector2::new(36.0, 30.0)); t.set_size(Vector2::new(1450.0, 44.0)); t.add_theme_font_size_override("font_size", 30); }
-            if let Some(t) = self.dlg_text.as_mut() { t.set_position(Vector2::new(36.0, 100.0)); t.set_size(Vector2::new(700.0, 510.0)); t.add_theme_font_size_override("font_size", 25); }
+            if let Some(t) = self.dlg_text.as_mut() {
+                // Authored text gets its own scroll area so long localized
+                // lines cannot overlap the illustration below it.
+                panel.remove_child(&*t);
+                t.set_position(Vector2::ZERO);
+                t.set_size(Vector2::new(680.0, 0.0));
+                t.set_custom_minimum_size(Vector2::new(680.0, 0.0));
+                t.add_theme_font_size_override("font_size", 25);
+                let mut text_scroll = ScrollContainer::new_alloc();
+                text_scroll.set_position(Vector2::new(36.0, 100.0));
+                text_scroll.set_size(Vector2::new(710.0, 230.0));
+                text_scroll.add_child(&*t);
+                panel.add_child(&text_scroll);
+            }
             if let Some(box_) = self.choice_box.as_mut() { box_.set_visible(false); }
             let mut scroll = ScrollContainer::new_alloc();
             scroll.set_position(Vector2::new(790.0, 100.0));
@@ -86,8 +99,8 @@ impl Game3D {
             let mut portrait = TextureRect::new_alloc();
             portrait.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
             portrait.set_stretch_mode(godot::classes::texture_rect::StretchMode::KEEP_ASPECT_CENTERED);
-            portrait.set_position(Vector2::new(36.0, 430.0));
-            portrait.set_size(Vector2::new(700.0, 290.0));
+            portrait.set_position(Vector2::new(36.0, 340.0));
+            portrait.set_size(Vector2::new(700.0, 390.0));
             portrait.set_visible(false);
             panel.add_child(&portrait);
             self.dialogue_portrait = Some(portrait);
@@ -179,19 +192,21 @@ impl Game3D {
         if let Some(portrait) = self.dialogue_portrait.as_mut() {
             let id = scene.lines.get(self.line_idx).map(|l| l.portrait.as_str()).unwrap_or("");
             let index = match id { "stylist" => Some(0), "ren" => Some(1), "mika" => Some(2), _ => None };
-            let neighbor = ["ivo", "noel", "lucien", "ash", "emil", "yves"].contains(&id);
-            portrait.set_visible(index.is_some() || neighbor || scene.id == "wardrobe");
-            if neighbor {
-                let folder = if scene.id.ends_with("_city") { "illustrations" } else { "portraits" };
-                if let Some(texture) = art_texture(&format!("res://assets/{folder}/neighbors/{id}.tres")) { portrait.set_texture(&texture); }
-            } else if scene.id == "wardrobe" {
-                if let Some(texture) = art_texture("res://assets/illustrations/costumes/femboy_classes_fullbody.png") { portrait.set_texture(&texture); }
+            // Always clear the previous line's artwork, including failed loads.
+            portrait.set_visible(false);
+            portrait.set_texture(Gd::<Texture2D>::null_arg());
+            if let Some(path) = crate::dialogue::artwork_path(&scene.id, id) {
+                if let Some(texture) = art_texture(&path) {
+                    portrait.set_texture(&texture);
+                    portrait.set_visible(true);
+                }
             } else if let Some(index) = index {
                 if let Some(texture) = art_texture("res://assets/sprites/characters/citizens_atlas.png") {
                     let mut atlas = AtlasTexture::new_gd();
                     atlas.set_atlas(&texture);
                     atlas.set_region(Rect2::new(Vector2::new(index as f32 * 512.0, 0.0), Vector2::new(512.0, 500.0)));
                     portrait.set_texture(&atlas);
+                    portrait.set_visible(true);
                 }
             }
         }

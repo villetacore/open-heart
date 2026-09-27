@@ -326,6 +326,13 @@ impl GameState {
 
     /// Применить список эффектов, вернуть строки для флэш-сообщений.
     pub fn apply(&mut self, effects: &[Effect], lang: &str) -> Vec<String> {
+        // A completion and its rewards form one transaction. Replaying a saved
+        // dialogue must not grant its gold, items or flags a second time.
+        if effects.iter().any(|effect| {
+            matches!(effect, Effect::QuestDone(id) if self.quests.is_completed(id))
+        }) {
+            return Vec::new();
+        }
         let mut msgs = Vec::new();
         for e in effects {
             match e {

@@ -84,7 +84,7 @@ fn assert_quest_graph(preset_name: &str, quests: &[QuestCfg]) {
             assert!(
                 matches!(
                     change.pattern.as_str(),
-                    "beacon" | "garden" | "gallery" | "archive" | "shrine"
+                    "beacon" | "garden" | "gallery" | "archive" | "shrine" | "table"
                 ),
                 "{preset_name}/quests.json: quest '{}' has unknown world_change pattern '{}'",
                 quest.id,
@@ -143,13 +143,13 @@ fn assert_quest_graph(preset_name: &str, quests: &[QuestCfg]) {
     if preset_name == "core" {
         assert_eq!(
             world_change_ids.len(),
-            5,
-            "core/quests.json: expected one world change for each of five quest chains"
+            6,
+            "core/quests.json: expected five original finales and the neighborhood table"
         );
         assert_eq!(
             world_change_patterns.len(),
-            5,
-            "core/quests.json: quest chain world changes must use five distinct patterns"
+            6,
+            "core/quests.json: quest chain world changes must use six distinct patterns"
         );
     }
 

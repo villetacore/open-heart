@@ -293,7 +293,15 @@ impl INode3D for Game3D {
             self.open_class_select();
         }
         self.update_loc_label();
-        if self.creative { self.confirm_class(0, 0); self.creative_refill(); self.build_creative_panel(); }
+        if self.creative {
+            self.confirm_class(0, 0);
+            self.creative_refill();
+            self.build_creative_panel();
+            // Кнопка «Арена» в меню: сразу высадить игрока в бой с волной врагов.
+            if creative::take_arena_request() {
+                self.spawn_arena_wave("mixed");
+            }
+        }
     }
 
     fn input(&mut self, event: Gd<InputEvent>) {

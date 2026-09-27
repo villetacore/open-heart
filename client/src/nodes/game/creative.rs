@@ -3,10 +3,19 @@ use godot::classes::Button;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static REQUESTED: AtomicBool = AtomicBool::new(false);
+static ARENA: AtomicBool = AtomicBool::new(false);
 pub(crate) fn request() { REQUESTED.store(true, Ordering::SeqCst); }
+/// Запуск прямо в боевую арену: креатив + автоспавн волны при загрузке.
+pub(crate) fn request_arena() {
+    REQUESTED.store(true, Ordering::SeqCst);
+    ARENA.store(true, Ordering::SeqCst);
+}
 pub(super) fn take_request() -> bool {
     REQUESTED.swap(false, Ordering::SeqCst)
         || godot::classes::Os::singleton().get_cmdline_user_args().as_slice().iter().any(|s| *s == "--creative")
+}
+pub(super) fn take_arena_request() -> bool {
+    ARENA.swap(false, Ordering::SeqCst)
 }
 
 impl Game3D {
@@ -66,6 +75,11 @@ impl Game3D {
         actions.push((0, if en {"Return to city"} else {"Вернуться в город"}.into()));
         actions.push((1, if en {"Unlock maximum perk ranks"} else {"Открыть все ранги перков"}.into()));
         actions.push((2, if en {"Wardrobe · all accessories"} else {"Гардероб · все аксессуары"}.into()));
+        // Тестовая боевая арена: спавн волн вокруг игрока для проверки оружия/умений.
+        actions.push((200, if en {"Arena · light wave"} else {"Арена · лёгкая волна"}.into()));
+        actions.push((201, if en {"Arena · mixed wave"} else {"Арена · смешанная волна"}.into()));
+        actions.push((202, if en {"Arena · heavy wave"} else {"Арена · тяжёлая волна"}.into()));
+        actions.push((203, if en {"Arena · clear enemies"} else {"Арена · убрать врагов"}.into()));
         actions.push((-1, if en {"Return to game [Esc]"} else {"Вернуться в игру [Esc]"}.into()));
         for (index, (action, label)) in actions.into_iter().enumerate() {
             let mut button = Button::new_alloc();
@@ -105,8 +119,52 @@ impl Game3D {
             2 => self.open_wardrobe(),
             10..=18 => self.confirm_class(((action - 10) / 3) as usize, ((action - 10) % 3) as usize),
             101..=108 => self.enter_dungeon((action - 100) as u32),
+            200 => self.spawn_arena_wave("light"),
+            201 => self.spawn_arena_wave("mixed"),
+            202 => self.spawn_arena_wave("heavy"),
+            203 => self.clear_world_enemies(),
             _ => {},
         }
         self.creative_refill();
+    }
+
+    /// Убрать всех текущих врагов — сброс арены между тестами.
+    pub(super) fn clear_world_enemies(&mut self) {
+        for mut enemy in self.enemies.drain(..) {
+            enemy.queue_free();
+        }
+    }
+
+    /// Тестовая боевая арена: заспавнить волну врагов кольцом вокруг игрока.
+    /// Роли подбираются по тиру, по одному представителю на роль из пресета —
+    /// удобно проверять оружие, умения и баланс против разных противников.
+    pub(super) fn spawn_arena_wave(&mut self, tier: &str) {
+        let Some(player) = self.player() else { return; };
+        let center = player.get_global_position();
+        let roles: &[&str] = match tier {
+            "light" => &["pursuer", "pursuer", "pursuer", "artillery"],
+            "heavy" => &["tank", "artillery", "commander", "summoner", "support"],
+            _ => &["pursuer", "artillery", "tank", "support", "controller"],
+        };
+        let Some(cfg) = self.cfg.take() else { return; };
+        let in_dungeon = self.loc == Loc::Dungeon;
+        let count = roles.len().max(1);
+        let mut spawned = 0;
+        for (i, role) in roles.iter().enumerate() {
+            let Some(kind) = cfg.enemies.iter().find(|e| e.role == *role).map(|e| e.id.clone()) else {
+                continue;
+            };
+            let angle = i as f32 / count as f32 * std::f32::consts::TAU;
+            let pos = center + Vector3::new(angle.cos() * 10.0, 0.0, angle.sin() * 10.0);
+            self.spawn_enemy(&cfg, &kind, pos, 1.0, false, in_dungeon, &[]);
+            spawned += 1;
+        }
+        self.cfg = Some(cfg);
+        let en = self.settings.lang == "en";
+        self.show_flash(&if en {
+            format!("Arena wave: {spawned} enemies")
+        } else {
+            format!("Волна арены: врагов {spawned}")
+        });
     }
 }

@@ -67,19 +67,76 @@ pub fn defaults() -> Vec<AbilityDef> {
     parse(include_str!("../../../game/presets/core/player_abilities.json")).expect("built-in abilities")
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+fn full_charges() -> [u8; 2] {
+    [1, 1]
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AbilityState {
     pub cooldowns: [f32; 2],
     pub guard: f32,
     pub guard_time: f32,
     pub speed: f32,
     pub speed_time: f32,
+    /// Доступные заряды слота. По умолчанию 1 — обычное поведение по кулдауну.
+    #[serde(default = "full_charges")]
+    pub charges: [u8; 2],
+    /// Максимум зарядов слота (спец может дать умению второй заряд, план §5).
+    #[serde(default = "full_charges")]
+    pub max_charges: [u8; 2],
+    /// Полное время восстановления одного заряда — чтобы tick перезапускал
+    /// таймер под следующий заряд, не имея на руках `AbilityDef`.
+    #[serde(default)]
+    pub cd_full: [f32; 2],
+}
+
+impl Default for AbilityState {
+    fn default() -> Self {
+        Self {
+            cooldowns: [0.0; 2],
+            guard: 0.0,
+            guard_time: 0.0,
+            speed: 0.0,
+            speed_time: 0.0,
+            charges: [1, 1],
+            max_charges: [1, 1],
+            cd_full: [0.0; 2],
+        }
+    }
 }
 
 impl AbilityState {
+    /// Задать максимум зарядов слота (из лоадаута спека). Доливаем до полного
+    /// только при изменении максимума, чтобы пересчёт лоадаута (покупка перка,
+    /// респек) не рефилил заряды на ровном месте.
+    pub fn set_max_charges(&mut self, slot: usize, max: u8) {
+        if slot >= 2 {
+            return;
+        }
+        let max = max.max(1);
+        if self.max_charges[slot] == max {
+            self.charges[slot] = self.charges[slot].min(max);
+            return;
+        }
+        self.max_charges[slot] = max;
+        self.charges[slot] = max;
+    }
+
     pub fn tick(&mut self, dt: f32) {
         if !dt.is_finite() || dt <= 0.0 { return; }
-        for c in &mut self.cooldowns { *c = (*c - dt).max(0.0); }
+        for slot in 0..2 {
+            let max = self.max_charges[slot].max(1);
+            if self.charges[slot] >= max {
+                self.cooldowns[slot] = 0.0;
+                continue;
+            }
+            self.cooldowns[slot] = (self.cooldowns[slot] - dt).max(0.0);
+            if self.cooldowns[slot] <= 0.0 {
+                self.charges[slot] = (self.charges[slot] + 1).min(max);
+                // Ещё не полный набор — сразу запускаем восстановление следующего.
+                self.cooldowns[slot] = if self.charges[slot] < max { self.cd_full[slot] } else { 0.0 };
+            }
+        }
         self.guard_time = (self.guard_time - dt).max(0.0);
         self.speed_time = (self.speed_time - dt).max(0.0);
     }
@@ -88,12 +145,24 @@ impl AbilityState {
     /// изменений; в сетевом режиме сервер и клиент используют 1.0, чтобы кулдаун
     /// был одинаков у всех (спек-модификаторы умений — пока только offline).
     pub fn activate(&mut self, def: &AbilityDef, cd_mult: f32, alive: bool, stunned: bool) -> bool {
-        if !alive || stunned || self.cooldowns[def.slot] > 0.0 { return false; }
+        let slot = def.slot;
+        let max = self.max_charges[slot].max(1);
+        self.charges[slot] = self.charges[slot].min(max);
+        if !alive || stunned || self.charges[slot] == 0 { return false; }
         let cd_mult = if cd_mult.is_finite() { cd_mult.clamp(0.1, 3.0) } else { 1.0 };
-        self.cooldowns[def.slot] = (def.cooldown * cd_mult).max(0.1);
+        self.charges[slot] -= 1;
+        self.cd_full[slot] = (def.cooldown * cd_mult).max(0.1);
+        // Запускаем таймер, только если он не идёт (несколько зарядов копятся по очереди).
+        if self.cooldowns[slot] <= 0.0 {
+            self.cooldowns[slot] = self.cd_full[slot];
+        }
         if def.guard > 0.0 { self.guard = def.guard; self.guard_time = def.duration; }
         if def.speed > 1.0 { self.speed = def.speed; self.speed_time = def.duration; }
         true
+    }
+    /// Готов ли слот к применению (есть заряд).
+    pub fn ready(&self, slot: usize) -> bool {
+        slot < 2 && self.charges[slot] > 0
     }
     pub fn damage_scale(&self) -> f32 {
         if self.guard_time > 0.0 { 1.0 - self.guard } else { 1.0 }
@@ -149,6 +218,23 @@ mod tests {
         assert_eq!(defaults().len(), 6);
         let bad = include_str!("../../../game/presets/core/player_abilities.json").replace("\"cooldown\":7.0", "\"cooldown\":0.0");
         assert!(parse(&bad).is_err());
+    }
+
+    #[test]
+    fn spec_second_charge_allows_burst_then_recovers() {
+        let d = defaults().remove(0); // blood_dash, slot 0
+        let mut s = AbilityState::default();
+        s.set_max_charges(0, 2);
+        assert_eq!(s.charges[0], 2);
+        assert!(s.activate(&d, 1.0, true, false)); // 2 -> 1
+        assert!(s.activate(&d, 1.0, true, false)); // 1 -> 0 (burst: two in a row)
+        assert!(!s.activate(&d, 1.0, true, false)); // empty -> blocked
+        assert!(!s.ready(0));
+        s.tick(d.cooldown); // one charge back
+        assert!(s.ready(0));
+        assert_eq!(s.charges[0], 1);
+        s.tick(d.cooldown); // fully recovered
+        assert_eq!(s.charges[0], 2);
     }
 
     #[test]

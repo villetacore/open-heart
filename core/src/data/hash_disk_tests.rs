@@ -10,7 +10,7 @@ use crate::data::hash::{is_content_file, preset_hash};
 
 /// Значение, посчитанное `server/internal/content.Hash` для `game/presets/core`.
 /// Меняется вместе с данными пресета — тогда обнови и его.
-const CORE_PRESET_HASH: &str = "0b3178a2f0190012e00f7d8b9b40ba1673a91a649630943335c8139630649b47";
+const CORE_PRESET_HASH: &str = "c53a68a7b6008003c46925cc19f1b1c9d8b6280050127d7f54b0f7e32a77f863";
 
 fn collect(root: &Path, dir: &Path, out: &mut Vec<(String, String)>) {
     let Ok(entries) = std::fs::read_dir(dir) else {

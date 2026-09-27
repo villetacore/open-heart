@@ -32,6 +32,7 @@ pub struct MainMenu {
     // Ректы кнопок для hit-теста
     r_new: Rect2,
     r_creative: Rect2,
+    r_arena: Rect2,
     r_cont: Rect2,
     r_preset: Rect2,
     r_connect: Rect2,
@@ -70,6 +71,7 @@ pub struct MainMenu {
     lbl_subtitle: Option<Gd<Label>>,
     lbl_new: Option<Gd<Label>>,
     lbl_creative: Option<Gd<Label>>,
+    lbl_arena: Option<Gd<Label>>,
     lbl_continue: Option<Gd<Label>>,
     lbl_preset: Option<Gd<Label>>,
     lbl_preset_desc: Option<Gd<Label>>,
@@ -257,6 +259,7 @@ impl IControl for MainMenu {
             show_settings: false,
             r_new: btn_rect(0.0),
             r_creative: btn_rect(0.0),
+            r_arena: btn_rect(0.0),
             r_cont: btn_rect(0.0),
             r_preset: btn_rect(0.0),
             r_connect: btn_rect(0.0),
@@ -287,6 +290,7 @@ impl IControl for MainMenu {
             lbl_subtitle: None,
             lbl_new: None,
             lbl_creative: None,
+            lbl_arena: None,
             lbl_continue: None,
             lbl_preset: None,
             lbl_preset_desc: None,
@@ -491,6 +495,8 @@ impl MainMenu {
         self.lbl_quit = Some(quit_label);
         self.r_creative = btn_rect(btn_start_y + gap * 6.0);
         self.lbl_creative = Some(self.make_btn(if lang == "en" {"CREATIVE · all unlocked"} else {"КРЕАТИВ · всё доступно"}, self.r_creative));
+        self.r_arena = btn_rect(btn_start_y + gap * 7.0);
+        self.lbl_arena = Some(self.make_btn(if lang == "en" {"ARENA · combat test"} else {"АРЕНА · боевой тест"}, self.r_arena));
         for label in [self.lbl_title.as_mut(), self.lbl_subtitle.as_mut()].into_iter().flatten() {
             let height = label.get_size().y;
             label.set_position(Vector2::new(100.0, if height > 40.0 {150.0} else {246.0}));
@@ -750,6 +756,7 @@ impl MainMenu {
             self.lbl_subtitle.as_mut(),
             self.lbl_new.as_mut(),
             self.lbl_creative.as_mut(),
+            self.lbl_arena.as_mut(),
             self.lbl_continue.as_mut(),
             self.lbl_preset.as_mut(),
             self.lbl_preset_desc.as_mut(),
@@ -773,6 +780,11 @@ impl MainMenu {
     fn handle_main_click(&mut self, pos: Vector2) {
         if self.r_creative.contains_point(pos) {
             crate::nodes::game::creative::request();
+            self.load_scene("res://main.tscn");
+            return;
+        }
+        if self.r_arena.contains_point(pos) {
+            crate::nodes::game::creative::request_arena();
             self.load_scene("res://main.tscn");
             return;
         }

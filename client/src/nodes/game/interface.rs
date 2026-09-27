@@ -161,10 +161,17 @@ impl Game3D {
             let name = cfg.as_ref().map(|c| c.name(&lang)).unwrap_or(&item.name);
             let mut b = button(&format!("×{}",item.qty),Vector2::new(130.0,120.0));
             b.set_tooltip_text(name);
-            if let Some(def) = cfg.quest(&q.id) {
-                if ["ivo", "noel", "lucien", "ash", "emil", "yves"].contains(&def.giver.as_str()) {
-                    let suffix = if def.stage > 1 { "_2" } else { "" };
-                    if let Some(texture) = super::presentation::art_texture(&format!("res://assets/icons/neighbors/{}{suffix}.tres", def.giver)) {
+            // Предмет-квест соседа (ателье) показывает портрет соответствующего соседа.
+            let neighbor = self.cfg.as_ref().and_then(|c| {
+                c.quests
+                    .iter()
+                    .find(|q| q.reward_items.iter().any(|r| r.id == item.id) || q.target == item.id)
+                    .map(|q| (q.giver.clone(), q.stage))
+            });
+            if let Some((giver, stage)) = neighbor {
+                if ["ivo", "noel", "lucien", "ash", "emil", "yves"].contains(&giver.as_str()) {
+                    let suffix = if stage > 1 { "_2" } else { "" };
+                    if let Some(texture) = super::presentation::art_texture(&format!("res://assets/icons/neighbors/{giver}{suffix}.tres")) {
                         b.set_button_icon(&texture);
                         b.set_expand_icon(true);
                         b.add_theme_constant_override("icon_max_width", 42);

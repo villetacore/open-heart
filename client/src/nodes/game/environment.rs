@@ -147,6 +147,28 @@ impl Game3D {
                 make_glow_slab(position * scale, size * scale, None, color, 1.0)
             };
             match change.pattern.as_str() {
+                "table" => {
+                    let wood = Color::from_rgb(0.24, 0.12, 0.16);
+                    let mut parts = vec![
+                        (Vector3::new(0.0, 0.9, 0.0), Vector3::new(3.6, 0.16, 1.4)),
+                        (Vector3::new(0.0, 0.5, -1.15), Vector3::new(3.6, 0.14, 0.5)),
+                        (Vector3::new(0.0, 0.5, 1.15), Vector3::new(3.6, 0.14, 0.5)),
+                    ];
+                    for x in [-1.4, 1.4] {
+                        for z in [-0.5, 0.5] {
+                            parts.push((Vector3::new(x, 0.45, z), Vector3::new(0.16, 0.9, 0.16)));
+                        }
+                        for z in [-1.15, 1.15] {
+                            parts.push((Vector3::new(x, 0.25, z), Vector3::new(0.16, 0.5, 0.35)));
+                        }
+                    }
+                    for (position, size) in parts {
+                        root.add_child(&make_glow_slab(position * scale, size * scale, None, wood, 0.12));
+                    }
+                    for x in [-1.1, 0.0, 1.1] {
+                        root.add_child(&slab(Vector3::new(x, 1.08, 0.0), Vector3::new(0.13, 0.25, 0.13)));
+                    }
+                }
                 "garden" => {
                     root.add_child(&slab(
                         Vector3::new(0.0, 0.08, 0.0),
@@ -243,7 +265,9 @@ impl Game3D {
                     root.add_child(&sprite);
                 }
             }
-            for index in 0..change.activity_count {
+            // A shared table is static decor, not orbiting NPC stand-ins.
+            let activity_count = if change.pattern == "table" { 0 } else { change.activity_count };
+            for index in 0..activity_count {
                 let angle = std::f32::consts::TAU * index as f32 / change.activity_count as f32;
                 let radius = change.activity_radius * scale;
                 let position = Vector3::new(angle.cos() * radius, 0.7, angle.sin() * radius);

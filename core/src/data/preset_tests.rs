@@ -1403,6 +1403,12 @@ fn weapon_roster_matches_balance_passport() {
 
     for w in &weapons {
         assert!(w.damage > 0.0 && w.range > 0.0, "core/weapons.json: '{}' с нулевым уроном/дистанцией", w.name_en);
+        // Крит-удары (паспорт): у каждого ствола ненулевой шанс и множитель > 1.
+        assert!(
+            (0.0..=1.0).contains(&w.crit_chance) && w.crit_chance > 0.0 && w.crit_mult >= 1.5,
+            "core/weapons.json: у '{}' крит вне паспорта (chance {}, mult {})",
+            w.name_en, w.crit_chance, w.crit_mult
+        );
         let melee = matches!(w.id, WeaponId::Sword | WeaponId::Chainsaw);
         if melee {
             assert!(w.ammo.is_none(), "core/weapons.json: меле '{}' не должно тратить боезапас", w.name_en);

@@ -145,6 +145,17 @@ jobs:
         working-directory: game
         run: godot --headless --path . --script res://tools/runtime_smoke.gd
 
+      # Контент-смоук (креатив, изолированный APPDATA): проверяет, что креатив не
+      # трогает кампанийный сейв и что весь контент выдаётся/сдаётся.
+      - name: Content smoke
+        working-directory: game
+        run: APPDATA=/tmp/content-qa-user godot --headless --path . --script res://tools/content_smoke.gd -- --creative
+
+      # Вечерний контент-пак «Свет для общего стола»: квесты соседей, награды, финал.
+      - name: Evening content smoke
+        working-directory: game
+        run: APPDATA=/tmp/evening-qa-user godot --headless --path . --script res://tools/evening_smoke.gd -- --creative
+
 # ── 2. Авто-тег (только push→main или ручной запуск) ───────────────────────────
   tag:
     name: "Bump & Tag"

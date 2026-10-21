@@ -1,0 +1,445 @@
+{
+  "scope": "Disk inventory, not runtime verification",
+  "source": {
+    "core/src": {
+      "files": 54,
+      "lines": 14544,
+      "largest": [
+        {
+          "path": "core/src/data/preset_tests.rs",
+          "lines": 1421
+        },
+        {
+          "path": "core/src/worldgen/dungeon.rs",
+          "lines": 1310
+        },
+        {
+          "path": "core/src/combat/weapon.rs",
+          "lines": 1202
+        },
+        {
+          "path": "core/src/data/config.rs",
+          "lines": 1156
+        },
+        {
+          "path": "core/src/data/story.rs",
+          "lines": 1152
+        },
+        {
+          "path": "core/src/sim/mod.rs",
+          "lines": 898
+        },
+        {
+          "path": "core/src/state/game_state.rs",
+          "lines": 734
+        },
+        {
+          "path": "core/src/data/dialogue.rs",
+          "lines": 384
+        }
+      ]
+    },
+    "client/src": {
+      "files": 46,
+      "lines": 20094,
+      "largest": [
+        {
+          "path": "client/src/nodes/game/runtime_smoke.rs",
+          "lines": 1828
+        },
+        {
+          "path": "client/src/nodes/enemy.rs",
+          "lines": 1659
+        },
+        {
+          "path": "client/src/nodes/main_menu.rs",
+          "lines": 1501
+        },
+        {
+          "path": "client/src/nodes/game/combat.rs",
+          "lines": 1372
+        },
+        {
+          "path": "client/src/worldgen/dungeon.rs",
+          "lines": 1213
+        },
+        {
+          "path": "client/src/nodes/game/hud.rs",
+          "lines": 1113
+        },
+        {
+          "path": "client/src/nodes/game/environment.rs",
+          "lines": 1051
+        },
+        {
+          "path": "client/src/nodes/game/items.rs",
+          "lines": 755
+        }
+      ]
+    },
+    "terminal/src": {
+      "files": 10,
+      "lines": 2900,
+      "largest": [
+        {
+          "path": "terminal/src/gameplay.rs",
+          "lines": 671
+        },
+        {
+          "path": "terminal/src/app.rs",
+          "lines": 661
+        },
+        {
+          "path": "terminal/src/tests.rs",
+          "lines": 420
+        },
+        {
+          "path": "terminal/src/ui.rs",
+          "lines": 378
+        },
+        {
+          "path": "terminal/src/host.rs",
+          "lines": 212
+        },
+        {
+          "path": "terminal/src/world.rs",
+          "lines": 193
+        },
+        {
+          "path": "terminal/src/main.rs",
+          "lines": 146
+        },
+        {
+          "path": "terminal/src/network.rs",
+          "lines": 89
+        }
+      ]
+    },
+    "server": {
+      "files": 37,
+      "lines": 6466,
+      "largest": [
+        {
+          "path": "server/internal/room/room.go",
+          "lines": 439
+        },
+        {
+          "path": "server/cmd/oh-master/handlers.go",
+          "lines": 363
+        },
+        {
+          "path": "server/cmd/oh-server/session.go",
+          "lines": 360
+        },
+        {
+          "path": "server/cmd/oh-server/main.go",
+          "lines": 319
+        },
+        {
+          "path": "server/internal/sim/wasm.go",
+          "lines": 313
+        },
+        {
+          "path": "server/internal/store/master.go",
+          "lines": 303
+        },
+        {
+          "path": "server/internal/relay/relay_test.go",
+          "lines": 290
+        },
+        {
+          "path": "server/internal/proto/proto.go",
+          "lines": 288
+        }
+      ]
+    },
+    "game": {
+      "files": 14,
+      "lines": 2669,
+      "largest": [
+        {
+          "path": "game/addons/oh_editor/editor_main.gd",
+          "lines": 1738
+        },
+        {
+          "path": "game/tools/runtime_smoke.gd",
+          "lines": 333
+        },
+        {
+          "path": "game/autoload/music_player.gd",
+          "lines": 128
+        },
+        {
+          "path": "game/tools/art_review.gd",
+          "lines": 72
+        },
+        {
+          "path": "game/dev_walk.gd",
+          "lines": 53
+        },
+        {
+          "path": "game/dev_menu.gd",
+          "lines": 46
+        },
+        {
+          "path": "game/tools/art_wave02_review.gd",
+          "lines": 45
+        },
+        {
+          "path": "game/addons/oh_editor/plugin.gd",
+          "lines": 43
+        }
+      ]
+    }
+  },
+  "presets": {
+    "arena": {
+      "counts": {
+        "classes": 3,
+        "enemies.enemies": 14,
+        "items.items": 18,
+        "level.spawn_enemies": 0,
+        "level.spawn_items": 0,
+        "level.spawn_ammo": 0,
+        "level.spawn_weapons": 0,
+        "npcs": 0,
+        "perks": 18,
+        "quests": 0,
+        "synergies": 8,
+        "weapons": 8
+      },
+      "maps": [
+        "game/presets/arena/maps/hub.json"
+      ],
+      "npcs": [],
+      "quest_types": {},
+      "chains": {},
+      "world_changes": []
+    },
+    "core": {
+      "counts": {
+        "abilities": 8,
+        "affixes": 5,
+        "classes": 3,
+        "dialogues": 154,
+        "dungeon.themes": 5,
+        "dungeon.pools": 4,
+        "dungeon.room_archetypes": 16,
+        "enemies.enemies": 21,
+        "items.items": 21,
+        "level.spawn_enemies": 25,
+        "level.spawn_items": 22,
+        "level.spawn_ammo": 12,
+        "level.spawn_weapons": 5,
+        "loot.room_items": 8,
+        "loot.kill_drops": 5,
+        "npcs": 21,
+        "perks": 21,
+        "player_abilities": 6,
+        "quests": 41,
+        "recipes.recipes": 8,
+        "statuses": 5,
+        "synergies": 11,
+        "weapon_mods": 16,
+        "weapons": 8
+      },
+      "maps": [
+        "game/presets/core/maps/hub.json"
+      ],
+      "npcs": [
+        {
+          "id": "vale",
+          "name": "Ms. Вейл",
+          "sprite": "npc_vale",
+          "scene": "story"
+        },
+        {
+          "id": "victor",
+          "name": "Виктор",
+          "sprite": "npc_victor",
+          "scene": "story"
+        },
+        {
+          "id": "elena",
+          "name": "Елена",
+          "sprite": "npc_elena",
+          "scene": "story"
+        },
+        {
+          "id": "sofia",
+          "name": "София",
+          "sprite": "npc_sofia",
+          "scene": "story"
+        },
+        {
+          "id": "guard",
+          "name": "Охранник",
+          "sprite": "npc_guard",
+          "scene": "story"
+        },
+        {
+          "id": "merchant",
+          "name": "Торговец",
+          "sprite": "npc_merchant",
+          "scene": "story"
+        },
+        {
+          "id": "scientist",
+          "name": "Учёный",
+          "sprite": "npc_scientist",
+          "scene": ""
+        },
+        {
+          "id": "stranger",
+          "name": "Незнакомец",
+          "sprite": "npc_stranger",
+          "scene": "story"
+        },
+        {
+          "id": "hunter",
+          "name": "Охотница Ба",
+          "sprite": "npc_guard",
+          "scene": ""
+        },
+        {
+          "id": "collector",
+          "name": "Коллекционер",
+          "sprite": "npc_merchant",
+          "scene": ""
+        },
+        {
+          "id": "warden",
+          "name": "Смотритель врат",
+          "sprite": "npc_stranger",
+          "scene": ""
+        },
+        {
+          "id": "medic",
+          "name": "Полевой медик",
+          "sprite": "npc_scientist",
+          "scene": ""
+        },
+        {
+          "id": "stylist",
+          "name": "Сайлас · мастер ателье",
+          "sprite": "citizens_atlas",
+          "scene": "atelier_intro"
+        },
+        {
+          "id": "ren",
+          "name": "Рен · хозяин чайной",
+          "sprite": "citizens_atlas",
+          "scene": "tea_intro"
+        },
+        {
+          "id": "mika",
+          "name": "Мика · курьер",
+          "sprite": "citizens_atlas",
+          "scene": "courier_intro"
+        },
+        {
+          "id": "ivo",
+          "name": "Иво",
+          "sprite": "npc_victor",
+          "scene": "neighbors_ivo"
+        },
+        {
+          "id": "noel",
+          "name": "Ноэль",
+          "sprite": "npc_victor",
+          "scene": "neighbors_noel"
+        },
+        {
+          "id": "lucien",
+          "name": "Люсьен",
+          "sprite": "npc_victor",
+          "scene": "neighbors_lucien"
+        },
+        {
+          "id": "ash",
+          "name": "Эш",
+          "sprite": "npc_victor",
+          "scene": "neighbors_ash"
+        },
+        {
+          "id": "emil",
+          "name": "Эмиль",
+          "sprite": "npc_victor",
+          "scene": "neighbors_emil"
+        },
+        {
+          "id": "yves",
+          "name": "Ив",
+          "sprite": "npc_victor",
+          "scene": "neighbors_yves"
+        }
+      ],
+      "quest_types": {
+        "boss": 1,
+        "clear_dungeon": 6,
+        "collect": 6,
+        "collect_category": 1,
+        "discover_lore": 2,
+        "discover_weapon": 1,
+        "enter_dungeon": 1,
+        "interact": 11,
+        "kill": 9,
+        "kill_any": 1,
+        "solve_puzzle": 2
+      },
+      "chains": {
+        "Архивный сигнал": 3,
+        "Глубинный дозор": 7,
+        "Линия снабжения": 3,
+        "Нити квартала": 3,
+        "Огни площади": 1,
+        "Охота квартала": 4,
+        "Почта квартала": 1,
+        "Реликвии квартала": 3,
+        "Свет для общего стола": 4,
+        "Соседи: Ив": 2,
+        "Соседи: Иво": 2,
+        "Соседи: Люсьен": 2,
+        "Соседи: Ноэль": 2,
+        "Соседи: Эмиль": 2,
+        "Соседи: Эш": 2
+      },
+      "world_changes": [
+        {
+          "quest": "district_patrol",
+          "pattern": "beacon"
+        },
+        {
+          "quest": "relief_supplies",
+          "pattern": "garden"
+        },
+        {
+          "quest": "stolen_cores",
+          "pattern": "gallery"
+        },
+        {
+          "quest": "heart_execution",
+          "pattern": "shrine"
+        },
+        {
+          "quest": "archive_whispers",
+          "pattern": "archive"
+        },
+        {
+          "quest": "evening_table",
+          "pattern": "table"
+        }
+      ]
+    }
+  },
+  "missing_resource_files": [],
+  "assets": {
+    ".json": 6,
+    ".md": 2,
+    ".ogg": 6,
+    ".png": 242,
+    ".tres": 110,
+    ".tscn": 6,
+    ".wav": 9
+  }
+}

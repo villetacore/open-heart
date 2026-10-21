@@ -6,19 +6,20 @@
 
 > Структурная карта «файл → за что отвечает», не полный список сигнатур. Точные
 > пути каталогов — в [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md); связи в рантайме
-> — в [ARCHITECTURE.md](ARCHITECTURE.md).
+> — в [актуальной архитектуре](current/ARCHITECTURE.md).
 
 **Сводка:** `core/` ≈ 14 500 строк Rust (**111 тестов**) · `client/` ≈ 20 000 строк
 Rust (GDExtension) · `server/` ≈ 6 500 строк Go · пресет `core` = 19 контент-стемов
-(JSON+RON) + карта · ~230 PNG-ассетов · Python/PS-пайплайн ассетов в `tools/`.
+(JSON+RON) + карта · 242 PNG-ассета · Python/PS-пайплайн ассетов в `tools/`.
 
-Три крейта, одно ядро правды:
+Три Rust-крейта и отдельный Go-модуль:
 
 | Крейт | Что | Собирается в |
 |---|---|---|
 | `core/` (`openheart-core`) | Чистая симуляция и данные без движка; общее для клиента и сервера | rlib + `core.wasm` для сервера |
 | `client/` (`openheart`) | GDExtension: ноды, рендер, ввод, HUD, сеть | `openheart.dll/.so/.dylib` |
-| `server/` | Go: `oh-server`, `oh-master`, `oh-probe` | бинарники ([server/README.md](../server/README.md)) |
+| `terminal/` (`openheart-terminal`) | Терминальный клиент: offline, host, server | бинарник Rust |
+| `server/` | Go: `oh-server`, `oh-master`, `oh-probe`, `oh-content-hash` | бинарники ([server/README.md](../server/README.md)) |
 
 ---
 
